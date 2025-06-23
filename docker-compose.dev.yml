@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Select the appropriate stage from the multi-stage Dockerfile
+      target: development
+    # Mount workspace for development
+    volumes:
+      - .:/app:cached
+      - sqlite-data:/app/data
+    networks:
+      - transcendence
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=sqlite:///app/data/database.db
+    # Use "ports" for regular Docker usage and "network_mode" for devcontainers
+    ports:
+      - "3000:3000"
+    # Override the command to keep it running
+    command: sleep infinity
+
+volumes:
+  sqlite-data:
+
+networks:
+  transcendence:
