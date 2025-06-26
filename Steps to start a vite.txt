@@ -1,0 +1,14 @@
+Steps to scaffold an app with vite:
+from the dev container node js:
+at the root directory:
+>pnpm create vite frontend --template react-ts
+>cd frontend
+>pnpm install
+
+to run :
+>pnpm run dev --host 0.0.0.0
+
+than :
+>pnpm install tailwindcss @tailwindcss/
+vite
+
