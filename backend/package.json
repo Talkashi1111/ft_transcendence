@@ -1,0 +1,27 @@
+{
+  "name": "backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^22.12.5",
+    "tsx": "^4.19.2",
+    "typescript": "~5.8.3",
+    "vitest": "^2.1.0",
+    "eslint": "^9.29.0"
+  }
+}
