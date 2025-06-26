@@ -5,25 +5,29 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # Select the appropriate stage from the multi-stage Dockerfile
       target: development
-    # Mount workspace for development
     volumes:
       - .:/app:cached
       - sqlite-data:/app/data
+      - node_modules_cache:/app/node_modules
+      - frontend_node_modules:/app/frontend/node_modules
+      - backend_node_modules:/app/backend/node_modules
     networks:
       - transcendence
     environment:
       - NODE_ENV=development
       - DATABASE_URL=sqlite:///app/data/database.db
-    # Use "ports" for regular Docker usage and "network_mode" for devcontainers
+      - VITE_API_URL=http://localhost:3000
     ports:
-      - "3000:3000"
-    # Override the command to keep it running
+      - "5173:5173"  # Frontend Vite dev server
+      - "3000:3000"  # Backend API server
     command: sleep infinity
 
 volumes:
   sqlite-data:
+  node_modules_cache:
+  frontend_node_modules:
+  backend_node_modules:
 
 networks:
   transcendence:

@@ -1,0 +1,25 @@
+{
+  "name": "ft-transcendence",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel run dev",
+    "build": "pnpm --recursive run build",
+    "lint": "pnpm --recursive exec eslint .",
+    "test": "pnpm --recursive run test",
+    "frontend:dev": "pnpm --filter frontend run dev",
+    "backend:dev": "pnpm --filter backend run dev",
+    "install:all": "pnpm install --recursive"
+  },
+  "pnpm": {
+    "overrides": {
+      "eslint": "^9.29.0"
+    }
+  },
+  "devDependencies": {
+    "eslint": "^9.29.0",
+    "typescript": "~5.8.3",
+    "vitest": "^2.1.0"
+  }
+}
