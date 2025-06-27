@@ -15,3 +15,20 @@ vite
 >cd /app/frontend/
 >pnpm install -D tailwindcss@3 postcss autoprefixer
 >npx tailwindcss init -p
+
+
+> cd /app/backend
+> pnpm init
+> pnpm i fastify
+> pnpm i -D typescript @types/node
+
+than it creats a package.json and there i should add the following to scripts:
+"scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node index.js",
+	"dev": "node --watch index.js"
+  }
+
+> npx tsc --init
+
+than inside the file tsconfig.json  i need to change target to es2017.
