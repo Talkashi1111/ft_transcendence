@@ -19,6 +19,7 @@
     "typescript": "~5.8.3"
   },
   "dependencies": {
+    "@sinclair/typebox": "^0.34.37",
     "fastify": "^5.4.0"
   }
 }
