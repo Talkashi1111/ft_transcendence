@@ -32,3 +32,5 @@ than it creats a package.json and there i should add the following to scripts:
 > npx tsc --init
 
 than inside the file tsconfig.json  i need to change target to es2017.
+> pnpm add -D nodemon
+> pnpm add pino --filter backend

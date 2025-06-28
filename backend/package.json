@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p tsconfig.json",
-    "start": "node index.js",
-	"dev": "NODE_HOST=0.0.0.0 node --watch index.js"
+    "start": "node build/index.js",
+    "dev": "nodemon -e ts -w src -x \"tsc && NODE_HOST=0.0.0.0 node build/index.js\""
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
   "packageManager": "pnpm@10.11.0",
   "devDependencies": {
     "@types/node": "^24.0.4",
+    "nodemon": "^3.1.10",
     "typescript": "~5.8.3"
   },
   "dependencies": {
