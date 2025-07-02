@@ -28,8 +28,10 @@ type CounterRequestType = Static<typeof CounterRequest>;
 // Create server instance
 const server = fastify({
   logger: { level: 'info' }
+  logger: { level: 'info' }
 });
 
+// Keep your existing ping endpoint
 // Keep your existing ping endpoint
 server.get('/ping', async (request, reply) => {
   return 'pong 🏓\n';
