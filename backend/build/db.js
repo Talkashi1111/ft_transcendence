@@ -21,7 +21,7 @@ db.exec(`
     id INTEGER PRIMARY KEY CHECK (id = 1),
     value INTEGER NOT NULL DEFAULT 0
   );
-  
+
   -- Insert a default counter value if none exists
   INSERT OR IGNORE INTO counter (id, value) VALUES (1, 0);
 `);
