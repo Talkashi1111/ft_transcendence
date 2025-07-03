@@ -23,9 +23,7 @@ const CounterRequest = typebox_1.Type.Object({
 // Create server instance
 const server = (0, fastify_1.default)({
     logger: { level: 'info' }
-    logger: { level: 'info' }
 });
-// Keep your existing ping endpoint
 // Keep your existing ping endpoint
 server.get('/ping', async (request, reply) => {
     return 'pong 🏓\n';

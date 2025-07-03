@@ -22,7 +22,7 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS developmen
 
 # Install SQLite for database
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends sqlite3 \
+    && apt-get -y install --no-install-recommends build-essential python3 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -42,9 +42,9 @@ CMD ["sleep", "infinity"]
 # Production stage (for deployment)
 FROM node:22-bookworm-slim AS production
 
-# Install SQLite and pnpm
+# Install SQLite and build dependencies for native modules
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends sqlite3 \
+    && apt-get -y install --no-install-recommends build-essential python3 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable pnpm for production
