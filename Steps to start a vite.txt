@@ -39,3 +39,28 @@ validation of JSON schema using typebox:
 > pnpm i @sinclair/typebox
 
 
+better sqlite3
+> cd /app/backend
+> pnpm add better-sqlite3
+> pnpm add -D @types/better-sqlite3
+> pnpm install
+
+
+╭ Warning ───────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                            │
+│   Ignored build scripts: better-sqlite3.                                                   │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.   │
+│                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+{
+	we need to approve dependencies for running scripts during installation (post installation scripts).
+	This security measure was added in: v10.1.0
+}
+
+> pnpm approve-builds
+✔ Choose which packages to build (Press <space> to select, <a> to toggle all, <i> to invert selection) · better-sqlite3
+✔ The next packages will now be built: better-sqlite3.
+Do you approve? (y/N) · true
+../node_modules/.pnpm/better-sqlite3@12.2.0/node_modules/better-sqlite3: Running install script, done in 1.8s
