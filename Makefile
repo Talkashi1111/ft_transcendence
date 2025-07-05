@@ -1,7 +1,10 @@
 up:        ## start dev stack
 	docker compose -f docker-compose.dev.yml up --no-start
 	docker compose -f docker-compose.dev.yml start
-	docker compose -f docker-compose.dev.yml exec app bash
+	docker compose -f docker-compose.dev.yml exec --user node app bash
+
+exec:      ## execute command in app container
+	docker compose -f docker-compose.dev.yml exec --user node app bash
 
 halt:      ## stop dev stack
 	docker compose -f docker-compose.dev.yml stop
@@ -15,8 +18,9 @@ destroy:    ## destroy dev stack
 prune:	 ## prune unused docker resources
 	docker image prune -f
 	docker container prune -f
-	docker builder prune -f
 	docker images | grep ft_transcendence | awk '{print $$3}' | xargs -r docker rmi -f
+	docker volume prune -f
+	docker builder prune -f
 
 install:   ## install all dependencies
 	pnpm install

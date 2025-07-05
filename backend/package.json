@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "build": "tsc -p tsconfig.json",
     "start": "node build/index.js",
     "dev": "nodemon -e ts -w src -x \"tsc && NODE_HOST=0.0.0.0 node build/index.js\""
@@ -16,8 +16,10 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.4",
+    "@vitest/coverage-v8": "2.1.9",
     "nodemon": "^3.1.10",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.37",
