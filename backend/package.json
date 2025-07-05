@@ -7,7 +7,7 @@
     "test": "vitest run",
     "build": "tsc -p tsconfig.json",
     "start": "node build/index.js",
-    "dev": "nodemon -e ts -w src -x \"tsc && NODE_HOST=0.0.0.0 node build/index.js\""
+    "dev": "nodemon -e ts -w src -x \"tsc && NODE_HOST=0.0.0.0 node build/src/index.js\""
   },
   "keywords": [],
   "author": "",
