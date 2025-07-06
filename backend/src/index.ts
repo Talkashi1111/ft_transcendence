@@ -30,11 +30,6 @@ const server = fastify({
   logger: { level: 'info' }
 });
 
-// Keep your existing ping endpoint
-server.get('/ping', async (request, reply) => {
-  return 'pong 🏓\n';
-});
-
 // Add a new endpoint with schema validation
 server.post<{ Body: UserType, Reply: UserType }>(
   '/users',
@@ -106,4 +101,10 @@ const start = async () => {
   }
 };
 
-start();
+// Only start the server if this file is run directly
+if (require.main === module) {
+  start();
+}
+
+// Export for testing
+export { server, start };
