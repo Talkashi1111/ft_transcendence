@@ -22,13 +22,20 @@ pnpm run dev
 # 1. Exit devcontainer first
 exit
 
-# 2. Deploy production
+# 2. Deploy production (uses pre-built image from GitHub)
+docker compose -f docker-compose.prod.yml up -d
+
+# Or rebuild locally if you made changes
 docker compose -f docker-compose.prod.yml up --build
 ```
 
 **Access:** http://localhost:8080
 
-> **Note:** You cannot run production and devcontainer simultaneously - they share the same Docker daemon. Exit devcontainer first.
+> **Note:**
+>
+> - Production uses pre-built images from GitHub Actions CI
+> - To use latest image, update the tag in `docker-compose.prod.yml`
+> - Or uncomment the `build` section to build locally
 
 ---
 

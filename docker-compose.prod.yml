@@ -5,10 +5,15 @@ name: ft_transcendence_prod # Different project name to avoid conflicts
 services:
   app:
     container_name: ft_transcendence-prod
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    # Pre-built image from GitHub Actions CI
+    # To use latest: change tag to 'main-<commit-hash>' or use 'latest'
+    # image: ghcr.io/talkashi1111/ft_transcendence:main-3e0c4e4
+    image: ghcr.io/talkashi1111/ft_transcendence:latest
+    # Uncomment to build locally instead of using pre-built image
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: production
     restart: unless-stopped
     volumes:
       - sqlite-data:/app/data
@@ -17,6 +22,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=sqlite:///app/data/database.db
+      - HOST_PORT=8080 # Host port for logging (should match ports mapping)
     ports:
       - "8080:3000" # Production on 8080 (avoids conflict with devcontainer port 3000)
 
