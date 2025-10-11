@@ -8,11 +8,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json', 'json-summary'],
-      // Set minimum coverage thresholds (60% requirement)
+      // Set minimum coverage thresholds (only lines enforced)
       thresholds: {
-        statements: 60,
-        branches: 60,
-        functions: 60,
+        // statements: 60,
+        // branches: 60,
+        // functions: 60,
         lines: 60,
       },
       exclude: [

@@ -1,16 +1,21 @@
 # CI/CD Pipeline Review
 
 ## Overview
+
 This document reviews the CI/CD pipeline configuration including Dockerfile stages, Makefile targets, and GitHub Actions workflow.
 
 ## Dockerfile Stages
 
 ### 1. Builder Stage (CI/CD)
+
 **Purpose:** Build applications and run tests in CI/CD
+
 ```dockerfile
 FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS builder
 ```
+
 **Key Features:**
+
 - ✅ Enables pnpm via corepack
 - ✅ Installs all dependencies (dev + prod) with `--frozen-lockfile`
 - ✅ Copies all source code
@@ -19,11 +24,15 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS builder
 - **Size:** Large (~1GB+) - contains all dev dependencies
 
 ### 2. Development Stage (DevContainer)
+
 **Purpose:** Local development environment
+
 ```dockerfile
 FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS development
 ```
+
 **Key Features:**
+
 - ✅ Installs SQLite and build tools for native modules
 - ✅ Creates `/app/data` directory for database
 - ✅ Exposes ports 5173 (frontend) and 3000 (backend)
@@ -33,11 +42,15 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS developmen
 - **Size:** Large (~1GB+) - full dev environment
 
 ### 3. Production Stage (Deployment)
+
 **Purpose:** Optimized runtime for production deployment
+
 ```dockerfile
 FROM node:22-bookworm-slim AS production
 ```
+
 **Key Features:**
+
 - ✅ Uses slim base image for smaller size
 - ✅ Installs only build essentials for native modules (better-sqlite3)
 - ✅ Enables pnpm via corepack
@@ -53,6 +66,7 @@ FROM node:22-bookworm-slim AS production
 ## Makefile Targets
 
 ### Docker Commands (Run on HOST)
+
 - `make up` - Start dev stack and enter container
 - `make exec` - Execute bash in running container
 - `make halt` - Stop dev stack
@@ -62,6 +76,7 @@ FROM node:22-bookworm-slim AS production
 - `make release` - Build and push production image
 
 ### Development Commands (Run INSIDE devcontainer)
+
 - `make install` - Install all dependencies
 - `make check-deps` - Check and auto-install dependencies
 - `make dev` - Run both frontend and backend
@@ -74,36 +89,43 @@ FROM node:22-bookworm-slim AS production
 ## GitHub Actions CI Workflow
 
 ### Trigger Events
+
 - Pull requests to `main` branch
 - Direct pushes to `main` branch
 
 ### Pipeline Steps
 
 #### 1. Setup
+
 - ✅ Checkout code
 - ✅ Setup Docker Buildx for efficient multi-stage builds
 - ✅ Enable GitHub Actions cache for Docker layers
 
 #### 2. Build Builder Stage
+
 - ✅ Builds `builder` target from Dockerfile
 - ✅ Uses GitHub Actions cache to speed up builds
 - ✅ Loads image into Docker for use in subsequent steps
 
 #### 3. Lint Check (`make lint`)
+
 ```bash
 docker run --rm ft_transcendence:builder pnpm -r exec eslint .
 ```
+
 - ✅ Runs ESLint on all packages (root, frontend, backend)
 - ✅ Fails CI if any linting errors found
 - ✅ Checks both TypeScript and configuration files
 
 #### 4. Test with Coverage (`make test`)
+
 ```bash
 docker run --rm ft_transcendence:builder sh -c "
-  pnpm --filter backend run test --coverage || exit 1 && 
+  pnpm --filter backend run test --coverage || exit 1 &&
   pnpm --filter frontend run test --coverage || exit 1
 "
 ```
+
 - ✅ Runs backend tests first
 - ✅ Runs frontend tests second
 - ✅ **Coverage Thresholds:** 60% minimum for each package
@@ -115,14 +137,17 @@ docker run --rm ft_transcendence:builder sh -c "
 - ✅ Runs tests separately to show clear failure source
 
 #### 5. Build Check (`make build`)
+
 ```bash
 docker run --rm ft_transcendence:builder pnpm run build
 ```
+
 - ✅ Verifies TypeScript compilation succeeds
 - ✅ Verifies Vite build succeeds
 - ✅ Fails CI if build errors occur
 
 #### 6. Production Image Build
+
 - ✅ Builds production stage
 - ✅ Verifies production image can be built
 - ✅ Uses cache for faster builds
@@ -131,6 +156,7 @@ docker run --rm ft_transcendence:builder pnpm run build
 ## Coverage Configuration
 
 ### Backend (`backend/vitest.config.ts`)
+
 ```typescript
 thresholds: {
   statements: 60,
@@ -139,11 +165,13 @@ thresholds: {
   lines: 60
 }
 ```
+
 - Excludes: node_modules, dist, build, config files, tests
 - Reports: text, json, html
 - Coverage provider: v8
 
 ### Frontend (`frontend/vitest.config.ts`)
+
 ```typescript
 thresholds: {
   statements: 60,
@@ -152,6 +180,7 @@ thresholds: {
   lines: 60
 }
 ```
+
 - Excludes: config files, node_modules, dist, main.tsx, tests
 - Reports: text, html, json, json-summary
 - Environment: jsdom (for React testing)
@@ -160,12 +189,14 @@ thresholds: {
 ## Key Improvements Made
 
 ### Dockerfile
+
 1. ✅ Added `corepack enable` to builder stage
 2. ✅ Copy backend source files to production (needed for ES modules)
 3. ✅ Clear separation of concerns between stages
 4. ✅ Optimized production image size
 
 ### CI Workflow
+
 1. ✅ Separated test runs for frontend and backend
 2. ✅ Clear failure messages showing which package failed
 3. ✅ Enforces 60% coverage threshold per package
@@ -173,6 +204,7 @@ thresholds: {
 5. ✅ Added verification steps with success messages
 
 ### Vitest Configuration
+
 1. ✅ Set consistent 60% threshold for both packages
 2. ✅ Proper exclusions for non-testable code
 3. ✅ Multiple report formats for CI and local dev
@@ -180,6 +212,7 @@ thresholds: {
 ## CI Failure Scenarios
 
 The CI will **FAIL** if:
+
 - ❌ Any linting errors in frontend or backend
 - ❌ Backend test coverage < 60% (any metric)
 - ❌ Frontend test coverage < 60% (any metric)
