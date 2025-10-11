@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.18.2",
   "scripts": {
     "dev": "pnpm --parallel run dev",
     "build": "pnpm --recursive run build",
