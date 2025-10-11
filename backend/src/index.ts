@@ -3,9 +3,13 @@ import { Static, Type } from '@sinclair/typebox';
 import { counterOperations } from './db.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fastifyStatic from '@fastify/static';
+import fs from 'fs';
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.NODE_HOST || '127.0.0.1';
+const HOST = process.env.NODE_HOST || '0.0.0.0';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Define your schemas
 const User = Type.Object({
@@ -95,8 +99,33 @@ server.put<{ Body: CounterRequestType, Reply: CounterResponseType }>(
 
 const start = async () => {
   try {
+    // Serve static frontend files in production
+    if (process.env.NODE_ENV === 'production') {
+      const frontendPath = path.join(__dirname, '../../frontend/dist');
+
+      // Register static file serving
+      await server.register(fastifyStatic, {
+        root: frontendPath,
+        prefix: '/',
+      });
+
+      // Serve index.html for all non-API routes (SPA support)
+      server.setNotFoundHandler(async (request, reply) => {
+        if (!request.url.startsWith('/api/')) {
+          const indexPath = path.join(frontendPath, 'index.html');
+          const indexHtml = fs.readFileSync(indexPath, 'utf-8');
+          return reply.type('text/html').send(indexHtml);
+        } else {
+          return reply.code(404).send({ error: 'Not found' });
+        }
+      });
+    }
+
     await server.listen({ port: +PORT, host: HOST });
-    console.log('Server started successfully');
+    console.log(`✅ Server started on http://${HOST}:${PORT}`);
+    if (process.env.NODE_ENV === 'production') {
+      console.log(`🌍 Access your app at http://localhost:8080`);
+    }
   } catch (err) {
     server.log.error(err);
     process.exit(1);
