@@ -110,10 +110,12 @@ const start = async () => {
       });
 
       // Serve index.html for all non-API routes (SPA support)
+      // Cache index.html content at startup to avoid blocking on every request
+      const indexPath = path.join(frontendPath, 'index.html');
+      const indexHtml = fs.readFileSync(indexPath, 'utf-8');
+
       server.setNotFoundHandler(async (request, reply) => {
         if (!request.url.startsWith('/api/')) {
-          const indexPath = path.join(frontendPath, 'index.html');
-          const indexHtml = fs.readFileSync(indexPath, 'utf-8');
           return reply.type('text/html').send(indexHtml);
         } else {
           return reply.code(404).send({ error: 'Not found' });
@@ -124,7 +126,8 @@ const start = async () => {
     await server.listen({ port: +PORT, host: HOST });
     console.log(`✅ Server started on http://${HOST}:${PORT}`);
     if (process.env.NODE_ENV === 'production') {
-      console.log(`🌍 Access your app at http://localhost:8080`);
+      const hostPort = process.env.HOST_PORT || '8080';
+      console.log(`🌍 Access your app at http://localhost:${hostPort}`);
     }
   } catch (err) {
     server.log.error(err);
