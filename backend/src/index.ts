@@ -119,7 +119,7 @@ const start = async () => {
       const indexPath = path.join(frontendPath, 'index.html');
 
       if (!fs.existsSync(indexPath)) {
-        throw new Error(`index.html not found at ${indexPath}. Frontend build may be incomplete.`);
+        throw new Error(`index.html not found at ${indexPath}. Verify the frontend build completed successfully by running 'pnpm run build'.`);
       }
 
       const indexHtml = fs.readFileSync(indexPath, 'utf-8');
