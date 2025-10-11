@@ -1,31 +1,5 @@
 # Quick CI/CD Reference
 
-## Summary of Changes
-
-### ✅ Updated Files
-
-1. **`.github/workflows/ci.yml`**
-
-   - Separated backend and frontend test runs
-   - Added explicit coverage threshold enforcement (60%)
-   - Better error messages showing which package failed
-   - Verifies all Makefile targets work
-
-2. **`Dockerfile`**
-
-   - Added `corepack enable` to builder stage
-   - Copy backend/src to production (needed for ES module imports)
-   - All three stages properly configured
-
-3. **`backend/vitest.config.ts`**
-
-   - Set all coverage thresholds to 60%
-   - Ensures consistent enforcement
-
-4. **`frontend/vitest.config.ts`**
-   - Set all coverage thresholds to 60%
-   - Ensures consistent enforcement
-
 ## CI Pipeline Flow
 
 ```
