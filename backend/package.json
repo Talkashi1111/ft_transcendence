@@ -1,10 +1,12 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
+    "test:watch": "vitest",
     "build": "tsc -p tsconfig.json",
     "start": "node build/index.js",
     "dev": "nodemon -e ts -w src -x \"tsc && NODE_HOST=0.0.0.0 node dist/index.js\""
@@ -14,11 +16,15 @@
   "license": "ISC",
   "packageManager": "pnpm@10.11.0",
   "devDependencies": {
+    "@eslint/js": "^9.29.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.4",
     "@vitest/coverage-v8": "2.1.9",
+    "eslint": "^9.29.0",
+    "globals": "^15.14.0",
     "nodemon": "^3.1.10",
     "typescript": "~5.8.3",
+    "typescript-eslint": "^8.19.1",
     "vitest": "^2.1.9"
   },
   "dependencies": {
