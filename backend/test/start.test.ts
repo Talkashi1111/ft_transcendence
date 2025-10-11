@@ -17,6 +17,7 @@ describe('Server start function', () => {
     console.log = vi.fn()
 
     // Mock process.exit
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     process.exit = vi.fn() as any
 
     // Reset mocks
@@ -31,6 +32,7 @@ describe('Server start function', () => {
 
   it('should log success message when server starts successfully', async () => {
     // Setup the mock to resolve successfully
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     listenSpy.mockResolvedValueOnce({} as any)
 
     // Call the start function
@@ -69,12 +71,6 @@ describe('Server start function', () => {
     // after the module has been loaded, we'll verify that the port and host constants
     // are using the environment variables when present.
 
-    // Create a mock implementation of the start function that will verify
-    // that it's called with the right PORT and HOST values from env variables
-    const mockStartFn = vi.fn(async () => {
-      // This function will be passed to verifyEnvVarsUsed
-    })
-
     // Function to verify that env vars are correctly used
     const verifyEnvVarsUsed = (port: string, host: string) => {
       // Save original env
@@ -93,6 +89,7 @@ describe('Server start function', () => {
             port: +port,
             host: host
           })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return Promise.resolve({} as any)
         })
 

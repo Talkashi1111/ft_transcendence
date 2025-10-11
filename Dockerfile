@@ -1,6 +1,9 @@
 # Builder stage (for CI/CD)
 FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS builder
 
+# Enable pnpm
+RUN corepack enable
+
 WORKDIR /app
 
 # Copy package files for dependency installation
@@ -60,9 +63,12 @@ COPY backend/package.json ./backend/
 # Install production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
-# Copy built applications (you'd build these in CI/CD)
+# Copy built applications from builder stage
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/backend/dist ./backend/dist
+
+# Copy backend source files (needed for ES module resolution)
+COPY backend/src ./backend/src
 
 # Create data directory
 RUN mkdir -p /app/data

@@ -1,3 +1,7 @@
+## ============================================
+## Docker targets (run on HOST machine)
+## ============================================
+
 up:        ## start dev stack
 	docker compose -f docker-compose.dev.yml up --no-start
 	docker compose -f docker-compose.dev.yml start
@@ -21,6 +25,14 @@ prune:	 ## prune unused docker resources
 	docker images | grep ft_transcendence | awk '{print $$3}' | xargs -r docker rmi -f
 	docker volume prune -f
 	docker builder prune -f
+
+release:   ## build & push prod image
+	docker compose -f docker-compose.prod.yml build
+	docker compose -f docker-compose.prod.yml push
+
+## ============================================
+## Development targets (run INSIDE devcontainer)
+## ============================================
 
 install:   ## install all dependencies
 	pnpm install
@@ -48,9 +60,5 @@ lint: check-deps ## run linting on all packages
 
 build: check-deps ## build all packages
 	pnpm run build
-
-release:   ## build & push prod image
-	docker compose -f docker-compose.prod.yml build
-	docker compose -f docker-compose.prod.yml push
 
 PHONY: up halt rebuild destroy test lint release prune install check-deps dev frontend backend build

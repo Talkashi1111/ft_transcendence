@@ -1,6 +1,8 @@
 import fastify from 'fastify';
 import { Static, Type } from '@sinclair/typebox';
-import { counterOperations } from './db';
+import { counterOperations } from './db.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.NODE_HOST || '127.0.0.1';
@@ -102,7 +104,8 @@ const start = async () => {
 };
 
 // Only start the server if this file is run directly
-if (require.main === module) {
+const isMainModule = fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isMainModule) {
   start();
 }
 
