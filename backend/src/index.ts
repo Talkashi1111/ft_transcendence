@@ -105,7 +105,7 @@ const start = async () => {
 
       // Verify frontend build exists
       if (!fs.existsSync(frontendPath)) {
-        throw new Error(`Frontend build not found at ${frontendPath}. Run 'pnpm run build' first.`);
+        throw new Error(`Frontend build not found at ${frontendPath}. Ensure the application is properly built.`);
       }
 
       // Register static file serving
