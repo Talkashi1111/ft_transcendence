@@ -8,12 +8,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json', 'json-summary'],
-      // Set moderate coverage thresholds that encourage good testing practices
+      // Set minimum coverage thresholds (60% requirement)
       thresholds: {
-        statements: 70,
-        branches: 70,
-        functions: 80,
-        lines: 70,
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60,
       },
       exclude: [
         '**/*.config.js',        // Excludes all config files like postcss.config.js, tailwind.config.js

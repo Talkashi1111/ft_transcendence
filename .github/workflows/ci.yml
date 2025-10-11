@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build builder stage
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: builder
+          tags: ft_transcendence:builder
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run lint (make lint)
+        run: |
+          docker run --rm ft_transcendence:builder pnpm -r exec eslint .
+          echo "✅ Linting passed"
+
+      - name: Run tests with coverage (make test)
+        run: |
+          echo "Running tests with coverage thresholds..."
+          docker run --rm ft_transcendence:builder sh -c "
+            echo '=== Running Backend Tests ===' && \
+            pnpm --filter backend run test --coverage || exit 1 && \
+            echo '' && \
+            echo '=== Running Frontend Tests ===' && \
+            pnpm --filter frontend run test --coverage || exit 1
+          "
+          echo "✅ All tests passed with required coverage (60%+ each)"
+
+      - name: Build all packages (make build)
+        run: |
+          docker run --rm ft_transcendence:builder pnpm run build
+          echo "✅ Build completed successfully"
+
+      - name: Build production stage
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: production
+          tags: ft_transcendence:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify production image
+        run: |
+          docker images ft_transcendence:production
+          echo "✅ Production image built successfully"
