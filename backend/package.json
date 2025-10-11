@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
+    "test:watch": "vitest",
     "build": "tsc -p tsconfig.json",
     "start": "node build/index.js",
     "dev": "nodemon -e ts -w src -x \"tsc && NODE_HOST=0.0.0.0 node dist/index.js\""

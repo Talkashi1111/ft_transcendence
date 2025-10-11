@@ -62,9 +62,13 @@ Pull Request or Push to main
 
 ```bash
 # Inside devcontainer:
-make lint    # Check for linting errors
-make test    # Run tests with coverage (must be ≥ 60%)
-make build   # Verify builds succeed
+make lint         # Check for linting errors
+make test         # Run tests with coverage (must be ≥ 60% lines)
+make build        # Verify builds succeed
+
+# Or run tests in watch mode for development:
+pnpm --filter frontend run test:watch
+pnpm --filter backend run test:watch
 ```
 
 ## Docker Stages Summary
