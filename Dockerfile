@@ -45,11 +45,6 @@ CMD ["sleep", "infinity"]
 # Production stage (for deployment)
 FROM node:22-bookworm-slim AS production
 
-# Install SQLite and build dependencies for native modules
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends build-essential python3 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
 # Enable pnpm for production
 RUN corepack enable
 
@@ -60,15 +55,17 @@ COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
 
-# Install production dependencies
-RUN pnpm install --prod --frozen-lockfile
+# Install build dependencies, install packages, then remove build deps
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends build-essential python3 \
+    && pnpm install --prod --frozen-lockfile \
+    && apt-get -y remove build-essential python3 \
+    && apt-get -y autoremove \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy built applications from builder stage
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/backend/dist ./backend/dist
-
-# Copy backend source files (needed for ES module resolution)
-COPY backend/src ./backend/src
 
 # Create data directory
 RUN mkdir -p /app/data

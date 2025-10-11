@@ -1,7 +1,10 @@
-version: '3.8'
+version: "3.8"
+
+name: ft_transcendence_prod # Different project name to avoid conflicts
 
 services:
   app:
+    container_name: ft_transcendence-prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,15 +13,15 @@ services:
     volumes:
       - sqlite-data:/app/data
     networks:
-      - transcendence
+      - transcendence-prod
     environment:
       - NODE_ENV=production
       - DATABASE_URL=sqlite:///app/data/database.db
     ports:
-      - "3000:3000"  # Backend API server
+      - "8080:3000" # Production on 8080 (avoids conflict with devcontainer port 3000)
 
 volumes:
   sqlite-data:
 
 networks:
-  transcendence:
+  transcendence-prod:

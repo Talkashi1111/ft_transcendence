@@ -39,10 +39,10 @@ describe('Server start function', () => {
     await start()
 
     // Verify server.listen was called with the correct arguments
-    expect(listenSpy).toHaveBeenCalledWith({ port: 3000, host: '127.0.0.1' })
+    expect(listenSpy).toHaveBeenCalledWith({ port: 3000, host: '0.0.0.0' })
 
     // Verify success message was logged
-    expect(console.log).toHaveBeenCalledWith('Server started successfully')
+    expect(console.log).toHaveBeenCalledWith('✅ Server started on http://0.0.0.0:3000')
 
     // Verify process.exit was not called
     expect(process.exit).not.toHaveBeenCalled()
@@ -57,7 +57,7 @@ describe('Server start function', () => {
     await start()
 
     // Verify server.listen was called
-    expect(listenSpy).toHaveBeenCalledWith({ port: 3000, host: '127.0.0.1' })
+    expect(listenSpy).toHaveBeenCalledWith({ port: 3000, host: '0.0.0.0' })
 
     // Verify error was logged
     expect(logErrorSpy).toHaveBeenCalledWith(testError)
