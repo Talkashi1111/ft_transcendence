@@ -60,16 +60,29 @@ Pull Request or Push to main
 
 ## Testing Locally Before Push
 
+**Inside DevContainer** - Run checks manually before committing:
+
 ```bash
-# Inside devcontainer:
-make lint         # Check for linting errors
-make test         # Run tests with coverage (must be ≥ 60% lines)
-make build        # Verify builds succeed
+# Run all checks at once
+make lint && make test && make build
+
+# Or run individually:
+make lint         # Check for linting errors (~1-3s)
+make test         # Run tests with coverage (~5-15s)
+make build        # Verify builds succeed (~10-30s)
 
 # Or run tests in watch mode for development:
 pnpm --filter frontend run test:watch
 pnpm --filter backend run test:watch
 ```
+
+**Why no pre-commit hooks?**
+
+- Follows DevContainer philosophy (tools stay in container)
+- Host only needs Git + Docker + VS Code
+- CI/CD is the authoritative quality gate
+
+See `.github/DEVCONTAINER-WORKFLOW.md` for details.
 
 ## Docker Stages Summary
 
