@@ -9,7 +9,7 @@
     "deploy:fuji": "hardhat ignition deploy ignition/modules/TournamentScores.ts --network fuji",
     "node": "hardhat node",
     "clean": "hardhat clean",
-    "lint": "echo 'No linting configured for Solidity'"
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

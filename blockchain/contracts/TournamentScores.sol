@@ -112,7 +112,7 @@ contract TournamentScores {
         // Would need to record 10^60 matches per second for universe lifetime
         uint256 matchId = matchCount;
         unchecked {
-            matchCount++; // Safe to use unchecked for gas optimization
+            matchCount++; // See above: overflow is impossible; using unchecked for gas optimization
         }
 
         matches[matchId] = Match({

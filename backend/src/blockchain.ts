@@ -28,14 +28,31 @@ const CONTRACT_ABI_PATH = path.join(
   '../../blockchain/artifacts/contracts/TournamentScores.sol/TournamentScores.json'
 );
 
-// Load contract ABI
-let contractABI: Abi | null = null;
-try {
-  const contractJson = JSON.parse(fs.readFileSync(CONTRACT_ABI_PATH, 'utf-8'));
-  contractABI = contractJson.abi;
-} catch (error) {
-  console.error('Failed to load contract ABI:', error);
-  contractABI = null;
+// Cached ABI to avoid re-reading file
+let cachedABI: Abi | null = null;
+
+/**
+ * Load contract ABI from file (lazy-loaded and cached)
+ * Throws an error if the ABI file cannot be loaded
+ */
+function loadContractABI(): Abi {
+  if (cachedABI !== null) {
+    return cachedABI as Abi;
+  }
+
+  try {
+    const contractJson = JSON.parse(fs.readFileSync(CONTRACT_ABI_PATH, 'utf-8'));
+    if (!contractJson.abi) {
+      throw new Error('ABI property not found in contract JSON');
+    }
+    cachedABI = contractJson.abi as Abi;
+    return cachedABI as Abi;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to load contract ABI from ${CONTRACT_ABI_PATH}: ${error.message}`);
+    }
+    throw new Error(`Failed to load contract ABI from ${CONTRACT_ABI_PATH}: Unknown error`);
+  }
 }
 
 /**
@@ -59,8 +76,13 @@ function getWalletClient(): WalletClient {
     throw new Error('PRIVATE_KEY not found in environment variables');
   }
 
+  // Normalize private key format (ensure it starts with 0x)
+  const normalizedKey = privateKey.startsWith('0x')
+    ? privateKey as `0x${string}`
+    : `0x${privateKey}` as `0x${string}`;
+
   const rpcUrl = process.env.FUJI_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
-  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const account = privateKeyToAccount(normalizedKey);
 
   return createWalletClient({
     account,
@@ -78,23 +100,22 @@ function getContractInstance(readOnly: boolean = false) {
     throw new Error('CONTRACT_ADDRESS not found in environment variables');
   }
 
-  if (!contractABI) {
-    throw new Error('Contract ABI not loaded');
-  }
+  // Lazy-load the ABI (will throw if file doesn't exist)
+  const abi = loadContractABI();
 
   const publicClient = getPublicClient();
 
   if (readOnly) {
     return getContract({
       address: contractAddress as Address,
-      abi: contractABI,
+      abi,
       client: publicClient,
     });
   } else {
     const walletClient = getWalletClient();
     return getContract({
       address: contractAddress as Address,
-      abi: contractABI,
+      abi,
       client: { public: publicClient, wallet: walletClient },
     });
   }
@@ -125,18 +146,16 @@ export async function recordMatch(
   const publicClient = getPublicClient();
 
   // Call the recordMatch function
-  const hash = await contract.write.recordMatch(
-    [
-      BigInt(tournamentId),
-      BigInt(player1Id),
-      player1Alias,
-      BigInt(player2Id),
-      player2Alias,
-      BigInt(score1),
-      BigInt(score2),
-    ],
-    {} as Record<string, never>
-  );
+  // Second parameter is optional WriteContractParameters (can include gas, nonce, etc.)
+  const hash = await contract.write.recordMatch([
+    BigInt(tournamentId),
+    BigInt(player1Id),
+    player1Alias,
+    BigInt(player2Id),
+    player2Alias,
+    BigInt(score1),
+    BigInt(score2),
+  ]);
 
   // Wait for transaction confirmation
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -232,10 +251,15 @@ export async function getTotalMatches(): Promise<bigint> {
  * Check if blockchain is configured and ready
  */
 export function isBlockchainConfigured(): boolean {
-  return !!(
-    contractABI &&
-    process.env.CONTRACT_ADDRESS &&
-    process.env.FUJI_RPC_URL &&
-    process.env.PRIVATE_KEY
-  );
+  try {
+    // Try to load ABI to verify it exists
+    loadContractABI();
+    return !!(
+      process.env.CONTRACT_ADDRESS &&
+      process.env.FUJI_RPC_URL &&
+      process.env.PRIVATE_KEY
+    );
+  } catch {
+    return false;
+  }
 }
