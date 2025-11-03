@@ -1,0 +1,28 @@
+{
+  "name": "blockchain",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat ignition deploy ignition/modules/TournamentScores.ts --network localhost",
+    "deploy:fuji": "hardhat ignition deploy ignition/modules/TournamentScores.ts --network fuji",
+    "node": "hardhat node",
+    "clean": "hardhat clean",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@nomicfoundation/hardhat-ignition": "^3.0.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
+    "@types/node": "^22.18.12",
+    "dotenv": "^17.2.3",
+    "eslint": "^9.29.0",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "globals": "^16.4.0",
+    "hardhat": "^3.0.9",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.46.2",
+    "viem": "^2.38.4"
+  }
+}

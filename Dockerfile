@@ -10,6 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
+COPY blockchain/package.json ./blockchain/
 
 # Install all dependencies (including dev dependencies for building)
 RUN pnpm install --frozen-lockfile

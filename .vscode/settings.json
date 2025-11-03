@@ -1,0 +1,22 @@
+{
+  // TypeScript settings for monorepo
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ESLint settings
+  "eslint.workingDirectories": [
+    "./backend",
+    "./frontend"
+  ],
+
+  // Editor settings
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // File associations
+  "files.associations": {
+    "*.css": "tailwindcss"
+  }
+}

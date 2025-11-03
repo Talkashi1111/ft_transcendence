@@ -45,6 +45,7 @@ docker compose -f docker-compose.prod.yml up --build
 ft_transcendence/
 ├── frontend/          # React + Vite + Tailwind CSS
 ├── backend/           # Fastify + TypeScript + SQLite
+├── blockchain/        # Hardhat + Solidity + Avalanche
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
 └── Dockerfile
@@ -58,13 +59,27 @@ ft_transcendence/
 
 ```bash
 pnpm run dev        # Run both frontend + backend
-pnpm run build      # Build both
-pnpm run test       # Test both
-pnpm run lint       # Lint both
+pnpm run build      # Build frontend + backend (not blockchain)
+pnpm run test       # Test all (frontend + backend + blockchain)
+pnpm run lint       # Lint all
 
 # Run separately
 make frontend       # Frontend only
 make backend        # Backend only
+
+# Blockchain commands (separate from main build)
+pnpm run blockchain:compile        # Compile smart contracts
+pnpm run blockchain:test           # Run blockchain tests
+pnpm run blockchain:node           # Start local Hardhat node
+pnpm run blockchain:deploy:local   # Deploy to local node
+pnpm run blockchain:deploy:fuji    # Deploy to Avalanche Fuji testnet
+
+# Or use make commands
+make blockchain-compile
+make blockchain-test
+make blockchain-node
+make blockchain-deploy-local
+make blockchain-deploy-fuji
 ```
 
 ### Production
@@ -144,6 +159,36 @@ pnpm add -D @types/better-sqlite3
 pnpm approve-builds
 ```
 
+### Blockchain Setup
+
+```bash
+# Create blockchain workspace
+mkdir -p /app/blockchain
+cd /app/blockchain
+
+# Initialize package.json
+pnpm init
+
+# Initialize Hardhat project (choose "Create a TypeScript project with Viem")
+pnpm dlx hardhat --init
+
+# Add blockchain to workspace
+# Edit /app/pnpm-workspace.yaml and add:
+#   - 'blockchain'
+
+# Add blockchain scripts to root package.json
+# Add to "scripts" section:
+#   "blockchain:compile": "pnpm --filter blockchain run compile"
+#   "blockchain:test": "pnpm --filter blockchain run test"
+#   "blockchain:deploy:local": "pnpm --filter blockchain run deploy:local"
+#   "blockchain:deploy:fuji": "pnpm --filter blockchain run deploy:fuji"
+#   "blockchain:node": "pnpm --filter blockchain run node"
+
+# Install Viem in backend for contract interaction
+cd /app/backend
+pnpm add viem@^2.38.4
+```
+
 </details>
 
 ---
@@ -169,6 +214,92 @@ SQLite Database (persistent volume)
 ```
 
 > **Port Mapping:** Production uses port 8080 on your host to avoid conflicts with devcontainer
+
+---
+
+## ⛓️ Blockchain Integration
+
+This project includes smart contract functionality for storing tournament scores on the Avalanche blockchain.
+
+### Architecture
+
+```
+Backend (Fastify)
+    ↓
+Viem (Contract Interaction)
+    ↓
+Smart Contract (TournamentScores.sol)
+    ↓
+Avalanche Fuji Testnet (EVM-compatible)
+```
+
+### Working with Smart Contracts
+
+Smart contracts are compiled separately from the main build process. Only compile when you modify Solidity code.
+
+```bash
+# Compile contracts (run only when contracts change)
+pnpm run blockchain:compile
+# or
+make blockchain-compile
+
+# Run tests
+pnpm run blockchain:test
+# or
+make blockchain-test
+
+# Start local Hardhat node (for testing)
+pnpm run blockchain:node
+# or
+make blockchain-node
+
+# Deploy to local node (in another terminal)
+pnpm run blockchain:deploy:local
+# or
+make blockchain-deploy-local
+
+# Deploy to Avalanche Fuji testnet
+pnpm run blockchain:deploy:fuji
+# or
+make blockchain-deploy-fuji
+```
+
+> **Note:** Smart contract compilation is **not** included in `pnpm run build` to avoid slowing down normal development. Compiled artifacts are committed to git.
+
+### Configuration
+
+1. Configure environment variables for blockchain and backend:
+
+   ```bash
+   # Backend (includes server + blockchain config)
+   cp backend/.env.example backend/.env
+
+   # Blockchain (for deployment only)
+   cp blockchain/.env.example blockchain/.env
+
+   # Edit both files with your wallet private key:
+   PRIVATE_KEY=your_wallet_private_key_here
+   FUJI_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
+   ```
+
+2. Get testnet AVAX from the [Avalanche Fuji Faucet](https://core.app/tools/testnet-faucet/?subnet=c&token=c)
+
+3. After deploying the contract, update `CONTRACT_ADDRESS` in `backend/.env`
+
+### Project Structure
+
+```
+blockchain/
+├── contracts/          # Solidity smart contracts
+│   └── TournamentScores.sol
+├── ignition/          # Deployment modules
+│   └── modules/
+├── test/              # Contract tests
+├── hardhat.config.ts  # Hardhat configuration
+└── package.json       # Scripts and dependencies
+```
+
+For more details, see [blockchain/README.md](blockchain/README.md)
 
 ---
 
@@ -213,8 +344,9 @@ Your project is ready for:
 ## 📚 Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS
-- **Backend:** Fastify, TypeScript, Typebox (validation)
+- **Backend:** Fastify, TypeScript, Typebox (validation), Viem
 - **Database:** SQLite (better-sqlite3)
+- **Blockchain:** Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji
 - **Dev Environment:** DevContainer (Node.js 22)
 - **Deployment:** Docker, Docker Compose
 

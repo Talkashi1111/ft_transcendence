@@ -11,6 +11,11 @@
     "test": "pnpm --recursive run test",
     "frontend:dev": "pnpm --filter frontend run dev",
     "backend:dev": "pnpm --filter backend run dev",
+    "blockchain:compile": "pnpm --filter blockchain run compile",
+    "blockchain:test": "pnpm --filter blockchain run test",
+    "blockchain:deploy:local": "pnpm --filter blockchain run deploy:local",
+    "blockchain:deploy:fuji": "pnpm --filter blockchain run deploy:fuji",
+    "blockchain:node": "pnpm --filter blockchain run node",
     "install:all": "pnpm install --recursive"
   },
   "pnpm": {
