@@ -1,4 +1,5 @@
-import '@testing-library/jest-dom'
+// Test setup for vanilla TypeScript tests
+// No special setup needed for jsdom
 
 // This file runs before all tests and sets up the testing environment
 

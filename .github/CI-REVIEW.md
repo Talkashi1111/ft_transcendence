@@ -181,9 +181,9 @@ thresholds: {
 }
 ```
 
-- Excludes: config files, node_modules, dist, main.tsx, tests
+- Excludes: config files, node_modules, dist, main.ts, tests
 - Reports: text, html, json, json-summary
-- Environment: jsdom (for React testing)
+- Environment: jsdom (for DOM testing)
 - Coverage provider: v8
 
 ## Key Improvements Made

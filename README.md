@@ -43,7 +43,7 @@ docker compose -f docker-compose.prod.yml up --build
 
 ```
 ft_transcendence/
-├── frontend/          # React + Vite + Tailwind CSS
+├── frontend/          # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
 ├── backend/           # Fastify + TypeScript + SQLite
 ├── blockchain/        # Hardhat + Solidity + Avalanche
 ├── docker-compose.dev.yml
@@ -124,8 +124,8 @@ devcontainer templates apply --workspace-folder . \
 ### Frontend Setup
 
 ```bash
-# Create Vite project
-pnpm create vite frontend --template react-ts
+# Create Vite project with vanilla TypeScript
+pnpm create vite frontend --template vanilla-ts
 cd frontend
 pnpm install
 
@@ -208,7 +208,7 @@ Port :8080 (host) → :3000 (container)
     ↓
 Backend (Fastify)
 ├── /api/* → API endpoints
-└── /*     → React static files
+└── /*     → Frontend static files (TypeScript + Tailwind)
     ↓
 SQLite Database (persistent volume)
 ```
@@ -343,7 +343,7 @@ Your project is ready for:
 
 ## 📚 Tech Stack
 
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS
+- **Frontend:** TypeScript (vanilla), Vite, Tailwind CSS
 - **Backend:** Fastify, TypeScript, Typebox (validation), Viem
 - **Database:** SQLite (better-sqlite3)
 - **Blockchain:** Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji
