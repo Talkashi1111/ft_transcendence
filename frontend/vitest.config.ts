@@ -21,7 +21,7 @@ export default defineConfig({
         '**/node_modules/**',    // Standard exclusion
         '**/dist/**',            // Build output
         '**/vite-env.d.ts',      // TypeScript declaration files
-        '**/main.tsx',           // Entry point file that just renders the App
+        '**/main.ts',            // Entry point file with DOM manipulation
         '**/test/**',            // Test directory
         '**/*.test.{js,jsx,ts,tsx}', // Test files
         '**/*.spec.{js,jsx,ts,tsx}', // Spec files
