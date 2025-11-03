@@ -69,7 +69,8 @@ backend: check-deps ## run only backend
 
 .PHONY: test
 test: check-deps ## run Vitest + backend unit tests
-	pnpm -r exec vitest run --coverage
+	pnpm --filter frontend --filter backend exec vitest run --coverage
+	pnpm --filter blockchain run test
 
 .PHONY: lint
 lint: check-deps ## run linting on all packages
@@ -81,6 +82,30 @@ build: check-deps ## build all packages
 
 .PHONY: all
 all: lint test build ## run lint, test, and build
+
+## ============================================
+## Blockchain targets (run INSIDE devcontainer)
+## ============================================
+
+.PHONY: blockchain-compile
+blockchain-compile: check-deps ## compile Solidity smart contracts
+	pnpm --filter blockchain run compile
+
+.PHONY: blockchain-test
+blockchain-test: check-deps ## test smart contracts
+	pnpm --filter blockchain run test
+
+.PHONY: blockchain-node
+blockchain-node: check-deps ## start local Hardhat node
+	pnpm --filter blockchain run node
+
+.PHONY: blockchain-deploy-local
+blockchain-deploy-local: check-deps ## deploy contracts to local Hardhat node
+	pnpm --filter blockchain run deploy:local
+
+.PHONY: blockchain-deploy-fuji
+blockchain-deploy-fuji: check-deps ## deploy contracts to Avalanche Fuji testnet
+	pnpm --filter blockchain run deploy:fuji
 
 .PHONY: help
 help: ## show this help message

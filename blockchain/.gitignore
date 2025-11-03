@@ -1,0 +1,24 @@
+# Node modules
+/node_modules
+
+# Compilation output
+/dist
+
+# pnpm deploy output
+/bundle
+
+# Hardhat Build Artifacts (but keep contract artifacts for backend ABI)
+/artifacts/build-info
+# Note: /artifacts/contracts/*.json are committed for backend to use
+
+# Hardhat compilation (v2) support directory
+/cache
+
+# Typechain output
+/types
+
+# Hardhat coverage reports
+/coverage
+
+# Hardhat Ignition deployments (environment-specific)
+/ignition/deployments
