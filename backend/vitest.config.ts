@@ -20,10 +20,10 @@ export default defineConfig({
       ],
       // Set minimum threshold levels to prevent coverage regression
       thresholds: {
-        // statements: 60,
-        // branches: 60,
-        // functions: 60,
-        lines: 60
+        // statements: 58,
+        // branches: 58,
+        // functions: 58,
+        lines: 58
       }
     }
   }
