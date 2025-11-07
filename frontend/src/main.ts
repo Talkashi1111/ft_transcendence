@@ -20,6 +20,14 @@ interface TournamentData {
   matches: Match[]
 }
 
+// Utility functions
+function formatAddress(address: string): string {
+  if (address.length <= 18) {
+    return address
+  }
+  return `${address.substring(0, 10)}...${address.substring(address.length - 8)}`
+}
+
 // Router
 let currentPage = 'home'
 
@@ -40,29 +48,36 @@ function render() {
   }
 }
 
+// Navigation bar component
+function renderNavBar(activePage: 'home' | 'tournaments'): string {
+  return `
+    <nav class="bg-white shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <div class="flex-shrink-0 flex items-center">
+              <h1 class="text-2xl font-bold text-gray-900">ft_transcendence</h1>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Home
+            </button>
+            <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Tournaments
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  `
+}
+
 // Home page
 function renderHome(app: HTMLElement) {
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex">
-              <div class="flex-shrink-0 flex items-center">
-                <h1 class="text-2xl font-bold text-gray-900">ft_transcendence</h1>
-              </div>
-            </div>
-            <div class="flex items-center space-x-4">
-              <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600">
-                Home
-              </button>
-              <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-                Tournaments
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      ${renderNavBar('home')}
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-2xl mx-auto">
@@ -112,25 +127,7 @@ function renderHome(app: HTMLElement) {
 function renderTournaments(app: HTMLElement) {
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex">
-              <div class="flex-shrink-0 flex items-center">
-                <h1 class="text-2xl font-bold text-gray-900">ft_transcendence</h1>
-              </div>
-            </div>
-            <div class="flex items-center space-x-4">
-              <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-                Home
-              </button>
-              <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600">
-                Tournaments
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      ${renderNavBar('tournaments')}
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
@@ -330,7 +327,7 @@ function setupTournamentLoader() {
           </div>
 
           <div class="mt-4 pt-4 border-t text-xs text-gray-500">
-            <div>Recorded by: <span class="font-mono">${match.recordedBy.substring(0, 10)}...${match.recordedBy.substring(match.recordedBy.length - 8)}</span></div>
+            <div>Recorded by: <span class="font-mono">${formatAddress(match.recordedBy)}</span></div>
           </div>
         </div>
       `).join('')}
