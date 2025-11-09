@@ -3,13 +3,12 @@ import { KEYS } from '../game/config'
 export class InputHandler {
   private keysPressed: Set<string> = new Set()
   private listeners: Map<string, () => void> = new Map()
+  private keydownHandler: (e: KeyboardEvent) => void
+  private keyupHandler: (e: KeyboardEvent) => void
 
   constructor() {
-    this.setupEventListeners()
-  }
-
-  private setupEventListeners(): void {
-    window.addEventListener('keydown', (e) => {
+    // Store event handler references so they can be removed later
+    this.keydownHandler = (e: KeyboardEvent) => {
       this.keysPressed.add(e.key.toLowerCase())
 
       // Trigger single-press actions
@@ -18,11 +17,18 @@ export class InputHandler {
         e.preventDefault()
         listener()
       }
-    })
+    }
 
-    window.addEventListener('keyup', (e) => {
+    this.keyupHandler = (e: KeyboardEvent) => {
       this.keysPressed.delete(e.key.toLowerCase())
-    })
+    }
+
+    this.setupEventListeners()
+  }
+
+  private setupEventListeners(): void {
+    window.addEventListener('keydown', this.keydownHandler)
+    window.addEventListener('keyup', this.keyupHandler)
   }
 
   isKeyPressed(key: string): boolean {
@@ -55,6 +61,10 @@ export class InputHandler {
   }
 
   destroy(): void {
+    // Remove event listeners to prevent memory leaks
+    window.removeEventListener('keydown', this.keydownHandler)
+    window.removeEventListener('keyup', this.keyupHandler)
+
     this.keysPressed.clear()
     this.listeners.clear()
   }

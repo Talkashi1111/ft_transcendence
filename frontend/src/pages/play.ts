@@ -1,5 +1,8 @@
 import { PongGame } from '../game/pong'
 
+// Constants
+const GAME_END_DELAY_MS = 2000 // Delay before showing result screen after game ends
+
 export function renderPlayPage(
   app: HTMLElement,
   renderNavBar: (page: 'home' | 'play' | 'tournaments') => string,
@@ -222,10 +225,10 @@ function setupPlayPageEvents(): void {
     currentGame = new PongGame(canvas, player1, player2)
 
     currentGame.setOnGameEnd((winner, score1, score2) => {
-      // Show result screen after a short delay
+      // Show result screen after a short delay to let players see final game state
       setTimeout(() => {
         showResultScreen(winner, player1, player2, score1, score2)
-      }, 2000)
+      }, GAME_END_DELAY_MS)
     })
 
     showScreen(gameScreen!)

@@ -189,9 +189,34 @@ describe('InputHandler', () => {
 
       inputHandler.destroy()
 
-      // Keys set should be cleared, but event listeners still active
-      // (In real implementation, destroy() doesn't remove event listeners)
+      // Keys set should be cleared
       expect(inputHandler['keysPressed'].size).toBe(0)
+    })
+
+    it('should remove event listeners and stop detecting key presses', () => {
+      inputHandler.destroy()
+
+      // Dispatch event after destroy
+      const event = new KeyboardEvent('keydown', { key: 'w' })
+      window.dispatchEvent(event)
+
+      // Should not detect the key press since listeners were removed
+      expect(inputHandler.isPlayer1UpPressed()).toBe(false)
+      expect(inputHandler['keysPressed'].size).toBe(0)
+    })
+
+    it('should remove event listeners and stop calling pause callbacks', () => {
+      const pauseCallback = vi.fn()
+      inputHandler.onPause(pauseCallback)
+
+      inputHandler.destroy()
+
+      // Dispatch pause key after destroy
+      const event = new KeyboardEvent('keydown', { key: ' ' })
+      window.dispatchEvent(event)
+
+      // Callback should not be called since listeners were removed
+      expect(pauseCallback).not.toHaveBeenCalled()
     })
   })
 

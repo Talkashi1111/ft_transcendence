@@ -18,6 +18,8 @@ export class PongGame {
   private animationId: number | null = null
   private countdownInterval: number | null = null
   private onGameEnd?: (winner: string, player1Score: number, player2Score: number) => void
+  private lastFrameTime: number = 0
+  private targetFrameTime: number = 1000 / GAME_CONFIG.fps // ~16.67ms for 60fps
 
   constructor(canvas: HTMLCanvasElement, player1Alias: string, player2Alias: string) {
     this.ctx = setupCanvas(canvas)
@@ -99,8 +101,9 @@ export class PongGame {
   }
 
   start(): void {
+    this.lastFrameTime = performance.now()
     this.startCountdown()
-    this.gameLoop()
+    this.gameLoop(this.lastFrameTime)
   }
 
   private togglePause(): void {
@@ -152,10 +155,12 @@ export class PongGame {
     if (scorer) {
       if (scorer === 'player1') {
         this.gameState.player1.paddle.score++
-        resetBall(this.gameState.ball, 'left')
+        // Player1 scored, so serve to player2 (who got scored on)
+        resetBall(this.gameState.ball, 'right')
       } else {
         this.gameState.player2.paddle.score++
-        resetBall(this.gameState.ball, 'right')
+        // Player2 scored, so serve to player1 (who got scored on)
+        resetBall(this.gameState.ball, 'left')
       }
 
       // Check win condition
@@ -180,9 +185,18 @@ export class PongGame {
     }
   }
 
-  private gameLoop = (): void => {
-    this.update()
-    render(this.ctx, this.gameState)
+  private gameLoop = (currentTime: number): void => {
+    // Calculate delta time in milliseconds
+    const deltaTime = currentTime - this.lastFrameTime
+
+    // Only update if enough time has passed (frame limiting for consistent 60fps)
+    if (deltaTime >= this.targetFrameTime) {
+      this.update()
+      render(this.ctx, this.gameState)
+
+      // Keep track of time, accounting for any overflow
+      this.lastFrameTime = currentTime - (deltaTime % this.targetFrameTime)
+    }
 
     if (this.gameState.status !== 'finished') {
       this.animationId = requestAnimationFrame(this.gameLoop)

@@ -89,7 +89,10 @@ export function resetBall(ball: Ball, direction: 'left' | 'right' = 'left'): voi
   // Random angle between -30 and 30 degrees
   const angle = (Math.random() * 60 - 30) * (Math.PI / 180)
 
-  ball.velocityX = direction === 'left' ? -ball.speed : ball.speed
+  // Calculate velocity components to maintain constant speed
+  // velocityX and velocityY form a vector with magnitude = ball.speed
+  const baseVelocityX = ball.speed * Math.cos(angle)
+  ball.velocityX = direction === 'left' ? -baseVelocityX : baseVelocityX
   ball.velocityY = ball.speed * Math.sin(angle)
 }
 
