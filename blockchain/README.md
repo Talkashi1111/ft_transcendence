@@ -102,7 +102,7 @@ This project is configured to deploy to Avalanche Fuji C-Chain testnet.
    ```
    PRIVATE_KEY=your_private_key_here
    ```
-2. Get testnet AVAX from the [Avalanche Faucet](https://core.app/tools/testnet-faucet/)
+2. Get testnet AVAX from the [Avalanche Faucet](https://build.avax.network/console/primary-network/faucet)
 
 **Deploy the contract:**
 

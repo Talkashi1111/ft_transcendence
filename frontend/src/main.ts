@@ -1,4 +1,5 @@
 import './index.css'
+import { renderPlayPage } from './pages/play'
 
 // Types
 interface Match {
@@ -33,8 +34,21 @@ let currentPage = 'home'
 
 function navigate(page: string) {
   currentPage = page
+  // Update browser history
+  window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`)
   render()
 }
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (event) => {
+  if (event.state && event.state.page) {
+    currentPage = event.state.page
+  } else {
+    // Default to home if no state
+    currentPage = 'home'
+  }
+  render()
+})
 
 // Render function
 function render() {
@@ -43,13 +57,15 @@ function render() {
 
   if (currentPage === 'home') {
     renderHome(app)
+  } else if (currentPage === 'play') {
+    renderPlayPage(app, renderNavBar, setupNavigation)
   } else if (currentPage === 'tournaments') {
     renderTournaments(app)
   }
 }
 
 // Navigation bar component
-function renderNavBar(activePage: 'home' | 'tournaments'): string {
+function renderNavBar(activePage: 'home' | 'play' | 'tournaments'): string {
   return `
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -62,6 +78,9 @@ function renderNavBar(activePage: 'home' | 'tournaments'): string {
           <div class="flex items-center space-x-4">
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               Home
+            </button>
+            <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Play
             </button>
             <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               Tournaments
@@ -183,9 +202,11 @@ function renderTournaments(app: HTMLElement) {
 // Setup navigation
 function setupNavigation() {
   const homeBtn = document.getElementById('nav-home')
+  const playBtn = document.getElementById('nav-play')
   const tournamentsBtn = document.getElementById('nav-tournaments')
 
   homeBtn?.addEventListener('click', () => navigate('home'))
+  playBtn?.addEventListener('click', () => navigate('play'))
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'))
 }
 
@@ -370,5 +391,16 @@ function setupTournamentLoader() {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+  // Determine initial page from URL
+  const path = window.location.pathname.substring(1) // Remove leading slash
+  if (path === 'play' || path === 'tournaments') {
+    currentPage = path
+  } else {
+    currentPage = 'home'
+  }
+
+  // Set initial history state
+  window.history.replaceState({ page: currentPage }, '', `/${currentPage === 'home' ? '' : currentPage}`)
+
   render()
 })

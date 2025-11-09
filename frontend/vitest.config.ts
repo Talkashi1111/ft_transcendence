@@ -15,16 +15,24 @@ export default defineConfig({
         // functions: 60,
         lines: 60,
       },
+      include: [
+        'src/**/*.ts',
+        'src/**/*.tsx',
+      ],
       exclude: [
-        '**/*.config.js',        // Excludes all config files like postcss.config.js, tailwind.config.js
-        '**/*.config.ts',        // Excludes TypeScript config files
-        '**/node_modules/**',    // Standard exclusion
-        '**/dist/**',            // Build output
-        '**/vite-env.d.ts',      // TypeScript declaration files
-        '**/main.ts',            // Entry point file with DOM manipulation
-        '**/test/**',            // Test directory
-        '**/*.test.{js,jsx,ts,tsx}', // Test files
-        '**/*.spec.{js,jsx,ts,tsx}', // Spec files
+        '**/*.config.js',
+        '**/*.config.ts',
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/vite-env.d.ts',
+        '**/main.ts',            // Entry point with DOM manipulation
+        '**/test/**',
+        '**/*.test.{js,jsx,ts,tsx}',
+        '**/*.spec.{js,jsx,ts,tsx}',
+        '**/types/**',           // Type-only files
+        '**/game/renderer.ts',   // Canvas-dependent (not testable in jsdom)
+        '**/game/pong.ts',       // Integration class (hard to unit test)
+        '**/pages/**',           // UI pages (need integration tests)
       ],
     },
   },

@@ -282,7 +282,7 @@ make blockchain-deploy-fuji
    FUJI_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
    ```
 
-2. Get testnet AVAX from the [Avalanche Fuji Faucet](https://core.app/tools/testnet-faucet/?subnet=c&token=c)
+2. Get testnet AVAX from the [Avalanche Fuji Faucet](https://build.avax.network/console/primary-network/faucet)
 
 3. After deploying the contract, update `CONTRACT_ADDRESS` in `backend/.env`
 
