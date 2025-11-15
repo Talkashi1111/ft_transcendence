@@ -32,3 +32,78 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Tournament Bracket Styles */
+@layer components {
+  .tournament-bracket-container {
+    @apply relative flex gap-[60px] overflow-x-auto p-10 bg-gray-800 rounded-lg;
+  }
+
+  .bracket-round-column {
+    @apply flex flex-col min-w-[220px];
+  }
+
+  .bracket-matches-container {
+    @apply flex flex-col;
+  }
+
+  .bracket-match-box {
+    @apply border-2 rounded-lg overflow-hidden;
+  }
+
+  .bracket-match-box--pending {
+    @apply border-gray-600 bg-gray-800;
+  }
+
+  .bracket-match-box--current {
+    @apply border-yellow-400 bg-yellow-900/30;
+  }
+
+  .bracket-match-box--finished {
+    @apply border-green-600 bg-gray-800;
+  }
+
+  .bracket-match-box--tbd {
+    @apply border-2 border-dashed border-gray-600 bg-gray-900/20;
+  }
+
+  .bracket-player-slot {
+    @apply flex justify-between items-center px-3 py-2;
+  }
+
+  .bracket-player-slot--top {
+    @apply border-b border-gray-700;
+  }
+
+  .bracket-player-name {
+    @apply text-sm;
+  }
+
+  .bracket-player-name--normal {
+    @apply text-white;
+  }
+
+  .bracket-player-name--winner {
+    @apply text-green-400 font-bold;
+  }
+
+  .bracket-player-name--loser {
+    @apply text-gray-500 line-through opacity-50;
+  }
+
+  .bracket-player-name--tbd {
+    @apply text-gray-500 italic;
+  }
+
+  .bracket-player-score {
+    @apply text-sm;
+  }
+
+  .bracket-player-score--normal {
+    @apply text-white font-semibold;
+  }
+
+  .bracket-player-score--tbd {
+    @apply text-gray-600;
+  }
+}
