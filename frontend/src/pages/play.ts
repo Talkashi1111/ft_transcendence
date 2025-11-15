@@ -1,6 +1,9 @@
 import { PongGame } from '../game/pong'
 import { TournamentManager } from '../game/tournament'
 import type { TournamentMatch } from '../types/tournament'
+import { toast } from '../utils/toast'
+import { showConfirmModal } from '../utils/modal'
+import { escapeHtml } from '../utils/sanitize'
 
 // Constants
 const GAME_END_DELAY_MS = 2000 // Delay before showing result screen after game ends
@@ -46,6 +49,7 @@ export function renderPlayPage(
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                <span id="player1-error" class="text-red-600 text-sm mt-1 hidden"></span>
               </div>
 
               <div>
@@ -59,6 +63,7 @@ export function renderPlayPage(
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                <span id="player2-error" class="text-red-600 text-sm mt-1 hidden"></span>
               </div>
 
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -148,6 +153,7 @@ export function renderPlayPage(
                   Add Player
                 </button>
               </div>
+              <span id="tournament-error" class="text-red-600 text-sm mt-1 hidden"></span>
 
               <!-- Players List -->
               <div id="tournament-players-list" class="space-y-2 mb-4 min-h-[100px]">
@@ -252,6 +258,26 @@ function setupPlayPageEvents(): void {
   const playAgainBtn = document.getElementById('play-again-btn')
   const backToMenuBtn = document.getElementById('back-to-menu-btn')
 
+  // Error message elements
+  const player1ErrorEl = document.getElementById('player1-error')
+  const player2ErrorEl = document.getElementById('player2-error')
+  const tournamentErrorEl = document.getElementById('tournament-error')
+
+  // Helper functions for error display
+  function showInlineError(element: HTMLElement | null, message: string): void {
+    if (element) {
+      element.textContent = message
+      element.classList.remove('hidden')
+    }
+  }
+
+  function hideInlineError(element: HTMLElement | null): void {
+    if (element) {
+      element.textContent = ''
+      element.classList.add('hidden')
+    }
+  }
+
   function showScreen(screen: HTMLElement): void {
     modeSelection?.classList.add('hidden')
     gameSetup?.classList.add('hidden')
@@ -307,23 +333,29 @@ function setupPlayPageEvents(): void {
         `
         )
         .join('')
-
-      // Add event listeners to remove buttons
-      document.querySelectorAll('.remove-player-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          const playerId = parseInt((e.target as HTMLElement).dataset.playerId || '0')
-          if (tournamentManager && tournamentManager.removePlayer(playerId)) {
-            updateTournamentUI()
-          }
-        })
-      })
     }
   }
 
-  function escapeHtml(text: string): string {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+  function validatePlayerAlias(alias: string): { valid: boolean; error?: string } {
+    const trimmed = alias.trim()
+
+    // Allow empty for default names in local game
+    if (trimmed === '') {
+      return { valid: true }
+    }
+
+    // Validate maximum length
+    if (trimmed.length > 20) {
+      return { valid: false, error: 'Player alias must be 20 characters or less' }
+    }
+
+    // Validate allowed characters (alphanumeric, spaces, basic punctuation)
+    const validAliasPattern = /^[a-zA-Z0-9\s._-]+$/
+    if (!validAliasPattern.test(trimmed)) {
+      return { valid: false, error: 'Player alias can only contain letters, numbers, spaces, dots, underscores, and hyphens' }
+    }
+
+    return { valid: true }
   }
 
   function startNextTournamentMatch(): void {
@@ -338,14 +370,7 @@ function setupPlayPageEvents(): void {
 
     // Display match info
     if (tournamentCurrentMatch) {
-      const bracket = tournamentManager.getBracket()
-      let round = 1
-      for (let i = 0; i < bracket.length; i++) {
-        if (bracket[i].some((m: TournamentMatch) => m.matchId === match.matchId)) {
-          round = i + 1
-          break
-        }
-      }
+      const round = match.round || 1
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center mb-4">
@@ -360,13 +385,6 @@ function setupPlayPageEvents(): void {
           </button>
         </div>
       `
-
-      const playMatchBtn = document.getElementById('playMatchBtn')
-      if (playMatchBtn) {
-        playMatchBtn.addEventListener('click', () => {
-          startMatchGame(match)
-        })
-      }
     }
   }
 
@@ -430,6 +448,132 @@ function setupPlayPageEvents(): void {
     }
   }
 
+  // Bracket layout constants
+  const PLAYER_SLOT_HEIGHT = 45
+  const MATCH_BOX_HEIGHT = 100 // Height to fit 2 player slots
+  const BASE_VERTICAL_GAP = 20
+
+  function calculateTournamentRounds(playerCount: number): number {
+    let totalRounds = 0
+    let temp = playerCount
+    while (temp > 1) {
+      totalRounds++
+      temp = Math.ceil(temp / 2)
+    }
+    return totalRounds
+  }
+
+  function getPlayerClassName(isWinner: boolean, isLoser: boolean, isTBD: boolean): string {
+    if (isTBD) return 'bracket-player-name bracket-player-name--tbd'
+    if (isWinner) return 'bracket-player-name bracket-player-name--winner'
+    if (isLoser) return 'bracket-player-name bracket-player-name--loser'
+    return 'bracket-player-name bracket-player-name--normal'
+  }
+
+  function getPlayerScoreClassName(isTBD: boolean): string {
+    return isTBD ? 'bracket-player-score bracket-player-score--tbd' : 'bracket-player-score bracket-player-score--normal'
+  }
+
+  function getMatchBoxClassName(isCurrent: boolean, isComplete: boolean): string {
+    if (isCurrent) return 'bracket-match-box bracket-match-box--current'
+    if (isComplete) return 'bracket-match-box bracket-match-box--finished'
+    return 'bracket-match-box bracket-match-box--pending'
+  }
+
+  function renderMatch(match: TournamentMatch, currentMatch: TournamentMatch | null): string {
+    const isCurrent = currentMatch?.matchId === match.matchId
+    const isComplete = match.status === 'finished'
+    const matchBoxClass = getMatchBoxClassName(isCurrent, isComplete)
+
+    const p1IsTBD = match.player1.id < 0
+    const p2IsTBD = match.player2.id < 0
+    const p1IsWinner = match.winner?.id === match.player1.id
+    const p2IsWinner = match.winner?.id === match.player2.id
+
+    const p1Class = getPlayerClassName(p1IsWinner, p2IsWinner && isComplete, p1IsTBD)
+    const p2Class = getPlayerClassName(p2IsWinner, p1IsWinner && isComplete, p2IsTBD)
+    const p1ScoreClass = getPlayerScoreClassName(p1IsTBD)
+    const p2ScoreClass = getPlayerScoreClassName(p2IsTBD)
+
+    return `
+      <div class="${matchBoxClass}" style="height: ${MATCH_BOX_HEIGHT}px;">
+        <!-- Player 1 -->
+        <div class="bracket-player-slot bracket-player-slot--top" style="height: ${PLAYER_SLOT_HEIGHT}px;">
+          <span class="${p1Class}">
+            ${escapeHtml(match.player1.alias)}
+          </span>
+          <span class="${p1ScoreClass}">${p1IsTBD ? '-' : match.player1Score}</span>
+        </div>
+
+        <!-- Player 2 -->
+        <div class="bracket-player-slot" style="height: ${PLAYER_SLOT_HEIGHT}px;">
+          <span class="${p2Class}">
+            ${escapeHtml(match.player2.alias)}
+          </span>
+          <span class="${p2ScoreClass}">${p2IsTBD ? '-' : match.player2Score}</span>
+        </div>
+      </div>
+    `
+  }
+
+  function renderTBDPlaceholder(): string {
+    return `
+      <div class="bracket-match-box bracket-match-box--tbd" style="height: ${MATCH_BOX_HEIGHT}px;">
+        <!-- Player 1 -->
+        <div class="bracket-player-slot bracket-player-slot--top" style="height: ${PLAYER_SLOT_HEIGHT}px;">
+          <span class="bracket-player-name bracket-player-name--tbd">TBD</span>
+          <span class="bracket-player-score bracket-player-score--tbd">-</span>
+        </div>
+
+        <!-- Player 2 -->
+        <div class="bracket-player-slot" style="height: ${PLAYER_SLOT_HEIGHT}px;">
+          <span class="bracket-player-name bracket-player-name--tbd">TBD</span>
+          <span class="bracket-player-score bracket-player-score--tbd">-</span>
+        </div>
+      </div>
+    `
+  }
+
+  function renderRound(
+    roundIndex: number,
+    roundMatches: TournamentMatch[],
+    totalRounds: number,
+    currentMatch: TournamentMatch | null
+  ): string {
+    const isLastRound = roundIndex === totalRounds - 1
+    const verticalGap = BASE_VERTICAL_GAP * Math.pow(2, roundIndex)
+
+    // For Round 1, only show actual matches (no TBD placeholders)
+    // For later rounds, show expected matches including TBD placeholders
+    let matchesToShow: number
+    if (roundIndex === 0) {
+      matchesToShow = roundMatches.length
+    } else {
+      const expectedMatches = Math.ceil(Math.pow(2, totalRounds - roundIndex - 1))
+      matchesToShow = Math.max(roundMatches.length, expectedMatches)
+    }
+
+    let html = `
+      <div class="bracket-round-column">
+        <h3 class="text-lg font-bold text-center mb-6 text-white">
+          ${isLastRound ? 'Finals' : `Round ${roundIndex + 1}`}
+        </h3>
+        <div class="bracket-matches-container" style="gap: ${verticalGap}px;">
+    `
+
+    for (let i = 0; i < matchesToShow; i++) {
+      const match = roundMatches[i]
+      html += match ? renderMatch(match, currentMatch) : renderTBDPlaceholder()
+    }
+
+    html += `
+        </div>
+      </div>
+    `
+
+    return html
+  }
+
   function renderTournamentBracket(): void {
     if (!tournamentManager || !tournamentBracketDisplay) return
 
@@ -438,125 +582,13 @@ function setupPlayPageEvents(): void {
     const currentMatch = tournamentManager.getCurrentMatch()
     const playerCount = tournament.players.length
 
-    // Calculate total rounds needed
-    let totalRounds = 0
-    let temp = playerCount
-    while (temp > 1) {
-      totalRounds++
-      temp = Math.ceil(temp / 2)
-    }
+    const totalRounds = calculateTournamentRounds(playerCount)
 
-    // Render bracket without SVG lines for now (simpler)
-    let html = '<div style="position: relative; display: flex; gap: 60px; overflow-x: auto; padding: 40px; background: #1f2937; border-radius: 8px;">'
+    let html = '<div class="tournament-bracket-container">'
 
-    // Render each round as a column
     for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
-      const isLastRound = roundIndex === totalRounds - 1
       const roundMatches = bracket[roundIndex] || []
-
-      // For Round 1, only show actual matches (no TBD placeholders)
-      // For later rounds, show expected matches including TBD placeholders
-      let matchesToShow: number
-      if (roundIndex === 0) {
-        matchesToShow = roundMatches.length
-      } else {
-        const expectedMatches = Math.ceil(Math.pow(2, totalRounds - roundIndex - 1))
-        matchesToShow = Math.max(roundMatches.length, expectedMatches)
-      }
-
-      // Calculate vertical spacing based on round
-      const matchHeight = 100 // Height for each match box (2 players)
-      const playerHeight = 45 // Height for each player slot
-      const baseGap = 20
-      const verticalGap = baseGap * Math.pow(2, roundIndex)
-
-      html += `
-        <div class="round-column" style="display: flex; flex-direction: column; min-width: 220px;">
-          <h3 class="text-lg font-bold mb-6 text-center text-white">
-            ${isLastRound ? 'Finals' : `Round ${roundIndex + 1}`}
-          </h3>
-          <div style="display: flex; flex-direction: column; gap: ${verticalGap}px;">
-      `
-
-      // Show actual matches or TBD placeholders
-      for (let i = 0; i < matchesToShow; i++) {
-        const match = roundMatches[i]
-
-        if (match) {
-          // Real match with players (including pre-generated matches with TBD)
-          const isCurrent = currentMatch?.matchId === match.matchId
-          const isComplete = match.status === 'finished'
-
-          let borderColor = 'border-gray-600'
-          let bgColor = 'bg-gray-800'
-
-          if (isCurrent) {
-            borderColor = 'border-yellow-400'
-            bgColor = 'bg-yellow-900/30'
-          } else if (isComplete) {
-            borderColor = 'border-green-600'
-          }
-
-          // Determine if players are TBD and style accordingly
-          const p1IsTBD = match.player1.alias === 'TBD'
-          const p2IsTBD = match.player2.alias === 'TBD'
-          const p1IsWinner = match.winner?.id === match.player1.id
-          const p2IsWinner = match.winner?.id === match.player2.id
-
-          // Style for each player
-          const getPlayerStyle = (isWinner: boolean, isLoser: boolean, isTBD: boolean) => {
-            if (isTBD) return 'text-gray-500 italic'
-            if (isWinner) return 'text-green-400 font-bold'
-            if (isLoser) return 'text-gray-500 line-through opacity-50'
-            return 'text-white'
-          }
-
-          const p1Style = getPlayerStyle(p1IsWinner, p2IsWinner && isComplete, p1IsTBD)
-          const p2Style = getPlayerStyle(p2IsWinner, p1IsWinner && isComplete, p2IsTBD)
-
-          html += `
-            <div class="match-box border-2 ${borderColor} rounded-lg ${bgColor} overflow-hidden" style="height: ${matchHeight}px;">
-              <!-- Player 1 -->
-              <div class="flex justify-between items-center px-3 py-2 border-b border-gray-700" style="height: ${playerHeight}px;">
-                <span class="text-sm ${p1Style}">
-                  ${escapeHtml(match.player1.alias)}
-                </span>
-                <span class="text-sm ${p1IsTBD ? 'text-gray-600' : 'text-white font-semibold'}">${p1IsTBD ? '-' : match.player1Score}</span>
-              </div>
-
-              <!-- Player 2 -->
-              <div class="flex justify-between items-center px-3 py-2" style="height: ${playerHeight}px;">
-                <span class="text-sm ${p2Style}">
-                  ${escapeHtml(match.player2.alias)}
-                </span>
-                <span class="text-sm ${p2IsTBD ? 'text-gray-600' : 'text-white font-semibold'}">${p2IsTBD ? '-' : match.player2Score}</span>
-              </div>
-            </div>
-          `
-        } else {
-          // Pure TBD placeholder for rounds that haven't been generated yet
-          html += `
-            <div class="match-box border-2 border-gray-700 border-dashed rounded-lg bg-gray-900/20 overflow-hidden" style="height: ${matchHeight}px;">
-              <!-- Player 1 -->
-              <div class="flex justify-between items-center px-3 py-2 border-b border-gray-700" style="height: ${playerHeight}px;">
-                <span class="text-sm text-gray-600 italic">TBD</span>
-                <span class="text-sm text-gray-600">-</span>
-              </div>
-
-              <!-- Player 2 -->
-              <div class="flex justify-between items-center px-3 py-2" style="height: ${playerHeight}px;">
-                <span class="text-sm text-gray-600 italic">TBD</span>
-                <span class="text-sm text-gray-600">-</span>
-              </div>
-            </div>
-          `
-        }
-      }
-
-      html += `
-          </div>
-        </div>
-      `
+      html += renderRound(roundIndex, roundMatches, totalRounds, currentMatch)
     }
 
     html += '</div>'
@@ -583,13 +615,6 @@ function setupPlayPageEvents(): void {
           </button>
         </div>
       `
-
-      const newTournamentBtn = document.getElementById('newTournamentBtn')
-      if (newTournamentBtn) {
-        newTournamentBtn.addEventListener('click', () => {
-          resetTournament()
-        })
-      }
     }
   }
 
@@ -628,20 +653,34 @@ function setupPlayPageEvents(): void {
     if (!tournamentManager || !tournamentPlayerAliasInput) return
 
     const alias = tournamentPlayerAliasInput.value.trim()
+
+    // Hide previous errors
+    hideInlineError(tournamentErrorEl)
+
+    // Validate empty input (required for tournament)
     if (alias === '') {
-      alert('Please enter a player alias')
+      showInlineError(tournamentErrorEl, 'Please enter a player alias')
+      return
+    }
+
+    // Validate alias format
+    const validation = validatePlayerAlias(alias)
+    if (!validation.valid) {
+      showInlineError(tournamentErrorEl, validation.error || 'Invalid alias')
       return
     }
 
     if (tournamentManager.addPlayer(alias)) {
       tournamentPlayerAliasInput.value = ''
+      hideInlineError(tournamentErrorEl)
       updateTournamentUI()
       tournamentPlayerAliasInput.focus()
+      toast.success(`${alias} added to tournament`)
     } else {
       if (!tournamentManager.canAddPlayers()) {
-        alert('Tournament is full (8 players max)')
+        showInlineError(tournamentErrorEl, 'Tournament is full (8 players max)')
       } else {
-        alert('This alias is already taken')
+        showInlineError(tournamentErrorEl, 'This alias is already taken')
       }
     }
   }
@@ -661,8 +700,9 @@ function setupPlayPageEvents(): void {
       showTournamentPhase('bracket')
       renderTournamentBracket() // Show full bracket with TBD
       startNextTournamentMatch()
+      toast.success('Tournament started!')
     } else {
-      alert('Cannot start tournament. Need at least 2 players.')
+      toast.error('Cannot start tournament. Need at least 2 players.')
     }
   })
 
@@ -683,8 +723,16 @@ function setupPlayPageEvents(): void {
   })
 
   // Event: End Tournament button
-  endTournamentBtn?.addEventListener('click', () => {
-    if (confirm('Are you sure you want to end this tournament? All progress will be lost.')) {
+  endTournamentBtn?.addEventListener('click', async () => {
+    const confirmed = await showConfirmModal({
+      title: 'End Tournament',
+      message: 'Are you sure you want to end this tournament?\nAll progress will be lost.',
+      confirmText: 'End Tournament',
+      cancelText: 'Cancel',
+      isDangerous: true,
+    })
+
+    if (confirmed) {
       // Clean up any running game
       if (currentGame) {
         currentGame.destroy()
@@ -694,13 +742,46 @@ function setupPlayPageEvents(): void {
       // Reset tournament
       showScreen(modeSelection!)
       tournamentManager = null
+      toast.info('Tournament ended')
     }
   })
 
   // Event: Start game
   startGameBtn?.addEventListener('click', () => {
-    const player1 = player1AliasInput.value.trim() || 'Player 1'
-    const player2 = player2AliasInput.value.trim() || 'Player 2'
+    let player1 = player1AliasInput.value.trim()
+    let player2 = player2AliasInput.value.trim()
+
+    // Hide previous errors
+    hideInlineError(player1ErrorEl)
+    hideInlineError(player2ErrorEl)
+
+    // Validate player 1 alias
+    if (player1 !== '') {
+      const validation = validatePlayerAlias(player1)
+      if (!validation.valid) {
+        showInlineError(player1ErrorEl, validation.error || 'Invalid alias')
+        return
+      }
+    } else {
+      player1 = 'Player 1' // Default name
+    }
+
+    // Validate player 2 alias
+    if (player2 !== '') {
+      const validation = validatePlayerAlias(player2)
+      if (!validation.valid) {
+        showInlineError(player2ErrorEl, validation.error || 'Invalid alias')
+        return
+      }
+    } else {
+      player2 = 'Player 2' // Default name
+    }
+
+    // Check for duplicate names
+    if (player1.toLowerCase() === player2.toLowerCase()) {
+      showInlineError(player2ErrorEl, 'Both players cannot have the same name')
+      return
+    }
 
     if (currentGame) {
       currentGame.destroy()
@@ -749,6 +830,37 @@ function setupPlayPageEvents(): void {
       currentGame = null
     }
     showScreen(modeSelection!)
+  })
+
+  // Event delegation for dynamically created buttons in tournament
+  tournamentCurrentMatch?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+
+    // Handle "Play Match" button
+    if (target.id === 'playMatchBtn') {
+      const match = tournamentManager?.getCurrentMatch()
+      if (match) {
+        startMatchGame(match)
+      }
+    }
+
+    // Handle "Start New Tournament" button
+    if (target.id === 'newTournamentBtn') {
+      resetTournament()
+    }
+  })
+
+  // Event delegation for remove player buttons
+  tournamentPlayersList?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+
+    // Handle "Remove" button
+    if (target.classList.contains('remove-player-btn')) {
+      const playerId = parseInt(target.dataset.playerId || '0')
+      if (tournamentManager && tournamentManager.removePlayer(playerId)) {
+        updateTournamentUI()
+      }
+    }
   })
 
   function showResultScreen(

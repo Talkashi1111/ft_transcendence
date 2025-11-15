@@ -212,7 +212,7 @@ describe('TournamentManager', () => {
       expect(result).toBe(false)
     })
 
-    it('should handle invalid winner ID by assigning to player2', () => {
+    it('should return false for invalid winner ID', () => {
       const match = manager.getCurrentMatch()!
       const result = manager.recordMatchResult(
         match.matchId,
@@ -220,9 +220,9 @@ describe('TournamentManager', () => {
         5,
         3
       )
-      // The implementation doesn't validate winner ID, it assigns player2 if not player1
-      expect(result).toBe(true)
-      expect(match.winner).toBe(match.player2)
+      // The implementation now validates winner ID
+      expect(result).toBe(false)
+      expect(match.winner).toBeNull()
     })
 
     it('should advance tournament to next match', () => {
@@ -429,6 +429,45 @@ describe('TournamentManager', () => {
       const uniqueIds = new Set(matchIds)
 
       expect(uniqueIds.size).toBe(matchIds.length)
+    })
+
+    it('should allow player with "TBD" alias and handle correctly', () => {
+      // Add a player named "TBD" (should be allowed)
+      const added1 = manager.addPlayer('TBD')
+      const added2 = manager.addPlayer('Alice')
+      const added3 = manager.addPlayer('Bob')
+
+      expect(added1).toBe(true)
+      expect(added2).toBe(true)
+      expect(added3).toBe(true)
+
+      const tournament = manager.getTournament()
+      const tbdPlayer = tournament.players.find(p => p.alias === 'TBD')
+      expect(tbdPlayer).toBeDefined()
+      expect(tbdPlayer!.id).toBeGreaterThan(0) // Real player has positive ID
+
+      manager.startTournament()
+
+      // First match should be Alice vs Bob (TBD gets bye)
+      const firstMatch = manager.getCurrentMatch()
+      expect(firstMatch).not.toBeNull()
+      expect(firstMatch!.player1.id).toBeGreaterThan(0)
+      expect(firstMatch!.player2.id).toBeGreaterThan(0)
+
+      // Record first match result
+      manager.recordMatchResult(firstMatch!.matchId, firstMatch!.player1.id, 5, 3)
+
+      // Next match should have the real "TBD" player (not a placeholder)
+      const secondMatch = manager.getCurrentMatch()
+      expect(secondMatch).not.toBeNull()
+
+      // One of the players should be our "TBD" named player (positive ID)
+      const hasTBDPlayer = secondMatch!.player1.alias === 'TBD' || secondMatch!.player2.alias === 'TBD'
+      expect(hasTBDPlayer).toBe(true)
+
+      // Verify both players have positive IDs (no placeholders)
+      expect(secondMatch!.player1.id).toBeGreaterThan(0)
+      expect(secondMatch!.player2.id).toBeGreaterThan(0)
     })
   })
 })
