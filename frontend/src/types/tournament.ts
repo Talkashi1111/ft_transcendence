@@ -13,6 +13,7 @@ export interface TournamentMatch {
   player2Score: number
   winner: TournamentPlayer | null
   status: 'pending' | 'playing' | 'finished'
+  round?: number // Which round this match belongs to
 }
 
 export interface Tournament {
