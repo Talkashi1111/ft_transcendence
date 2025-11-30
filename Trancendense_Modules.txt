@@ -1,0 +1,32 @@
+Mandatory:
+	Backend - must be written in pure PHP without frameworks. However, this requirement can be overridden by the Framework module.
+	Database - you must follow the constraints of the Database module.
+	frontend - should be developed using Typescript as base code. However, this requirement can be modified through the FrontEnd module.
+	SPA - website must be a single-page application. The user should be able to use the Back and Forward buttons of the browser.
+	Mozilla Firefox - Your website must be compatible with Firefox.
+	All errors should be handled.
+	Docker - You must use Docker to run your website. Launched with a single command.
+
+Web:
+	Backend 1pt - Fastify with Node.js
+	Frontend 0.5pt - Use a framework or toolkit to build the front-end. Must use the Tailwind CSS in addition of the Typescript, and nothing else.
+	DB 0.5pt - SQLite
+	Blockchain 1pt - Avalanche and Solidity, testing env.
+	Standard user management 1pt.
+	Implement remote authentication with OAuth 2.0 1pt
+	Remote players 1pt
+	Introduce an AI opponent 1pt.(?)
+	2FA + JWT 1pt.
+	Server side pong 1pt.
+	ELK (Elasticsearch, Logstash, Kibana) for Log Management 1pt.(?)
+	Monitoring Grafana 0.5pt
+	accessibility support all devices 0.5p(Hoanh)
+	3D Graphics 1pt (Hoanh)
+	multiples language support 0.5pt (Hoanh)
+
+
+	https://core.app/token/c-chain/avax
+	https://build.avax.network/console/primary-network/faucet
+
+
+

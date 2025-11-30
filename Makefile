@@ -67,6 +67,10 @@ frontend: check-deps ## run only frontend
 backend: check-deps ## run only backend
 	pnpm --filter backend run dev
 
+.PHONY: studio
+studio: check-deps ## open Prisma Studio (database GUI) at http://localhost:5555
+	cd backend && npx prisma studio --port 5555
+
 .PHONY: test
 test: check-deps ## run Vitest + backend unit tests
 	pnpm --filter frontend --filter backend exec vitest run --coverage
@@ -98,6 +102,30 @@ blockchain-test: check-deps ## test smart contracts
 .PHONY: blockchain-node
 blockchain-node: check-deps ## start local Hardhat node
 	pnpm --filter blockchain run node
+
+## ============================================
+## Database targets (run INSIDE devcontainer)
+## ============================================
+
+.PHONY: seed
+seed: check-deps ## seed database with demo data
+	cd backend && npx prisma db seed
+
+.PHONY: seed-reset
+seed-reset: check-deps ## clean database and reseed
+	cd backend && npx prisma db seed -- --clean
+
+.PHONY: migrate
+migrate: check-deps ## run database migrations
+	cd backend && npx prisma migrate dev
+
+.PHONY: migrate-reset
+migrate-reset: check-deps ## reset database and run all migrations
+	cd backend && npx prisma migrate reset --force
+
+## ============================================
+## Deployment targets (run INSIDE devcontainer)
+## ============================================
 
 .PHONY: blockchain-deploy-local
 blockchain-deploy-local: check-deps ## deploy contracts to local Hardhat node
