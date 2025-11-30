@@ -18,8 +18,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build applications
-RUN pnpm run build
+# Generate Prisma Client and build applications
+RUN cd backend && npx prisma generate && cd .. && pnpm run build
 
 # Development stage (for devcontainer)
 FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS development
