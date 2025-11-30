@@ -132,8 +132,9 @@ npx prisma db seed -- --clean  # Clear all data, then seed
 | Email | Alias | Password |
 | ------------------ | ------- | ---------- |
 | demo@example.com | demo | demo1234 |
-| alice@example.com | alice | alice1234 |
-| bob@example.com | bob | bob12345 |
+| alice@example.com | alice | password123 |
+| bob@example.com | bob | password123 |
+| charlie@example.com | charlie | password123 |
 
 ### Test Database Isolation
 
