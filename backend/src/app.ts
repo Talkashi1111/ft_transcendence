@@ -13,15 +13,19 @@ import blockchainRoutes from './modules/blockchain/blockchain.route.js';
 const PORT = process.env.PORT || 3000;
 
 // Ensure JWT_SECRET is set securely
-let JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) {
+    return secret;
+  }
   if (process.env.NODE_ENV === 'production') {
     throw new Error('JWT_SECRET environment variable must be set in production.');
-  } else {
-    console.warn('Warning: Using fallback JWT secret. Do NOT use this in production!');
-    JWT_SECRET = 'dev-only-jwt-secret-do-not-use-in-production';
   }
+  console.warn('Warning: Using fallback JWT secret. Do NOT use this in production!');
+  return 'dev-only-jwt-secret-do-not-use-in-production';
 }
+
+const JWT_SECRET = getJwtSecret();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
