@@ -11,10 +11,26 @@ This project is about creating a website for the mighty Pong contest.
 ```bash
 # Run both frontend + backend
 pnpm run dev
+# or
+make dev
 ```
 
-- **Frontend:** http://localhost:5173 (hot reload)
-- **Backend:** http://localhost:3000 (auto-restart)
+| Service           | URL                        | Description                  |
+| ----------------- | -------------------------- | ---------------------------- |
+| **Frontend**      | http://localhost:5173      | Vite dev server              |
+| **Backend API**   | http://localhost:3000      | Fastify REST API             |
+| **Swagger Docs**  | http://localhost:3000/docs | Interactive API explorer     |
+| **Prisma Studio** | http://localhost:5555      | Database GUI (`make studio`) |
+
+### Starting Prisma Studio
+
+```bash
+# From project root
+make studio
+
+# Or from backend directory
+cd /app/backend && npx prisma studio --port 5555
+```
 
 ### Production (From Host Machine)
 
@@ -44,8 +60,9 @@ docker compose -f docker-compose.prod.yml up --build
 ```
 ft_transcendence/
 ├── frontend/          # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
-├── backend/           # Fastify + TypeScript + SQLite
+├── backend/           # Fastify + Prisma + SQLite + JWT auth
 ├── blockchain/        # Hardhat + Solidity + Avalanche
+├── data/              # SQLite database (persistent volume)
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
 └── Dockerfile
@@ -58,16 +75,39 @@ ft_transcendence/
 ### Development
 
 ```bash
-pnpm run dev        # Run both frontend + backend
-pnpm run build      # Build frontend + backend (not blockchain)
-pnpm run test       # Test all (frontend + backend + blockchain)
-pnpm run lint       # Lint all
+make dev            # Run both frontend + backend
+make test           # Test all (frontend + backend + blockchain)
+make lint           # Lint all
+make build          # Build frontend + backend
 
 # Run separately
 make frontend       # Frontend only
 make backend        # Backend only
+```
 
-# Blockchain commands (separate from main build)
+### Database (Prisma)
+
+```bash
+# Prisma Studio (can run from root!)
+make studio                    # Database GUI at http://localhost:5555
+
+# Database seeding
+make seed                      # Add demo data to dev database
+make seed-reset                # Clear and reseed database
+
+# Migrations
+make migrate                   # Run pending migrations
+make migrate-reset             # Reset database and rerun all migrations
+
+# Other Prisma commands (must run from /app/backend)
+cd /app/backend
+npx prisma migrate dev         # Create new migration
+npx prisma generate            # Regenerate Prisma Client
+```
+
+### Blockchain
+
+```bash
 pnpm run blockchain:compile        # Compile smart contracts
 pnpm run blockchain:test           # Run blockchain tests
 pnpm run blockchain:node           # Start local Hardhat node
@@ -330,25 +370,16 @@ Database is automatically persisted in Docker volume `sqlite-data`.
 
 ---
 
-## 🌍 Cloud Deployment
-
-Your project is ready for:
-
-- **Render.com** - Connect GitHub, auto-deploy
-- **Railway.app** - Import repo, instant deploy
-- **Fly.io** - `fly launch && fly deploy`
-- **Any Docker platform** - VPS, AWS, DigitalOcean, etc.
-
----
-
 ## 📚 Tech Stack
 
-- **Frontend:** TypeScript (vanilla), Vite, Tailwind CSS
-- **Backend:** Fastify, TypeScript, Typebox (validation), Viem
-- **Database:** SQLite (better-sqlite3)
-- **Blockchain:** Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji
-- **Dev Environment:** DevContainer (Node.js 22)
-- **Deployment:** Docker, Docker Compose
+| Layer          | Technology                                           |
+| -------------- | ---------------------------------------------------- |
+| **Frontend**   | TypeScript (vanilla), Vite, Tailwind CSS             |
+| **Backend**    | Fastify, Prisma ORM, Zod validation, Argon2, JWT     |
+| **Database**   | SQLite                                               |
+| **Blockchain** | Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji |
+| **Dev Env**    | DevContainer (Node.js 22)                            |
+| **Deploy**     | Docker, Docker Compose                               |
 
 ---
 

@@ -21,7 +21,7 @@ services:
       - transcendence-prod
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=sqlite:///app/data/database.db
+      - DATABASE_URL=file:/app/data/database.db
       - HOST_PORT=8080 # Host port for logging (should match ports mapping)
     ports:
       - "8080:3000" # Production on 8080 (avoids conflict with devcontainer port 3000)

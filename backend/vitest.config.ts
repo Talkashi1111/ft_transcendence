@@ -4,6 +4,14 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['test/**/*.test.ts'],
+    setupFiles: ['test/setup.ts'],
+    // Run tests sequentially to avoid database conflicts
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true
+      }
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -16,7 +24,10 @@ export default defineConfig({
         '**/*.d.ts',
         'coverage/**',  // Exclude coverage reports
         'test/**',      // Exclude test files from coverage calculation
-        'src/blockchain.ts'  // Exclude blockchain helper (requires deployed contract) // TODO
+        'src/index.ts', // Exclude entry point (just starts server)
+        'src/modules/blockchain/**', // Exclude blockchain module (requires deployed contract)
+        'src/generated/**', // Exclude Prisma generated files
+        'prisma.config.ts' // Exclude Prisma config
       ],
       // Set minimum threshold levels to prevent coverage regression
       thresholds: {

@@ -1,5 +1,5 @@
 /**
- * Blockchain helper module for interacting with TournamentScores smart contract
+ * Blockchain service module for interacting with TournamentScores smart contract
  *
  * This module provides functions to:
  * - Record tournament match results on the blockchain
@@ -30,7 +30,7 @@ const __dirname = path.dirname(__filename);
 // Path to the compiled contract ABI
 const CONTRACT_ABI_PATH = path.join(
   __dirname,
-  '../../blockchain/artifacts/contracts/TournamentScores.sol/TournamentScores.json'
+  '../../../../blockchain/artifacts/contracts/TournamentScores.sol/TournamentScores.json'
 );
 
 // Cached ABI to avoid re-reading file
@@ -151,7 +151,6 @@ export async function recordMatch(
   const publicClient = getPublicClient();
 
   // Call the recordMatch function
-  // Second parameter is optional WriteContractParameters (can include gas, nonce, etc.)
   const hash = await contract.write.recordMatch([
     BigInt(tournamentId),
     BigInt(player1Id),

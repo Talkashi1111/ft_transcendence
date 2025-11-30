@@ -1,19 +1,13 @@
-import { describe, it, expect, afterAll, vi, beforeEach } from 'vitest'
-import { server } from '../src/index'
-import { counterOperations } from '../src/db'
+import { describe, it, expect, afterAll, beforeAll } from 'vitest'
+import { buildApp } from '../src/app.js'
+import type { FastifyInstance } from 'fastify'
 
-// Mock the db module
-vi.mock('../src/db', () => ({
-  counterOperations: {
-    getValue: vi.fn(),
-    setValue: vi.fn()
-  }
-}))
+let server: FastifyInstance
 
 describe('API Server', () => {
-  // Reset mocks before each test
-  beforeEach(() => {
-    vi.resetAllMocks()
+  // Setup before all tests
+  beforeAll(async () => {
+    server = await buildApp()
   })
 
   // Clean up after all tests
@@ -21,44 +15,113 @@ describe('API Server', () => {
     await server.close()
   })
 
-  describe('User endpoint', () => {
-    it('should create a user successfully', async () => {
+  describe('Health check', () => {
+    it('should return ok status', async () => {
       const response = await server.inject({
-        method: 'POST',
-        url: '/users',
-        payload: {
-          name: 'Test User',
-          mail: 'test@example.com'
-        }
+        method: 'GET',
+        url: '/healthcheck'
       })
 
       expect(response.statusCode).toBe(200)
-      expect(JSON.parse(response.payload)).toEqual({
-        name: 'Test User',
-        mail: 'test@example.com'
-      })
+      expect(JSON.parse(response.payload)).toEqual({ status: 'ok' })
     })
+  })
 
-    it('should validate user schema', async () => {
+  describe('User registration', () => {
+    const testUser = {
+      email: 'test@example.com',
+      alias: 'testuser',
+      password: 'password123'
+    }
+
+    it('should register a new user', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: '/users',
+        url: '/api/users',
+        payload: testUser
+      })
+
+      // Could be 201 (created) or 409 (already exists from previous test run)
+      expect([201, 409]).toContain(response.statusCode)
+
+      if (response.statusCode === 201) {
+        const body = JSON.parse(response.payload)
+        expect(body).toHaveProperty('id')
+        expect(body.email).toBe(testUser.email)
+        expect(body.alias).toBe(testUser.alias)
+        expect(body).toHaveProperty('createdAt')
+        // Password should not be returned
+        expect(body).not.toHaveProperty('password')
+      }
+    })
+
+    it('should reject duplicate email', async () => {
+      // First, ensure user exists
+      await server.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: testUser
+      })
+
+      // Try to register with same email
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: testUser
+      })
+
+      expect(response.statusCode).toBe(409)
+    })
+
+    it('should validate email format', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/users',
         payload: {
-          // Missing required name field
-          mail: 'invalid@example.com'
+          email: 'not-an-email',
+          alias: 'testuser2',
+          password: 'password123'
         }
       })
 
       expect(response.statusCode).toBe(400)
     })
 
-    it('should validate email format', async () => {
+    it('should validate password minimum length', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: '/users',
+        url: '/api/users',
         payload: {
-          name: 'Invalid Email User',
-          mail: 'not-an-email'
+          email: 'test2@example.com',
+          alias: 'testuser2',
+          password: 'short'  // Less than 8 characters
+        }
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
+    it('should validate alias minimum length', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: {
+          email: 'test3@example.com',
+          alias: 'ab',  // Less than 3 characters
+          password: 'password123'
+        }
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
+    it('should require all fields', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: {
+          email: 'test4@example.com'
+          // Missing alias and password
         }
       })
 
@@ -66,95 +129,144 @@ describe('API Server', () => {
     })
   })
 
-  describe('Counter endpoint', () => {
-    it('should get counter value', async () => {
-      // Mock the getValue operation
-      vi.mocked(counterOperations.getValue).mockReturnValue({ value: 42 })
+  describe('User login', () => {
+    const testUser = {
+      email: 'logintest@example.com',
+      alias: 'loginuser',
+      password: 'password123'
+    }
 
-      const response = await server.inject({
-        method: 'GET',
-        url: '/api/counter'
+    beforeAll(async () => {
+      // Register user for login tests
+      await server.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: testUser
       })
-
-      expect(response.statusCode).toBe(200)
-      expect(JSON.parse(response.payload)).toEqual({ value: 42 })
-      expect(counterOperations.getValue).toHaveBeenCalledTimes(1)
     })
 
-    it('should return 0 when counter not found', async () => {
-      // Mock the getValue operation returning null
-      vi.mocked(counterOperations.getValue).mockReturnValue(null)
-
+    it('should login with valid credentials', async () => {
       const response = await server.inject({
-        method: 'GET',
-        url: '/api/counter'
-      })
-
-      expect(response.statusCode).toBe(200)
-      expect(JSON.parse(response.payload)).toEqual({ value: 0 })
-    })
-
-    it('should handle error when getting counter', async () => {
-      // Mock the getValue operation throwing an error
-      vi.mocked(counterOperations.getValue).mockImplementation(() => {
-        throw new Error('Database error')
-      })
-
-      const response = await server.inject({
-        method: 'GET',
-        url: '/api/counter'
-      })
-
-      expect(response.statusCode).toBe(500)
-      expect(JSON.parse(response.payload)).toEqual({ value: 0 })
-    })
-
-    it('should update counter value', async () => {
-      // Mock the setValue operation
-      vi.mocked(counterOperations.setValue).mockReturnValue({ value: 100 })
-
-      const response = await server.inject({
-        method: 'PUT',
-        url: '/api/counter',
+        method: 'POST',
+        url: '/api/users/login',
         payload: {
-          value: 100
+          email: testUser.email,
+          password: testUser.password
         }
       })
 
       expect(response.statusCode).toBe(200)
-      expect(JSON.parse(response.payload)).toEqual({ value: 100 })
-      expect(counterOperations.setValue).toHaveBeenCalledWith(100)
+      const body = JSON.parse(response.payload)
+      expect(body).toHaveProperty('accessToken')
+      expect(typeof body.accessToken).toBe('string')
     })
 
-    it('should validate counter schema', async () => {
+    it('should reject invalid password', async () => {
       const response = await server.inject({
-        method: 'PUT',
-        url: '/api/counter',
+        method: 'POST',
+        url: '/api/users/login',
         payload: {
-          // Should be an integer, not a string
-          value: "not a number"
+          email: testUser.email,
+          password: 'wrongpassword'
         }
       })
 
-      expect(response.statusCode).toBe(400)
+      expect(response.statusCode).toBe(401)
     })
 
-    it('should handle error when updating counter', async () => {
-      // Mock the setValue operation throwing an error
-      vi.mocked(counterOperations.setValue).mockImplementation(() => {
-        throw new Error('Database error')
-      })
-
+    it('should reject non-existent email', async () => {
       const response = await server.inject({
-        method: 'PUT',
-        url: '/api/counter',
+        method: 'POST',
+        url: '/api/users/login',
         payload: {
-          value: 200
+          email: 'nonexistent@example.com',
+          password: 'password123'
         }
       })
 
-      expect(response.statusCode).toBe(500)
-      expect(JSON.parse(response.payload)).toEqual({ value: -1 })
+      expect(response.statusCode).toBe(401)
+    })
+  })
+
+  describe('Protected routes', () => {
+    let accessToken: string
+
+    beforeAll(async () => {
+      const testUser = {
+        email: 'protected@example.com',
+        alias: 'protecteduser',
+        password: 'password123'
+      }
+
+      // Register user
+      await server.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: testUser
+      })
+
+      // Login to get token
+      const loginResponse = await server.inject({
+        method: 'POST',
+        url: '/api/users/login',
+        payload: {
+          email: testUser.email,
+          password: testUser.password
+        }
+      })
+
+      accessToken = JSON.parse(loginResponse.payload).accessToken
+    })
+
+    it('should get users list with valid token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/api/users',
+        headers: {
+          authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.payload)
+      expect(Array.isArray(body)).toBe(true)
+    })
+
+    it('should reject request without token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/api/users'
+      })
+
+      expect(response.statusCode).toBe(401)
+    })
+
+    it('should reject request with invalid token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/api/users',
+        headers: {
+          authorization: 'Bearer invalid-token'
+        }
+      })
+
+      expect(response.statusCode).toBe(401)
+    })
+
+    it('should get current user profile', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/api/users/me',
+        headers: {
+          authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.payload)
+      expect(body).toHaveProperty('id')
+      expect(body.email).toBe('protected@example.com')
+      expect(body.alias).toBe('protecteduser')
     })
   })
 })
