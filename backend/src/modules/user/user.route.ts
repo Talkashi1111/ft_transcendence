@@ -1,0 +1,84 @@
+import type { FastifyInstance } from 'fastify';
+import {
+  registerUserHandler,
+  loginHandler,
+  getUsersHandler,
+  getMeHandler,
+} from './user.controller.js';
+import {
+  createUserJsonSchema,
+  loginJsonSchema,
+  userResponseJsonSchema,
+  loginResponseJsonSchema,
+  usersResponseJsonSchema,
+} from './user.schema.js';
+
+async function userRoutes(server: FastifyInstance) {
+  // Register new user
+  server.post(
+    '/',
+    {
+      schema: {
+        description: 'Register a new user',
+        tags: ['Users'],
+        body: createUserJsonSchema,
+        response: {
+          201: userResponseJsonSchema,
+        },
+      },
+    },
+    registerUserHandler
+  );
+
+  // Login
+  server.post(
+    '/login',
+    {
+      schema: {
+        description: 'Login with email and password',
+        tags: ['Users'],
+        body: loginJsonSchema,
+        response: {
+          200: loginResponseJsonSchema,
+        },
+      },
+    },
+    loginHandler
+  );
+
+  // Get all users (requires authentication)
+  server.get(
+    '/',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Get all users (requires authentication)',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: usersResponseJsonSchema,
+        },
+      },
+    },
+    getUsersHandler
+  );
+
+  // Get current user profile
+  server.get(
+    '/me',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Get current user profile',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: userResponseJsonSchema,
+        },
+      },
+    },
+    getMeHandler
+  );
+}
+
+export default userRoutes;
