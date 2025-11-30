@@ -18,8 +18,12 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Create data directory for SQLite databases (used by tests)
+RUN mkdir -p /app/data
+
 # Generate Prisma Client and build applications
-RUN cd backend && npx prisma generate && cd .. && pnpm run build
+# DATABASE_URL is required for prisma generate but not used at build time
+RUN cd backend && DATABASE_URL="file:/app/data/database.db" npx prisma generate && cd .. && pnpm run build
 
 # Development stage (for devcontainer)
 FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm AS development
