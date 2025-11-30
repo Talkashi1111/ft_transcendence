@@ -13,6 +13,9 @@ import blockchainRoutes from './modules/blockchain/blockchain.route.js';
 const PORT = process.env.PORT || 3000;
 
 // Ensure JWT_SECRET is set securely
+// In production: MUST be set via environment variable (throws if missing)
+// In development: Uses a fixed fallback for convenience (tokens persist across restarts)
+// Note: A random secret would be more secure but would invalidate tokens on every restart
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (secret) {
@@ -21,7 +24,7 @@ function getJwtSecret(): string {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('JWT_SECRET environment variable must be set in production.');
   }
-  console.warn('Warning: Using fallback JWT secret. Do NOT use this in production!');
+  console.warn('Warning: Using fallback JWT secret. Set JWT_SECRET in .env for production!');
   return 'dev-only-jwt-secret-do-not-use-in-production';
 }
 
@@ -92,8 +95,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   server.decorate('authenticate', async function (request: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply) {
     try {
       await request.jwtVerify();
-    } catch {
-      reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message: 'Invalid or missing token' });
+    } catch (err) {
+      const message = err instanceof Error && err.message.includes('expired')
+        ? 'Token has expired'
+        : 'Invalid or missing token';
+      reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message });
     }
   });
 

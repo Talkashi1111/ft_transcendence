@@ -31,8 +31,10 @@ beforeAll(async () => {
       cwd: process.cwd(),
     });
     console.log("✅ Migrations applied to test database");
-  } catch {
-    console.log("ℹ️  Migrations already applied or no changes");
+  } catch (error) {
+    // Log the actual error for debugging (could be permissions, syntax errors, etc.)
+    console.error("Migration error:", error);
+    console.log("ℹ️  Migrations may already be applied or check error above");
   }
 
   // Connect to test database and clean it

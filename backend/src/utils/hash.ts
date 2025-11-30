@@ -19,7 +19,9 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
   try {
     return await argon2.verify(hashedPassword, password);
-  } catch {
+  } catch (error) {
+    // Log error for debugging but don't expose details to caller
+    console.error('Password verification error:', error);
     return false;
   }
 }
