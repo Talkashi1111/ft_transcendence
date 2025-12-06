@@ -7,7 +7,6 @@
 The `.github/workflows/ci.yml` now has two jobs:
 
 1. **CI Job** - Runs on all PRs and pushes
-
    - Lints, tests, and builds
    - Validates production image builds
    - Must pass before merge
@@ -75,7 +74,6 @@ If you prefer Docker Hub, follow these steps:
 ### Platforms Built
 
 - **linux/amd64** - Intel/AMD x86_64
-
   - Most cloud servers (AWS EC2, Azure VMs, Google Compute)
   - Most desktop computers
   - Traditional Linux servers
@@ -234,7 +232,6 @@ docker run -d --name ft-transcendence ... :main-abc123
 ### Build Times (Approximate)
 
 - **CI Job**: 3-5 minutes
-
   - Lint: 30 seconds
   - Test: 1-2 minutes
   - Build: 1-2 minutes
@@ -298,9 +295,9 @@ Add vulnerability scanning to workflow:
   uses: aquasecurity/trivy-action@master
   with:
     image-ref: ghcr.io/${{ github.repository }}:latest
-    format: "table"
-    exit-code: "1"
-    severity: "CRITICAL,HIGH"
+    format: 'table'
+    exit-code: '1'
+    severity: 'CRITICAL,HIGH'
 ```
 
 ### Minimal Base Image

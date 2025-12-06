@@ -4,10 +4,7 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
 
   // ESLint settings
-  "eslint.workingDirectories": [
-    "./backend",
-    "./frontend"
-  ],
+  "eslint.workingDirectories": ["./backend", "./frontend"],
 
   // Editor settings
   "editor.formatOnSave": true,

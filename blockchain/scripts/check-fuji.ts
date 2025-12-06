@@ -1,29 +1,25 @@
-import {
-  createPublicClient,
-  http,
-  getContract,
-} from "viem";
-import { avalancheFuji } from "viem/chains";
-import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
+import { createPublicClient, http, getContract } from 'viem';
+import { avalancheFuji } from 'viem/chains';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main() {
-  const contractAddress = "0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D";
+  const contractAddress = '0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D';
 
-  console.log("🔍 Checking TournamentScores Contract on Fuji Testnet\n");
-  console.log("Contract Address:", contractAddress);
-  console.log("---\n");
+  console.log('🔍 Checking TournamentScores Contract on Fuji Testnet\n');
+  console.log('Contract Address:', contractAddress);
+  console.log('---\n');
 
   // Load contract ABI
   const artifactPath = path.join(
     __dirname,
-    "../artifacts/contracts/TournamentScores.sol/TournamentScores.json"
+    '../artifacts/contracts/TournamentScores.sol/TournamentScores.json'
   );
-  const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
+  const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
 
   // Create public client (read-only)
   const publicClient = createPublicClient({
@@ -40,14 +36,14 @@ async function main() {
 
   // Get owner
   const owner = await TournamentScores.read.owner([]);
-  console.log("📋 Contract Owner:", owner);
+  console.log('📋 Contract Owner:', owner);
 
   // Get total match count
   const totalMatches = (await TournamentScores.read.getTotalMatches([])) as bigint;
-  console.log("📊 Total Matches:", totalMatches.toString());
+  console.log('📊 Total Matches:', totalMatches.toString());
 
   if (totalMatches > 0n) {
-    console.log("\n📋 All Matches:");
+    console.log('\n📋 All Matches:');
     for (let i = 0n; i < totalMatches; i++) {
       const match = (await TournamentScores.read.getMatch([i])) as [
         bigint,
@@ -58,7 +54,7 @@ async function main() {
         bigint,
         bigint,
         bigint,
-        string
+        string,
       ];
       console.log(`\n🔍 Match #${i}:`);
       console.log({
@@ -75,13 +71,14 @@ async function main() {
     }
 
     // Check tournament #1 matches
-    console.log("\n📋 Tournament #1 Matches:");
-    const tournamentMatches = (await TournamentScores.read.getTournamentMatches([
-      1n,
-    ])) as bigint[];
-    console.log("Match IDs:", tournamentMatches.map((id: bigint) => id.toString()));
+    console.log('\n📋 Tournament #1 Matches:');
+    const tournamentMatches = (await TournamentScores.read.getTournamentMatches([1n])) as bigint[];
+    console.log(
+      'Match IDs:',
+      tournamentMatches.map((id: bigint) => id.toString())
+    );
   } else {
-    console.log("\nℹ️  No matches recorded yet");
+    console.log('\nℹ️  No matches recorded yet');
   }
 
   console.log(`\n🔍 View on Snowtrace: https://testnet.snowtrace.io/address/${contractAddress}`);

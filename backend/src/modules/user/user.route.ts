@@ -4,6 +4,7 @@ import {
   loginHandler,
   getUsersHandler,
   getMeHandler,
+  logoutHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
@@ -78,6 +79,26 @@ async function userRoutes(server: FastifyInstance) {
       },
     },
     getMeHandler
+  );
+
+  // Logout (clear authentication cookie)
+  server.post(
+    '/logout',
+    {
+      schema: {
+        description: 'Logout user by clearing authentication cookie',
+        tags: ['Users'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+            },
+          },
+        },
+      },
+    },
+    logoutHandler
   );
 }
 

@@ -20,9 +20,9 @@ Web:
 	Server side pong 1pt.
 	ELK (Elasticsearch, Logstash, Kibana) for Log Management 1pt.(?)
 	Monitoring Grafana 0.5pt
-	accessibility support all devices 0.5p(Hoanh)
-	3D Graphics 1pt (Hoanh)
-	multiples language support 0.5pt (Hoanh)
+	accessibility support all devices 0.5p
+	3D Graphics 1pt
+	multiples language support 0.5pt
 
 
 	https://core.app/token/c-chain/avax

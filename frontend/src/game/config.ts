@@ -1,4 +1,4 @@
-import type { GameConfig } from '../types/game'
+import type { GameConfig } from '../types/game';
 
 export const GAME_CONFIG: GameConfig = {
   canvasWidth: 800,
@@ -11,7 +11,7 @@ export const GAME_CONFIG: GameConfig = {
   ballMaxSpeed: 12,
   maxScore: 11,
   fps: 60,
-}
+};
 
 // Colors
 export const COLORS = {
@@ -20,7 +20,7 @@ export const COLORS = {
   ball: '#ffffff',
   text: '#ffffff',
   centerLine: '#475569', // slate-600
-}
+};
 
 // Keyboard controls
 export const KEYS = {
@@ -30,4 +30,4 @@ export const KEYS = {
   player2Down: 'ArrowDown',
   pause: ' ',
   escape: 'Escape',
-}
+};

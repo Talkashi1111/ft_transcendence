@@ -3,6 +3,7 @@ import fastify, { FastifyInstance } from 'fastify';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fastifyStatic from '@fastify/static';
+import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
@@ -36,14 +37,17 @@ const __dirname = path.dirname(__filename);
 // Extend FastifyInstance for JWT and authenticate decorator
 declare module 'fastify' {
   interface FastifyInstance {
-    authenticate: (request: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply) => Promise<void>;
+    authenticate: (
+      request: import('fastify').FastifyRequest,
+      reply: import('fastify').FastifyReply
+    ) => Promise<void>;
   }
 }
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { id: string; email: string; alias: string };
-    user: { id: string; email: string; alias: string };
+    payload: { id: string; email: string };
+    user: { id: string; email: string };
   }
 }
 
@@ -52,7 +56,7 @@ declare module '@fastify/jwt' {
  */
 export async function buildApp(): Promise<FastifyInstance> {
   const server = fastify({
-    logger: { level: 'info' }
+    logger: { level: 'info' },
   });
 
   // Register Swagger
@@ -86,22 +90,36 @@ export async function buildApp(): Promise<FastifyInstance> {
     routePrefix: '/docs',
   });
 
+  // Register Cookie plugin
+  await server.register(fastifyCookie);
+
   // Register JWT
   await server.register(fastifyJwt, {
     secret: JWT_SECRET,
+    cookie: {
+      cookieName: 'token', // Read JWT from 'token' cookie
+      signed: false, // We'll handle cookie signing separately
+    },
   });
 
   // Authentication decorator
-  server.decorate('authenticate', async function (request: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply) {
-    try {
-      await request.jwtVerify();
-    } catch (err) {
-      const message = err instanceof Error && err.message.includes('expired')
-        ? 'Token has expired'
-        : 'Invalid or missing token';
-      reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message });
+  server.decorate(
+    'authenticate',
+    async function (
+      request: import('fastify').FastifyRequest,
+      reply: import('fastify').FastifyReply
+    ) {
+      try {
+        await request.jwtVerify();
+      } catch (err) {
+        const message =
+          err instanceof Error && err.message.includes('expired')
+            ? 'Token has expired'
+            : 'Invalid or missing token';
+        reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message });
+      }
     }
-  });
+  );
 
   // Register routes
   await server.register(userRoutes, { prefix: '/api/users' });
@@ -124,7 +142,9 @@ export async function configureStaticServing(server: FastifyInstance): Promise<v
 
     // Verify frontend build exists
     if (!fs.existsSync(frontendPath)) {
-      throw new Error(`Frontend build not found at ${frontendPath}. Ensure the application is properly built.`);
+      throw new Error(
+        `Frontend build not found at ${frontendPath}. Ensure the application is properly built.`
+      );
     }
 
     // Register static file serving
@@ -137,7 +157,9 @@ export async function configureStaticServing(server: FastifyInstance): Promise<v
     const indexPath = path.join(frontendPath, 'index.html');
 
     if (!fs.existsSync(indexPath)) {
-      throw new Error(`index.html not found at ${indexPath}. Verify the frontend build completed successfully by running 'pnpm run build'.`);
+      throw new Error(
+        `index.html not found at ${indexPath}. Verify the frontend build completed successfully by running 'pnpm run build'.`
+      );
     }
 
     const indexHtml = fs.readFileSync(indexPath, 'utf-8');

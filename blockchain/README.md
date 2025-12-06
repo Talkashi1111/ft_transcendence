@@ -87,7 +87,7 @@ This script demonstrates:
 **Note:** The contract address in `scripts/interact.ts` is hardcoded. Update it if your deployment address differs:
 
 ```typescript
-const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 ```
 
 **Remember:** Restarting the Hardhat node resets the blockchain state. You'll need to redeploy contracts after each restart.
