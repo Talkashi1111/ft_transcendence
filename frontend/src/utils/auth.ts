@@ -43,8 +43,12 @@ class RegisterError extends Error {
 
 /**
  * Register a new user
+ *
+ * Note: Registration does NOT authenticate the user automatically.
+ * After successful registration, users must login separately to obtain authentication cookies.
+ * This is intentional for security and allows for future email verification flows.
  */
-export async function register(alias: string, email: string, password: string) {
+export async function register(alias: string, email: string, password: string): Promise<void> {
   const response = await fetch('/api/users', {
     method: 'POST',
     headers: {
@@ -74,8 +78,8 @@ export async function register(alias: string, email: string, password: string) {
     }
   }
 
-  const data = await response.json();
-  return data;
+  // Registration successful - no return value needed
+  // User must login separately to authenticate
 }
 
 /**

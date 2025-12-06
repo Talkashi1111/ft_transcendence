@@ -15,6 +15,13 @@ interface PrismaClientKnownRequestError extends Error {
   meta?: { target?: string[] };
 }
 
+/**
+ * Register a new user
+ *
+ * Note: This endpoint does NOT set authentication cookies.
+ * Users must login separately after registration to obtain a session.
+ * This allows for future email verification and other onboarding flows.
+ */
 export async function registerUserHandler(
   request: FastifyRequest<{ Body: CreateUserInput }>,
   reply: FastifyReply
@@ -48,7 +55,7 @@ export async function registerUserHandler(
       return reply.status(400).send({
         statusCode: 400,
         error: 'Bad Request',
-        message: error.issues,
+        message: error.issues[0].message,
       });
     }
 

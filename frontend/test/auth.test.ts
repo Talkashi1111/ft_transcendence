@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   login,
+  register,
   logout,
   isAuthenticated,
   getCurrentUser,
@@ -118,6 +119,134 @@ describe('Auth Utility', () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
       await expect(logout()).resolves.not.toThrow();
+    });
+  });
+
+  describe('register', () => {
+    it('should successfully register a new user', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: '456',
+          email: 'newuser@test.com',
+          alias: 'newuser',
+          createdAt: '2024-01-01T00:00:00.000Z',
+        }),
+      });
+
+      await expect(register('newuser', 'newuser@test.com', 'password123')).resolves.not.toThrow();
+
+      expect(fetch).toHaveBeenCalledWith('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          alias: 'newuser',
+          email: 'newuser@test.com',
+          password: 'password123',
+        }),
+        credentials: 'include',
+      });
+    });
+
+    it('should throw RegisterError on 409 (duplicate email)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ message: 'User with this email already exists' }),
+      });
+
+      await expect(register('user', 'existing@test.com', 'password123')).rejects.toThrow(
+        'User with this email already exists'
+      );
+    });
+
+    it('should throw RegisterError on 409 (duplicate alias)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ message: 'User with this alias already exists' }),
+      });
+
+      await expect(register('existinguser', 'new@test.com', 'password123')).rejects.toThrow(
+        'User with this alias already exists'
+      );
+    });
+
+    it('should throw RegisterError on 400 (validation error)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ message: 'Please enter a valid email address' }),
+      });
+
+      await expect(register('user', 'invalid-email', 'password123')).rejects.toThrow(
+        'Please enter a valid email address'
+      );
+    });
+
+    it('should use fallback message on 400 without message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({}),
+      });
+
+      await expect(register('user', 'test@test.com', 'short')).rejects.toThrow(
+        'Please check your input and try again'
+      );
+    });
+
+    it('should handle network errors', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('Network error');
+        },
+      });
+
+      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+        'Network error'
+      );
+    });
+
+    it('should handle generic errors with message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ message: 'Internal server error' }),
+      });
+
+      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+        'Internal server error'
+      );
+    });
+
+    it('should use fallback message on 500 without message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      });
+
+      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+        'Registration failed'
+      );
+    });
+
+    it('should handle JSON parse failures as network error', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        json: async () => {
+          throw new SyntaxError('Unexpected token');
+        },
+      });
+
+      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+        'Network error'
+      );
     });
   });
 
