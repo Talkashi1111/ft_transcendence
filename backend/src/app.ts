@@ -121,6 +121,34 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
   );
 
+  // Custom validation error handler
+  server.setErrorHandler((error, request, reply) => {
+    if (error.validation) {
+      // Handle validation errors with user-friendly messages
+      const firstError = error.validation[0];
+      let message = firstError.message || 'Validation error';
+
+      // Make email validation errors more user-friendly
+      if (
+        firstError.instancePath === '/email' ||
+        (firstError.params && 'pattern' in firstError.params)
+      ) {
+        if (message.includes('pattern')) {
+          message = 'Please enter a valid email address';
+        }
+      }
+
+      return reply.status(400).send({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: message,
+      });
+    }
+
+    // Re-throw other errors for default handling
+    return reply.send(error);
+  });
+
   // Register routes
   await server.register(userRoutes, { prefix: '/api/users' });
   await server.register(blockchainRoutes, { prefix: '/api' });
