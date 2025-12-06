@@ -23,6 +23,7 @@
       "eslint": "^9.29.0"
     },
     "onlyBuiltDependencies": [
+      "argon2",
       "better-sqlite3",
       "esbuild"
     ]

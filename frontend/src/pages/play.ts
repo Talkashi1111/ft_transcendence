@@ -8,14 +8,15 @@ import { escapeHtml } from '../utils/sanitize'
 // Constants
 const GAME_END_DELAY_MS = 2000 // Delay before showing result screen after game ends
 
-export function renderPlayPage(
+export async function renderPlayPage(
   app: HTMLElement,
-  renderNavBar: (page: 'home' | 'play' | 'tournaments') => string,
+  renderNavBar: (page: 'home' | 'play' | 'tournaments') => Promise<string>,
   setupNavigation: () => void
-): void {
+): Promise<void> {
+  const navBar = await renderNavBar('play')
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      ${renderNavBar('play')}
+      ${navBar}
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Mode Selection -->

@@ -3,6 +3,7 @@ import fastify, { FastifyInstance } from 'fastify';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fastifyStatic from '@fastify/static';
+import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
@@ -42,8 +43,8 @@ declare module 'fastify' {
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { id: string; email: string; alias: string };
-    user: { id: string; email: string; alias: string };
+    payload: { id: string; email: string };
+    user: { id: string; email: string };
   }
 }
 
@@ -86,9 +87,24 @@ export async function buildApp(): Promise<FastifyInstance> {
     routePrefix: '/docs',
   });
 
+  // Register Cookie plugin
+  await server.register(fastifyCookie, {
+    secret: JWT_SECRET, // For signed cookies
+    parseOptions: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax', // CSRF protection
+      path: '/',
+    },
+  });
+
   // Register JWT
   await server.register(fastifyJwt, {
     secret: JWT_SECRET,
+    cookie: {
+      cookieName: 'token', // Read JWT from 'token' cookie
+      signed: false, // We'll handle cookie signing separately
+    },
   });
 
   // Authentication decorator

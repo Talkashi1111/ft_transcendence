@@ -157,8 +157,10 @@ describe('API Server', () => {
 
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.payload)
-      expect(body).toHaveProperty('accessToken')
-      expect(typeof body.accessToken).toBe('string')
+      expect(body).toHaveProperty('success')
+      expect(body.success).toBe(true)
+      // Check that cookie was set
+      expect(response.headers['set-cookie']).toBeDefined()
     })
 
     it('should reject invalid password', async () => {
@@ -189,7 +191,7 @@ describe('API Server', () => {
   })
 
   describe('Protected routes', () => {
-    let accessToken: string
+    let cookies: string
 
     beforeAll(async () => {
       const testUser = {
@@ -205,7 +207,7 @@ describe('API Server', () => {
         payload: testUser
       })
 
-      // Login to get token
+      // Login to get cookie
       const loginResponse = await server.inject({
         method: 'POST',
         url: '/api/users/login',
@@ -215,7 +217,8 @@ describe('API Server', () => {
         }
       })
 
-      accessToken = JSON.parse(loginResponse.payload).accessToken
+      // Extract cookie from response
+      cookies = loginResponse.headers['set-cookie'] as string
     })
 
     it('should get users list with valid token', async () => {
@@ -223,7 +226,7 @@ describe('API Server', () => {
         method: 'GET',
         url: '/api/users',
         headers: {
-          authorization: `Bearer ${accessToken}`
+          cookie: cookies
         }
       })
 
@@ -246,7 +249,7 @@ describe('API Server', () => {
         method: 'GET',
         url: '/api/users',
         headers: {
-          authorization: 'Bearer invalid-token'
+          cookie: 'token=invalid-token'
         }
       })
 
@@ -258,7 +261,7 @@ describe('API Server', () => {
         method: 'GET',
         url: '/api/users/me',
         headers: {
-          authorization: `Bearer ${accessToken}`
+          cookie: cookies
         }
       })
 
