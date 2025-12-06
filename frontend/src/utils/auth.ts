@@ -32,6 +32,53 @@ class LoginError extends Error {
 }
 
 /**
+ * Custom error class for registration errors
+ */
+class RegisterError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RegisterError';
+  }
+}
+
+/**
+ * Register a new user
+ */
+export async function register(alias: string, email: string, password: string) {
+  const response = await fetch('/api/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ alias, email, password }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    try {
+      const errorData = await response.json();
+      // Handle different error cases based on status code
+      if (response.status === 409 || response.status === 400) {
+        // Server message specifies the exact issue (duplicate field or validation error)
+        throw new RegisterError(errorData.message || 'Please check your input and try again');
+      } else {
+        throw new RegisterError(errorData.message || 'Registration failed');
+      }
+    } catch (parseError) {
+      // If it's our custom RegisterError, rethrow it
+      if (parseError instanceof RegisterError) {
+        throw parseError;
+      }
+      // Otherwise, it's a JSON parsing error (network issue)
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+/**
  * Login with email and password
  * Cookie is set by backend automatically (httpOnly)
  */

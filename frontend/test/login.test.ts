@@ -318,8 +318,9 @@ describe('Login Page', () => {
   });
 
   describe('Register Link', () => {
-    it('should show alert when register link is clicked', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('should dispatch navigate event when register link is clicked', async () => {
+      const navigateSpy = vi.fn();
+      window.addEventListener('navigate', navigateSpy);
 
       await renderLoginPage(container, mockRenderNavBar, mockSetupNavigation, mockOnLoginSuccess);
 
@@ -327,9 +328,11 @@ describe('Login Page', () => {
 
       registerLink.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Registration page coming soon!');
+      expect(navigateSpy).toHaveBeenCalled();
+      const event = navigateSpy.mock.calls[0][0] as CustomEvent;
+      expect(event.detail.page).toBe('register');
 
-      alertSpy.mockRestore();
+      window.removeEventListener('navigate', navigateSpy);
     });
   });
 });
