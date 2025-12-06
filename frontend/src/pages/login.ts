@@ -135,9 +135,9 @@ function setupLoginForm(onLoginSuccess: () => void): void {
     }
   });
 
-  // Placeholder for register link
+  // Navigate to register page
   registerLink.addEventListener('click', () => {
-    // TODO: Navigate to register page when it's implemented
-    alert('Registration page coming soon!');
+    const event = new CustomEvent('navigate', { detail: { page: 'register' } });
+    window.dispatchEvent(event);
   });
 }

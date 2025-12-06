@@ -1,6 +1,7 @@
 import './index.css';
 import { renderPlayPage } from './pages/play';
 import { renderLoginPage } from './pages/login';
+import { renderRegisterPage } from './pages/register';
 import { isAuthenticated, logout } from './utils/auth';
 
 // Types
@@ -32,9 +33,9 @@ function formatAddress(address: string): string {
 }
 
 // Router
-let currentPage: 'home' | 'login' | 'play' | 'tournaments' = 'home';
+let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' = 'home';
 
-function navigate(page: 'home' | 'login' | 'play' | 'tournaments') {
+function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments') {
   currentPage = page;
   // Update browser history
   window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
@@ -62,6 +63,11 @@ async function render() {
       // After successful login, go to home
       navigate('home');
     });
+  } else if (currentPage === 'register') {
+    renderRegisterPage(app, renderNavBar, setupNavigation, () => {
+      // After successful registration, go to login
+      navigate('login');
+    });
   } else if (currentPage === 'home') {
     renderHome(app);
   } else if (currentPage === 'play') {
@@ -85,7 +91,7 @@ async function render() {
 
 // Navigation bar component
 async function renderNavBar(
-  activePage: 'home' | 'login' | 'play' | 'tournaments',
+  activePage: 'home' | 'login' | 'register' | 'play' | 'tournaments',
   authenticated?: boolean
 ): Promise<string> {
   const isAuth = authenticated ?? (await isAuthenticated());
@@ -116,8 +122,11 @@ async function renderNavBar(
               </button>
             `
                 : `
-              <button id="nav-login" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
+              <button id="nav-login" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'login' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Login
+              </button>
+              <button id="nav-register" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+                Register
               </button>
             `
             }
@@ -226,12 +235,14 @@ function setupNavigation() {
   const playBtn = document.getElementById('nav-play');
   const tournamentsBtn = document.getElementById('nav-tournaments');
   const loginBtn = document.getElementById('nav-login');
+  const registerBtn = document.getElementById('nav-register');
   const logoutBtn = document.getElementById('nav-logout');
 
   homeBtn?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => navigate('play'));
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
   loginBtn?.addEventListener('click', () => navigate('login'));
+  registerBtn?.addEventListener('click', () => navigate('register'));
 
   logoutBtn?.addEventListener('click', async () => {
     await logout();
@@ -363,7 +374,7 @@ function setupTournamentLoader() {
 document.addEventListener('DOMContentLoaded', () => {
   // Determine initial page from URL
   const path = window.location.pathname.substring(1); // Remove leading slash
-  if (path === 'play' || path === 'tournaments' || path === 'login') {
+  if (path === 'play' || path === 'tournaments' || path === 'login' || path === 'register') {
     currentPage = path;
   } else {
     currentPage = 'home';
@@ -375,6 +386,20 @@ document.addEventListener('DOMContentLoaded', () => {
     '',
     `/${currentPage === 'home' ? '' : currentPage}`
   );
+
+  // Listen for custom navigation events (from login/register links)
+  window.addEventListener('navigate', ((event: CustomEvent) => {
+    const page = event.detail.page;
+    if (
+      page === 'home' ||
+      page === 'login' ||
+      page === 'register' ||
+      page === 'play' ||
+      page === 'tournaments'
+    ) {
+      navigate(page);
+    }
+  }) as EventListener);
 
   render();
 });
