@@ -1,6 +1,6 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config([
   {
@@ -8,10 +8,7 @@ export default tseslint.config([
   },
   {
     files: ['**/*.{ts,js}'],
-    extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommended,
-    ],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
       globals: {
@@ -19,4 +16,4 @@ export default tseslint.config([
       },
     },
   },
-])
+]);

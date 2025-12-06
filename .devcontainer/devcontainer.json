@@ -1,42 +1,59 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/javascript-node-postgres
 {
-	"name": "app",
-	"dockerComposeFile": ["../docker-compose.dev.yml"],
-	"service": "app",
-	"workspaceFolder": "/app",
+  "name": "app",
+  "dockerComposeFile": ["../docker-compose.dev.yml"],
+  "service": "app",
+  "workspaceFolder": "/app",
 
-	// All containers should stop if we close / reload the VSCode window.
-	"shutdownAction": "stopCompose",
+  // All containers should stop if we close / reload the VSCode window.
+  "shutdownAction": "stopCompose",
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// This can be used to network with other containers or with the host.
-	"forwardPorts": [3000, 5173],
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // This can be used to network with other containers or with the host.
+  "forwardPorts": [3000, 5173],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo chown -R node:node /app 2>/dev/null && pnpm install",
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "sudo chown -R node:node /app 2>/dev/null && pnpm install",
 
-	// Configure tool-specific properties.
-	"customizations": {
-		"vscode": {
-			// Add the IDs of extensions you want installed when the container is created.
-			"extensions": [
-				"esbenp.prettier-vscode",
-				"ms-vscode.vscode-typescript-next",
-				"bradlc.vscode-tailwindcss",
-				"juanblanco.solidity"
-			],
-			// Configure VS Code settings specific to this dev container.
-			"settings": {
-				"editor.formatOnSave": true,
-				"typescript.preferences.includePackageJsonAutoImports": "auto"
-			}
-		}
-	}
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "juanblanco.solidity"
+      ],
+      // Configure VS Code settings specific to this dev container.
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        // Prettier for all file types
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "typescript.preferences.includePackageJsonAutoImports": "auto"
+      }
+    }
+  }
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
 }

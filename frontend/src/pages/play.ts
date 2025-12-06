@@ -1,19 +1,19 @@
-import { PongGame } from '../game/pong'
-import { TournamentManager } from '../game/tournament'
-import type { TournamentMatch } from '../types/tournament'
-import { toast } from '../utils/toast'
-import { showConfirmModal } from '../utils/modal'
-import { escapeHtml } from '../utils/sanitize'
+import { PongGame } from '../game/pong';
+import { TournamentManager } from '../game/tournament';
+import type { TournamentMatch } from '../types/tournament';
+import { toast } from '../utils/toast';
+import { showConfirmModal } from '../utils/modal';
+import { escapeHtml } from '../utils/sanitize';
 
 // Constants
-const GAME_END_DELAY_MS = 2000 // Delay before showing result screen after game ends
+const GAME_END_DELAY_MS = 2000; // Delay before showing result screen after game ends
 
 export async function renderPlayPage(
   app: HTMLElement,
   renderNavBar: (page: 'home' | 'play' | 'tournaments') => Promise<string>,
   setupNavigation: () => void
 ): Promise<void> {
-  const navBar = await renderNavBar('play')
+  const navBar = await renderNavBar('play');
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${navBar}
@@ -203,125 +203,127 @@ export async function renderPlayPage(
         </div>
       </div>
     </div>
-  `
+  `;
 
   // Setup navigation
-  setupNavigation()
+  setupNavigation();
 
-  setupPlayPageEvents()
+  setupPlayPageEvents();
 }
 
 function setupPlayPageEvents(): void {
-  let currentGame: PongGame | null = null
-  let tournamentManager: TournamentManager | null = null
+  let currentGame: PongGame | null = null;
+  let tournamentManager: TournamentManager | null = null;
 
   // Mode selection
-  const localGameBtn = document.getElementById('local-game-btn')
-  const tournamentBtn = document.getElementById('tournament-btn')
+  const localGameBtn = document.getElementById('local-game-btn');
+  const tournamentBtn = document.getElementById('tournament-btn');
 
   // Screens
-  const modeSelection = document.getElementById('mode-selection')
-  const gameSetup = document.getElementById('game-setup')
-  const gameScreen = document.getElementById('game-screen')
-  const resultScreen = document.getElementById('result-screen')
-  const tournamentScreen = document.getElementById('tournament-screen')
-  const tournamentRegistration = document.getElementById('tournament-registration')
-  const tournamentBracket = document.getElementById('tournament-bracket')
+  const modeSelection = document.getElementById('mode-selection');
+  const gameSetup = document.getElementById('game-setup');
+  const gameScreen = document.getElementById('game-screen');
+  const resultScreen = document.getElementById('result-screen');
+  const tournamentScreen = document.getElementById('tournament-screen');
+  const tournamentRegistration = document.getElementById('tournament-registration');
+  const tournamentBracket = document.getElementById('tournament-bracket');
 
   // Setup screen elements
-  const player1AliasInput = document.getElementById('player1-alias') as HTMLInputElement
-  const player2AliasInput = document.getElementById('player2-alias') as HTMLInputElement
-  const startGameBtn = document.getElementById('start-game-btn')
-  const backToModeBtn = document.getElementById('back-to-mode-btn')
+  const player1AliasInput = document.getElementById('player1-alias') as HTMLInputElement;
+  const player2AliasInput = document.getElementById('player2-alias') as HTMLInputElement;
+  const startGameBtn = document.getElementById('start-game-btn');
+  const backToModeBtn = document.getElementById('back-to-mode-btn');
 
   // Tournament elements
-  const tournamentPlayerAliasInput = document.getElementById('tournament-player-alias') as HTMLInputElement
-  const addTournamentPlayerBtn = document.getElementById('add-tournament-player-btn')
-  const tournamentPlayersList = document.getElementById('tournament-players-list')
-  const tournamentPlayerCount = document.getElementById('tournament-player-count')
-  const tournamentStatusMessage = document.getElementById('tournament-status-message')
-  const startTournamentBtn = document.getElementById('start-tournament-btn')
-  const backFromTournamentBtn = document.getElementById('back-from-tournament-btn')
-  const endTournamentBtn = document.getElementById('end-tournament-btn')
-  const tournamentCurrentMatch = document.getElementById('tournament-current-match')
-  const tournamentBracketDisplay = document.getElementById('tournament-bracket-display')
+  const tournamentPlayerAliasInput = document.getElementById(
+    'tournament-player-alias'
+  ) as HTMLInputElement;
+  const addTournamentPlayerBtn = document.getElementById('add-tournament-player-btn');
+  const tournamentPlayersList = document.getElementById('tournament-players-list');
+  const tournamentPlayerCount = document.getElementById('tournament-player-count');
+  const tournamentStatusMessage = document.getElementById('tournament-status-message');
+  const startTournamentBtn = document.getElementById('start-tournament-btn');
+  const backFromTournamentBtn = document.getElementById('back-from-tournament-btn');
+  const endTournamentBtn = document.getElementById('end-tournament-btn');
+  const tournamentCurrentMatch = document.getElementById('tournament-current-match');
+  const tournamentBracketDisplay = document.getElementById('tournament-bracket-display');
 
   // Game screen elements
-  const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement
-  const endGameBtn = document.getElementById('end-game-btn')
+  const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
+  const endGameBtn = document.getElementById('end-game-btn');
 
   // Result screen elements
-  const winnerNameEl = document.getElementById('winner-name')
-  const resultPlayer1El = document.getElementById('result-player1')
-  const resultScore1El = document.getElementById('result-score1')
-  const resultPlayer2El = document.getElementById('result-player2')
-  const resultScore2El = document.getElementById('result-score2')
-  const playAgainBtn = document.getElementById('play-again-btn')
-  const backToMenuBtn = document.getElementById('back-to-menu-btn')
+  const winnerNameEl = document.getElementById('winner-name');
+  const resultPlayer1El = document.getElementById('result-player1');
+  const resultScore1El = document.getElementById('result-score1');
+  const resultPlayer2El = document.getElementById('result-player2');
+  const resultScore2El = document.getElementById('result-score2');
+  const playAgainBtn = document.getElementById('play-again-btn');
+  const backToMenuBtn = document.getElementById('back-to-menu-btn');
 
   // Error message elements
-  const player1ErrorEl = document.getElementById('player1-error')
-  const player2ErrorEl = document.getElementById('player2-error')
-  const tournamentErrorEl = document.getElementById('tournament-error')
+  const player1ErrorEl = document.getElementById('player1-error');
+  const player2ErrorEl = document.getElementById('player2-error');
+  const tournamentErrorEl = document.getElementById('tournament-error');
 
   // Helper functions for error display
   function showInlineError(element: HTMLElement | null, message: string): void {
     if (element) {
-      element.textContent = message
-      element.classList.remove('hidden')
+      element.textContent = message;
+      element.classList.remove('hidden');
     }
   }
 
   function hideInlineError(element: HTMLElement | null): void {
     if (element) {
-      element.textContent = ''
-      element.classList.add('hidden')
+      element.textContent = '';
+      element.classList.add('hidden');
     }
   }
 
   function showScreen(screen: HTMLElement): void {
-    modeSelection?.classList.add('hidden')
-    gameSetup?.classList.add('hidden')
-    gameScreen?.classList.add('hidden')
-    resultScreen?.classList.add('hidden')
-    tournamentScreen?.classList.add('hidden')
-    screen.classList.remove('hidden')
+    modeSelection?.classList.add('hidden');
+    gameSetup?.classList.add('hidden');
+    gameScreen?.classList.add('hidden');
+    resultScreen?.classList.add('hidden');
+    tournamentScreen?.classList.add('hidden');
+    screen.classList.remove('hidden');
   }
 
   function showTournamentPhase(phase: 'registration' | 'bracket'): void {
-    tournamentRegistration?.classList.toggle('hidden', phase !== 'registration')
-    tournamentBracket?.classList.toggle('hidden', phase !== 'bracket')
+    tournamentRegistration?.classList.toggle('hidden', phase !== 'registration');
+    tournamentBracket?.classList.toggle('hidden', phase !== 'bracket');
   }
 
   function updateTournamentUI(): void {
-    if (!tournamentManager) return
+    if (!tournamentManager) return;
 
-    const playerCount = tournamentManager.getPlayerCount()
+    const playerCount = tournamentManager.getPlayerCount();
     if (tournamentPlayerCount) {
-      tournamentPlayerCount.textContent = playerCount.toString()
+      tournamentPlayerCount.textContent = playerCount.toString();
     }
 
     // Update start button state
     if (startTournamentBtn) {
-      ;(startTournamentBtn as HTMLButtonElement).disabled = !tournamentManager.canStartTournament()
+      (startTournamentBtn as HTMLButtonElement).disabled = !tournamentManager.canStartTournament();
     }
 
     // Update status message
     if (tournamentStatusMessage) {
       if (playerCount === 0) {
-        tournamentStatusMessage.textContent = 'Add at least 2 players to start'
+        tournamentStatusMessage.textContent = 'Add at least 2 players to start';
       } else if (playerCount === 1) {
-        tournamentStatusMessage.textContent = 'Need at least 1 more player'
+        tournamentStatusMessage.textContent = 'Need at least 1 more player';
       } else if (playerCount < 8) {
-        tournamentStatusMessage.textContent = `Ready to start! (Can add ${8 - playerCount} more)`
+        tournamentStatusMessage.textContent = `Ready to start! (Can add ${8 - playerCount} more)`;
       } else {
-        tournamentStatusMessage.textContent = 'Tournament is full!'
+        tournamentStatusMessage.textContent = 'Tournament is full!';
       }
     }
 
     // Render players list
     if (tournamentPlayersList) {
-      const players = tournamentManager.getTournament().players
+      const players = tournamentManager.getTournament().players;
       tournamentPlayersList.innerHTML = players
         .map(
           (player) => `
@@ -333,45 +335,49 @@ function setupPlayPageEvents(): void {
           </div>
         `
         )
-        .join('')
+        .join('');
     }
   }
 
   function validatePlayerAlias(alias: string): { valid: boolean; error?: string } {
-    const trimmed = alias.trim()
+    const trimmed = alias.trim();
 
     // Allow empty for default names in local game
     if (trimmed === '') {
-      return { valid: true }
+      return { valid: true };
     }
 
     // Validate maximum length
     if (trimmed.length > 20) {
-      return { valid: false, error: 'Player alias must be 20 characters or less' }
+      return { valid: false, error: 'Player alias must be 20 characters or less' };
     }
 
     // Validate allowed characters (alphanumeric, spaces, basic punctuation)
-    const validAliasPattern = /^[a-zA-Z0-9\s._-]+$/
+    const validAliasPattern = /^[a-zA-Z0-9\s._-]+$/;
     if (!validAliasPattern.test(trimmed)) {
-      return { valid: false, error: 'Player alias can only contain letters, numbers, spaces, dots, underscores, and hyphens' }
+      return {
+        valid: false,
+        error:
+          'Player alias can only contain letters, numbers, spaces, dots, underscores, and hyphens',
+      };
     }
 
-    return { valid: true }
+    return { valid: true };
   }
 
   function startNextTournamentMatch(): void {
-    if (!tournamentManager) return
+    if (!tournamentManager) return;
 
-    const match = tournamentManager.getCurrentMatch()
+    const match = tournamentManager.getCurrentMatch();
     if (!match) {
       // Tournament is complete
-      showTournamentWinner()
-      return
+      showTournamentWinner();
+      return;
     }
 
     // Display match info
     if (tournamentCurrentMatch) {
-      const round = match.round || 1
+      const round = match.round || 1;
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center mb-4">
@@ -385,116 +391,114 @@ function setupPlayPageEvents(): void {
             Play Match
           </button>
         </div>
-      `
+      `;
     }
   }
 
   function startMatchGame(match: TournamentMatch): void {
     // Destroy any existing game first
     if (currentGame) {
-      currentGame.destroy()
-      currentGame = null
+      currentGame.destroy();
+      currentGame = null;
     }
 
     // Hide tournament UI, show game canvas
-    if (tournamentBracket) tournamentBracket.classList.add('hidden')
-    if (gameScreen) gameScreen.classList.remove('hidden')
-    if (canvas) canvas.classList.remove('hidden')
+    if (tournamentBracket) tournamentBracket.classList.add('hidden');
+    if (gameScreen) gameScreen.classList.remove('hidden');
+    if (canvas) canvas.classList.remove('hidden');
 
     // Create game with tournament players
-    currentGame = new PongGame(
-      canvas,
-      match.player1.alias,
-      match.player2.alias
-    )
+    currentGame = new PongGame(canvas, match.player1.alias, match.player2.alias);
 
     // Set up game end callback
     currentGame.setOnGameEnd((winner: string, player1Score: number, player2Score: number) => {
       // Determine winner ID based on name
-      const winnerId = winner === match.player1.alias ? match.player1.id : match.player2.id
-      handleMatchEnd(match.matchId, winnerId, player1Score, player2Score)
-    })
+      const winnerId = winner === match.player1.alias ? match.player1.id : match.player2.id;
+      handleMatchEnd(match.matchId, winnerId, player1Score, player2Score);
+    });
 
-    currentGame.start()
+    currentGame.start();
   }
 
   function handleMatchEnd(matchId: number, winnerId: number, score1: number, score2: number): void {
-    if (!tournamentManager) return
+    if (!tournamentManager) return;
 
     // Clean up the game
     if (currentGame) {
-      currentGame.destroy()
-      currentGame = null
+      currentGame.destroy();
+      currentGame = null;
     }
 
     // Record the result
-    tournamentManager.recordMatchResult(matchId, winnerId, score1, score2)
+    tournamentManager.recordMatchResult(matchId, winnerId, score1, score2);
 
     // Hide game canvas
-    if (gameScreen) gameScreen.classList.add('hidden')
-    if (canvas) canvas.classList.add('hidden')
+    if (gameScreen) gameScreen.classList.add('hidden');
+    if (canvas) canvas.classList.add('hidden');
 
     // Show tournament bracket
-    if (tournamentBracket) tournamentBracket.classList.remove('hidden')
+    if (tournamentBracket) tournamentBracket.classList.remove('hidden');
 
     // Update bracket visualization
-    renderTournamentBracket()
+    renderTournamentBracket();
 
     // Check if tournament is complete
-    const nextMatch = tournamentManager.getCurrentMatch()
+    const nextMatch = tournamentManager.getCurrentMatch();
     if (!nextMatch) {
-      showTournamentWinner()
+      showTournamentWinner();
     } else {
-      startNextTournamentMatch()
+      startNextTournamentMatch();
     }
   }
 
   // Bracket layout constants
-  const PLAYER_SLOT_HEIGHT = 45
-  const MATCH_BOX_HEIGHT = 100 // Height to fit 2 player slots
-  const BASE_VERTICAL_GAP = 20
+  const PLAYER_SLOT_HEIGHT = 45;
+  const MATCH_BOX_HEIGHT = 100; // Height to fit 2 player slots
+  const BASE_VERTICAL_GAP = 20;
 
   function calculateTournamentRounds(playerCount: number): number {
-    let totalRounds = 0
-    let temp = playerCount
+    let totalRounds = 0;
+    let temp = playerCount;
     while (temp > 1) {
-      totalRounds++
-      temp = Math.ceil(temp / 2)
+      totalRounds++;
+      temp = Math.ceil(temp / 2);
     }
-    return totalRounds
+    return totalRounds;
   }
 
   function getPlayerClassName(isWinner: boolean, isLoser: boolean, isTBD: boolean): string {
-    if (isTBD) return 'bracket-player-name bracket-player-name--tbd'
-    if (isWinner) return 'bracket-player-name bracket-player-name--winner'
-    if (isLoser) return 'bracket-player-name bracket-player-name--loser'
-    return 'bracket-player-name bracket-player-name--normal'
+    if (isTBD) return 'bracket-player-name bracket-player-name--tbd';
+    if (isWinner) return 'bracket-player-name bracket-player-name--winner';
+    if (isLoser) return 'bracket-player-name bracket-player-name--loser';
+    return 'bracket-player-name bracket-player-name--normal';
   }
 
   function getPlayerScoreClassName(isTBD: boolean): string {
-    return isTBD ? 'bracket-player-score bracket-player-score--tbd' : 'bracket-player-score bracket-player-score--normal'
+    return isTBD
+      ? 'bracket-player-score bracket-player-score--tbd'
+      : 'bracket-player-score bracket-player-score--normal';
   }
 
   function getMatchBoxClassName(isCurrent: boolean, isComplete: boolean): string {
-    if (isCurrent) return 'bracket-match-box bracket-match-box--current'
-    if (isComplete) return 'bracket-match-box bracket-match-box--finished'
-    return 'bracket-match-box bracket-match-box--pending'
+    if (isCurrent) return 'bracket-match-box bracket-match-box--current';
+    if (isComplete) return 'bracket-match-box bracket-match-box--finished';
+    return 'bracket-match-box bracket-match-box--pending';
   }
 
   function renderMatch(match: TournamentMatch, currentMatch: TournamentMatch | null): string {
-    const isCurrent = currentMatch?.matchId === match.matchId
-    const isComplete = match.status === 'finished'
-    const matchBoxClass = getMatchBoxClassName(isCurrent, isComplete)
+    const isCurrent = currentMatch?.matchId === match.matchId;
+    const isComplete = match.status === 'finished';
+    const matchBoxClass = getMatchBoxClassName(isCurrent, isComplete);
 
-    const p1IsTBD = match.player1.id < 0
-    const p2IsTBD = match.player2.id < 0
-    const p1IsWinner = match.winner?.id === match.player1.id
-    const p2IsWinner = match.winner?.id === match.player2.id
+    const p1IsTBD = match.player1.id < 0;
+    const p2IsTBD = match.player2.id < 0;
+    const p1IsWinner = match.winner?.id === match.player1.id;
+    const p2IsWinner = match.winner?.id === match.player2.id;
 
-    const p1Class = getPlayerClassName(p1IsWinner, p2IsWinner && isComplete, p1IsTBD)
-    const p2Class = getPlayerClassName(p2IsWinner, p1IsWinner && isComplete, p2IsTBD)
-    const p1ScoreClass = getPlayerScoreClassName(p1IsTBD)
-    const p2ScoreClass = getPlayerScoreClassName(p2IsTBD)
+    const p1Class = getPlayerClassName(p1IsWinner, p2IsWinner && isComplete, p1IsTBD);
+    const p2Class = getPlayerClassName(p2IsWinner, p1IsWinner && isComplete, p2IsTBD);
+    const p1ScoreClass = getPlayerScoreClassName(p1IsTBD);
+    const p2ScoreClass = getPlayerScoreClassName(p2IsTBD);
 
     return `
       <div class="${matchBoxClass}" style="height: ${MATCH_BOX_HEIGHT}px;">
@@ -514,7 +518,7 @@ function setupPlayPageEvents(): void {
           <span class="${p2ScoreClass}">${p2IsTBD ? '-' : match.player2Score}</span>
         </div>
       </div>
-    `
+    `;
   }
 
   function renderTBDPlaceholder(): string {
@@ -532,7 +536,7 @@ function setupPlayPageEvents(): void {
           <span class="bracket-player-score bracket-player-score--tbd">-</span>
         </div>
       </div>
-    `
+    `;
   }
 
   function renderRound(
@@ -541,17 +545,17 @@ function setupPlayPageEvents(): void {
     totalRounds: number,
     currentMatch: TournamentMatch | null
   ): string {
-    const isLastRound = roundIndex === totalRounds - 1
-    const verticalGap = BASE_VERTICAL_GAP * Math.pow(2, roundIndex)
+    const isLastRound = roundIndex === totalRounds - 1;
+    const verticalGap = BASE_VERTICAL_GAP * Math.pow(2, roundIndex);
 
     // For Round 1, only show actual matches (no TBD placeholders)
     // For later rounds, show expected matches including TBD placeholders
-    let matchesToShow: number
+    let matchesToShow: number;
     if (roundIndex === 0) {
-      matchesToShow = roundMatches.length
+      matchesToShow = roundMatches.length;
     } else {
-      const expectedMatches = Math.ceil(Math.pow(2, totalRounds - roundIndex - 1))
-      matchesToShow = Math.max(roundMatches.length, expectedMatches)
+      const expectedMatches = Math.ceil(Math.pow(2, totalRounds - roundIndex - 1));
+      matchesToShow = Math.max(roundMatches.length, expectedMatches);
     }
 
     let html = `
@@ -560,50 +564,50 @@ function setupPlayPageEvents(): void {
           ${isLastRound ? 'Finals' : `Round ${roundIndex + 1}`}
         </h3>
         <div class="bracket-matches-container" style="gap: ${verticalGap}px;">
-    `
+    `;
 
     for (let i = 0; i < matchesToShow; i++) {
-      const match = roundMatches[i]
-      html += match ? renderMatch(match, currentMatch) : renderTBDPlaceholder()
+      const match = roundMatches[i];
+      html += match ? renderMatch(match, currentMatch) : renderTBDPlaceholder();
     }
 
     html += `
         </div>
       </div>
-    `
+    `;
 
-    return html
+    return html;
   }
 
   function renderTournamentBracket(): void {
-    if (!tournamentManager || !tournamentBracketDisplay) return
+    if (!tournamentManager || !tournamentBracketDisplay) return;
 
-    const tournament = tournamentManager.getTournament()
-    const bracket = tournamentManager.getBracket()
-    const currentMatch = tournamentManager.getCurrentMatch()
-    const playerCount = tournament.players.length
+    const tournament = tournamentManager.getTournament();
+    const bracket = tournamentManager.getBracket();
+    const currentMatch = tournamentManager.getCurrentMatch();
+    const playerCount = tournament.players.length;
 
-    const totalRounds = calculateTournamentRounds(playerCount)
+    const totalRounds = calculateTournamentRounds(playerCount);
 
-    let html = '<div class="tournament-bracket-container">'
+    let html = '<div class="tournament-bracket-container">';
 
     for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
-      const roundMatches = bracket[roundIndex] || []
-      html += renderRound(roundIndex, roundMatches, totalRounds, currentMatch)
+      const roundMatches = bracket[roundIndex] || [];
+      html += renderRound(roundIndex, roundMatches, totalRounds, currentMatch);
     }
 
-    html += '</div>'
-    tournamentBracketDisplay.innerHTML = html
+    html += '</div>';
+    tournamentBracketDisplay.innerHTML = html;
   }
 
   function showTournamentWinner(): void {
-    if (!tournamentManager || !tournamentCurrentMatch) return
+    if (!tournamentManager || !tournamentCurrentMatch) return;
 
-    const bracket = tournamentManager.getBracket()
-    const finalMatch = bracket[bracket.length - 1]?.[0]
+    const bracket = tournamentManager.getBracket();
+    const finalMatch = bracket[bracket.length - 1]?.[0];
 
     if (finalMatch?.winner) {
-      const winner = finalMatch.winner
+      const winner = finalMatch.winner;
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center">
@@ -615,113 +619,113 @@ function setupPlayPageEvents(): void {
             Start New Tournament
           </button>
         </div>
-      `
+      `;
     }
   }
 
   function resetTournament(): void {
     // Clean up any running game
     if (currentGame) {
-      currentGame.destroy()
-      currentGame = null
+      currentGame.destroy();
+      currentGame = null;
     }
 
-    tournamentManager = new TournamentManager()
-    showTournamentPhase('registration')
-    updateTournamentUI()
+    tournamentManager = new TournamentManager();
+    showTournamentPhase('registration');
+    updateTournamentUI();
   }
 
   // Event: Local Game button
   localGameBtn?.addEventListener('click', () => {
-    showScreen(gameSetup!)
-    player1AliasInput.value = ''
-    player2AliasInput.value = ''
-    player1AliasInput.focus()
-  })
+    showScreen(gameSetup!);
+    player1AliasInput.value = '';
+    player2AliasInput.value = '';
+    player1AliasInput.focus();
+  });
 
   // Event: Tournament button
   tournamentBtn?.addEventListener('click', () => {
     // Create new tournament
-    tournamentManager = new TournamentManager()
-    updateTournamentUI()
-    showTournamentPhase('registration')
-    showScreen(tournamentScreen!)
-    tournamentPlayerAliasInput?.focus()
-  })
+    tournamentManager = new TournamentManager();
+    updateTournamentUI();
+    showTournamentPhase('registration');
+    showScreen(tournamentScreen!);
+    tournamentPlayerAliasInput?.focus();
+  });
 
   // Event: Add tournament player
   const handleAddPlayer = () => {
-    if (!tournamentManager || !tournamentPlayerAliasInput) return
+    if (!tournamentManager || !tournamentPlayerAliasInput) return;
 
-    const alias = tournamentPlayerAliasInput.value.trim()
+    const alias = tournamentPlayerAliasInput.value.trim();
 
     // Hide previous errors
-    hideInlineError(tournamentErrorEl)
+    hideInlineError(tournamentErrorEl);
 
     // Validate empty input (required for tournament)
     if (alias === '') {
-      showInlineError(tournamentErrorEl, 'Please enter a player alias')
-      return
+      showInlineError(tournamentErrorEl, 'Please enter a player alias');
+      return;
     }
 
     // Validate alias format
-    const validation = validatePlayerAlias(alias)
+    const validation = validatePlayerAlias(alias);
     if (!validation.valid) {
-      showInlineError(tournamentErrorEl, validation.error || 'Invalid alias')
-      return
+      showInlineError(tournamentErrorEl, validation.error || 'Invalid alias');
+      return;
     }
 
     if (tournamentManager.addPlayer(alias)) {
-      tournamentPlayerAliasInput.value = ''
-      hideInlineError(tournamentErrorEl)
-      updateTournamentUI()
-      tournamentPlayerAliasInput.focus()
-      toast.success(`${alias} added to tournament`)
+      tournamentPlayerAliasInput.value = '';
+      hideInlineError(tournamentErrorEl);
+      updateTournamentUI();
+      tournamentPlayerAliasInput.focus();
+      toast.success(`${alias} added to tournament`);
     } else {
       if (!tournamentManager.canAddPlayers()) {
-        showInlineError(tournamentErrorEl, 'Tournament is full (8 players max)')
+        showInlineError(tournamentErrorEl, 'Tournament is full (8 players max)');
       } else {
-        showInlineError(tournamentErrorEl, 'This alias is already taken')
+        showInlineError(tournamentErrorEl, 'This alias is already taken');
       }
     }
-  }
+  };
 
-  addTournamentPlayerBtn?.addEventListener('click', handleAddPlayer)
+  addTournamentPlayerBtn?.addEventListener('click', handleAddPlayer);
   tournamentPlayerAliasInput?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-      handleAddPlayer()
+      handleAddPlayer();
     }
-  })
+  });
 
   // Event: Start tournament
   startTournamentBtn?.addEventListener('click', () => {
-    if (!tournamentManager) return
+    if (!tournamentManager) return;
 
     if (tournamentManager.startTournament()) {
-      showTournamentPhase('bracket')
-      renderTournamentBracket() // Show full bracket with TBD
-      startNextTournamentMatch()
-      toast.success('Tournament started!')
+      showTournamentPhase('bracket');
+      renderTournamentBracket(); // Show full bracket with TBD
+      startNextTournamentMatch();
+      toast.success('Tournament started!');
     } else {
-      toast.error('Cannot start tournament. Need at least 2 players.')
+      toast.error('Cannot start tournament. Need at least 2 players.');
     }
-  })
+  });
 
   // Event: Back to mode selection
   backToModeBtn?.addEventListener('click', () => {
-    showScreen(modeSelection!)
-  })
+    showScreen(modeSelection!);
+  });
 
   backFromTournamentBtn?.addEventListener('click', () => {
     // Clean up any running game
     if (currentGame) {
-      currentGame.destroy()
-      currentGame = null
+      currentGame.destroy();
+      currentGame = null;
     }
 
-    showScreen(modeSelection!)
-    tournamentManager = null
-  })
+    showScreen(modeSelection!);
+    tournamentManager = null;
+  });
 
   // Event: End Tournament button
   endTournamentBtn?.addEventListener('click', async () => {
@@ -731,138 +735,138 @@ function setupPlayPageEvents(): void {
       confirmText: 'End Tournament',
       cancelText: 'Cancel',
       isDangerous: true,
-    })
+    });
 
     if (confirmed) {
       // Clean up any running game
       if (currentGame) {
-        currentGame.destroy()
-        currentGame = null
+        currentGame.destroy();
+        currentGame = null;
       }
 
       // Reset tournament
-      showScreen(modeSelection!)
-      tournamentManager = null
-      toast.info('Tournament ended')
+      showScreen(modeSelection!);
+      tournamentManager = null;
+      toast.info('Tournament ended');
     }
-  })
+  });
 
   // Event: Start game
   startGameBtn?.addEventListener('click', () => {
-    let player1 = player1AliasInput.value.trim()
-    let player2 = player2AliasInput.value.trim()
+    let player1 = player1AliasInput.value.trim();
+    let player2 = player2AliasInput.value.trim();
 
     // Hide previous errors
-    hideInlineError(player1ErrorEl)
-    hideInlineError(player2ErrorEl)
+    hideInlineError(player1ErrorEl);
+    hideInlineError(player2ErrorEl);
 
     // Validate player 1 alias
     if (player1 !== '') {
-      const validation = validatePlayerAlias(player1)
+      const validation = validatePlayerAlias(player1);
       if (!validation.valid) {
-        showInlineError(player1ErrorEl, validation.error || 'Invalid alias')
-        return
+        showInlineError(player1ErrorEl, validation.error || 'Invalid alias');
+        return;
       }
     } else {
-      player1 = 'Player 1' // Default name
+      player1 = 'Player 1'; // Default name
     }
 
     // Validate player 2 alias
     if (player2 !== '') {
-      const validation = validatePlayerAlias(player2)
+      const validation = validatePlayerAlias(player2);
       if (!validation.valid) {
-        showInlineError(player2ErrorEl, validation.error || 'Invalid alias')
-        return
+        showInlineError(player2ErrorEl, validation.error || 'Invalid alias');
+        return;
       }
     } else {
-      player2 = 'Player 2' // Default name
+      player2 = 'Player 2'; // Default name
     }
 
     // Check for duplicate names
     if (player1.toLowerCase() === player2.toLowerCase()) {
-      showInlineError(player2ErrorEl, 'Both players cannot have the same name')
-      return
+      showInlineError(player2ErrorEl, 'Both players cannot have the same name');
+      return;
     }
 
     if (currentGame) {
-      currentGame.destroy()
+      currentGame.destroy();
     }
 
-    currentGame = new PongGame(canvas, player1, player2)
+    currentGame = new PongGame(canvas, player1, player2);
 
     currentGame.setOnGameEnd((winner, score1, score2) => {
       // Show result screen after a short delay to let players see final game state
       setTimeout(() => {
-        showResultScreen(winner, player1, player2, score1, score2)
-      }, GAME_END_DELAY_MS)
-    })
+        showResultScreen(winner, player1, player2, score1, score2);
+      }, GAME_END_DELAY_MS);
+    });
 
-    showScreen(gameScreen!)
-    currentGame.start()
-  })
+    showScreen(gameScreen!);
+    currentGame.start();
+  });
 
   // Event: End game early
   endGameBtn?.addEventListener('click', () => {
     if (currentGame) {
-      currentGame.destroy()
-      currentGame = null
+      currentGame.destroy();
+      currentGame = null;
     }
 
     // If we're in a tournament, go back to tournament bracket
     if (tournamentManager && tournamentManager.getTournament().status === 'in-progress') {
-      if (tournamentBracket) tournamentBracket.classList.remove('hidden')
-      if (gameScreen) gameScreen.classList.add('hidden')
-      showScreen(tournamentScreen!)
+      if (tournamentBracket) tournamentBracket.classList.remove('hidden');
+      if (gameScreen) gameScreen.classList.add('hidden');
+      showScreen(tournamentScreen!);
     } else {
-      showScreen(modeSelection!)
+      showScreen(modeSelection!);
     }
-  })
+  });
 
   // Event: Play again
   playAgainBtn?.addEventListener('click', () => {
-    showScreen(gameSetup!)
-    player1AliasInput.focus()
-  })
+    showScreen(gameSetup!);
+    player1AliasInput.focus();
+  });
 
   // Event: Back to menu from results
   backToMenuBtn?.addEventListener('click', () => {
     if (currentGame) {
-      currentGame.destroy()
-      currentGame = null
+      currentGame.destroy();
+      currentGame = null;
     }
-    showScreen(modeSelection!)
-  })
+    showScreen(modeSelection!);
+  });
 
   // Event delegation for dynamically created buttons in tournament
   tournamentCurrentMatch?.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement
+    const target = e.target as HTMLElement;
 
     // Handle "Play Match" button
     if (target.id === 'playMatchBtn') {
-      const match = tournamentManager?.getCurrentMatch()
+      const match = tournamentManager?.getCurrentMatch();
       if (match) {
-        startMatchGame(match)
+        startMatchGame(match);
       }
     }
 
     // Handle "Start New Tournament" button
     if (target.id === 'newTournamentBtn') {
-      resetTournament()
+      resetTournament();
     }
-  })
+  });
 
   // Event delegation for remove player buttons
   tournamentPlayersList?.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement
+    const target = e.target as HTMLElement;
 
     // Handle "Remove" button
     if (target.classList.contains('remove-player-btn')) {
-      const playerId = parseInt(target.dataset.playerId || '0')
+      const playerId = parseInt(target.dataset.playerId || '0');
       if (tournamentManager && tournamentManager.removePlayer(playerId)) {
-        updateTournamentUI()
+        updateTournamentUI();
       }
     }
-  })
+  });
 
   function showResultScreen(
     winner: string,
@@ -871,12 +875,12 @@ function setupPlayPageEvents(): void {
     score1: number,
     score2: number
   ): void {
-    if (winnerNameEl) winnerNameEl.textContent = `${winner} WINS!`
-    if (resultPlayer1El) resultPlayer1El.textContent = player1
-    if (resultScore1El) resultScore1El.textContent = score1.toString()
-    if (resultPlayer2El) resultPlayer2El.textContent = player2
-    if (resultScore2El) resultScore2El.textContent = score2.toString()
+    if (winnerNameEl) winnerNameEl.textContent = `${winner} WINS!`;
+    if (resultPlayer1El) resultPlayer1El.textContent = player1;
+    if (resultScore1El) resultScore1El.textContent = score1.toString();
+    if (resultPlayer2El) resultPlayer2El.textContent = player2;
+    if (resultScore2El) resultScore2El.textContent = score2.toString();
 
-    showScreen(resultScreen!)
+    showScreen(resultScreen!);
   }
 }

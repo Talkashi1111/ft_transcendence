@@ -180,7 +180,6 @@ To use Docker Hub instead, uncomment the Docker Hub login step in `.github/workf
 
 1. Go to GitHub repo → Settings → Secrets and variables → Actions
 2. Add secrets:
-
    - `DOCKER_USERNAME` - Your Docker Hub username
    - `DOCKER_PASSWORD` - Your Docker Hub access token
 

@@ -8,6 +8,7 @@
     "dev": "pnpm --parallel run dev",
     "build": "pnpm --recursive run build",
     "lint": "pnpm --recursive exec eslint .",
+    "format": "prettier --write --log-level warn .",
     "test": "pnpm --recursive run test",
     "frontend:dev": "pnpm --filter frontend run dev",
     "backend:dev": "pnpm --filter backend run dev",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.0",
     "eslint": "^9.29.0",
+    "prettier": "^3.7.4",
     "typescript": "~5.8.3",
     "vitest": "^2.1.0"
   }

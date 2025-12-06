@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   app:
@@ -19,8 +19,8 @@ services:
       - DATABASE_URL=file:/app/data/database.db
       - VITE_API_URL=http://localhost:3000
     ports:
-      - "5173:5173" # Frontend Vite dev server
-      - "3000:3000" # Backend API server
+      - '5173:5173' # Frontend Vite dev server
+      - '3000:3000' # Backend API server
     command: sleep infinity
 
 volumes:

@@ -1,4 +1,4 @@
-import { login } from '../utils/auth'
+import { login } from '../utils/auth';
 
 export async function renderLoginPage(
   app: HTMLElement,
@@ -6,7 +6,7 @@ export async function renderLoginPage(
   setupNavigation: () => void,
   onLoginSuccess: () => void
 ): Promise<void> {
-  const navBar = await renderNavBar('login')
+  const navBar = await renderNavBar('login');
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${navBar}
@@ -80,64 +80,64 @@ export async function renderLoginPage(
         </div>
       </div>
     </div>
-  `
+  `;
 
-  setupNavigation()
-  setupLoginForm(onLoginSuccess)
+  setupNavigation();
+  setupLoginForm(onLoginSuccess);
 }
 
 function setupLoginForm(onLoginSuccess: () => void): void {
-  const form = document.getElementById('login-form') as HTMLFormElement
-  const emailInput = document.getElementById('email') as HTMLInputElement
-  const passwordInput = document.getElementById('password') as HTMLInputElement
-  const loginBtn = document.getElementById('login-btn') as HTMLButtonElement
-  const errorMessage = document.getElementById('error-message') as HTMLElement
-  const errorText = errorMessage.querySelector('p')!
-  const registerLink = document.getElementById('register-link') as HTMLButtonElement
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const emailInput = document.getElementById('email') as HTMLInputElement;
+  const passwordInput = document.getElementById('password') as HTMLInputElement;
+  const loginBtn = document.getElementById('login-btn') as HTMLButtonElement;
+  const errorMessage = document.getElementById('error-message') as HTMLElement;
+  const errorText = errorMessage.querySelector('p')!;
+  const registerLink = document.getElementById('register-link') as HTMLButtonElement;
 
-  if (!form || !emailInput || !passwordInput || !loginBtn) return
+  if (!form || !emailInput || !passwordInput || !loginBtn) return;
 
   const showError = (message: string) => {
-    errorText.textContent = message
-    errorMessage.classList.remove('hidden')
-  }
+    errorText.textContent = message;
+    errorMessage.classList.remove('hidden');
+  };
 
   const hideError = () => {
-    errorMessage.classList.add('hidden')
-  }
+    errorMessage.classList.add('hidden');
+  };
 
   form.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    hideError()
+    e.preventDefault();
+    hideError();
 
-    const email = emailInput.value.trim()
-    const password = passwordInput.value
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
 
     if (!email || !password) {
-      showError('Please fill in all fields')
-      return
+      showError('Please fill in all fields');
+      return;
     }
 
-    loginBtn.disabled = true
-    loginBtn.textContent = 'Logging in...'
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
 
     try {
-      await login(email, password)
+      await login(email, password);
       // Reset form
-      form.reset()
+      form.reset();
       // Call callback to redirect
-      onLoginSuccess()
+      onLoginSuccess();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed. Please try again.'
-      showError(message)
-      loginBtn.disabled = false
-      loginBtn.textContent = 'Login'
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      showError(message);
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Login';
     }
-  })
+  });
 
   // Placeholder for register link
   registerLink.addEventListener('click', () => {
     // TODO: Navigate to register page when it's implemented
-    alert('Registration page coming soon!')
-  })
+    alert('Registration page coming soon!');
+  });
 }

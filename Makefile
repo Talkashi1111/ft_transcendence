@@ -80,12 +80,16 @@ test: check-deps ## run Vitest + backend unit tests
 lint: check-deps ## run linting on all packages
 	pnpm -r exec eslint .
 
+.PHONY: format
+format: check-deps ## format all files with prettier
+	pnpm run format
+
 .PHONY: build
 build: check-deps ## build all packages
 	pnpm run build
 
 .PHONY: all
-all: lint test build ## run lint, test, and build
+all: format lint test build ## run format, lint, test, and build
 
 ## ============================================
 ## Blockchain targets (run INSIDE devcontainer)

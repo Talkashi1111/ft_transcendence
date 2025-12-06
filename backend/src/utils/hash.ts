@@ -7,9 +7,9 @@ import argon2 from 'argon2';
 export async function hashPassword(password: string): Promise<string> {
   return argon2.hash(password, {
     type: argon2.argon2id, // Recommended: resistant to both side-channel and GPU attacks
-    memoryCost: 65536,     // 64 MB memory
-    timeCost: 3,           // 3 iterations
-    parallelism: 4,        // 4 parallel threads
+    memoryCost: 65536, // 64 MB memory
+    timeCost: 3, // 3 iterations
+    parallelism: 4, // 4 parallel threads
   });
 }
 

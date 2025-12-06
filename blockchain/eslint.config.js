@@ -1,20 +1,14 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
-import tseslint from "typescript-eslint";
+import globals from 'globals';
+import pluginJs from '@eslint/js';
+import tseslint from 'typescript-eslint';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: [
-      "artifacts/**",
-      "cache/**",
-      "node_modules/**",
-      "ignitions/deployments/**",
-      "dist/**",
-    ],
+    ignores: ['artifacts/**', 'cache/**', 'node_modules/**', 'ignitions/deployments/**', 'dist/**'],
   },
   {
-    files: ["**/*.{js,mjs,cjs,ts}"],
+    files: ['**/*.{js,mjs,cjs,ts}'],
     languageOptions: {
       globals: globals.node,
     },
@@ -23,7 +17,7 @@ export default [
   ...tseslint.configs.recommended,
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off", // Allow any for blockchain ABI types
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any for blockchain ABI types
     },
   },
 ];

@@ -1,91 +1,94 @@
-import './index.css'
-import { renderPlayPage } from './pages/play'
-import { renderLoginPage } from './pages/login'
-import { isAuthenticated, logout } from './utils/auth'
+import './index.css';
+import { renderPlayPage } from './pages/play';
+import { renderLoginPage } from './pages/login';
+import { isAuthenticated, logout } from './utils/auth';
 
 // Types
 interface Match {
-  matchId: string
-  tournamentId: string
-  player1Id: string
-  player1Alias: string
-  player2Id: string
-  player2Alias: string
-  score1: string
-  score2: string
-  timestamp: string
-  recordedBy: string
+  matchId: string;
+  tournamentId: string;
+  player1Id: string;
+  player1Alias: string;
+  player2Id: string;
+  player2Alias: string;
+  score1: string;
+  score2: string;
+  timestamp: string;
+  recordedBy: string;
 }
 
 interface TournamentData {
-  tournamentId: number
-  matchIds: string[]
-  matches: Match[]
+  tournamentId: number;
+  matchIds: string[];
+  matches: Match[];
 }
 
 // Utility functions
 function formatAddress(address: string): string {
   if (address.length <= 18) {
-    return address
+    return address;
   }
-  return `${address.substring(0, 10)}...${address.substring(address.length - 8)}`
+  return `${address.substring(0, 10)}...${address.substring(address.length - 8)}`;
 }
 
 // Router
-let currentPage: 'home' | 'login' | 'play' | 'tournaments' = 'home'
+let currentPage: 'home' | 'login' | 'play' | 'tournaments' = 'home';
 
 function navigate(page: 'home' | 'login' | 'play' | 'tournaments') {
-  currentPage = page
+  currentPage = page;
   // Update browser history
-  window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`)
-  render()
+  window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
+  render();
 }
 
 // Handle browser back/forward buttons
 window.addEventListener('popstate', (event) => {
   if (event.state && event.state.page) {
-    currentPage = event.state.page
+    currentPage = event.state.page;
   } else {
     // Default to home if no state
-    currentPage = 'home'
+    currentPage = 'home';
   }
-  render()
-})
+  render();
+});
 
 // Render function
 async function render() {
-  const app = document.getElementById('root')
-  if (!app) return
+  const app = document.getElementById('root');
+  if (!app) return;
 
   if (currentPage === 'login') {
     renderLoginPage(app, renderNavBar, setupNavigation, () => {
       // After successful login, go to home
-      navigate('home')
-    })
+      navigate('home');
+    });
   } else if (currentPage === 'home') {
-    renderHome(app)
+    renderHome(app);
   } else if (currentPage === 'play') {
     // Protect play page - redirect to login if not authenticated
-    const authenticated = await isAuthenticated()
+    const authenticated = await isAuthenticated();
     if (!authenticated) {
-      navigate('login')
-      return
+      navigate('login');
+      return;
     }
-    renderPlayPage(app, renderNavBar, setupNavigation)
+    renderPlayPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   } else if (currentPage === 'tournaments') {
     // Protect tournaments page - redirect to login if not authenticated
-    const authenticated = await isAuthenticated()
+    const authenticated = await isAuthenticated();
     if (!authenticated) {
-      navigate('login')
-      return
+      navigate('login');
+      return;
     }
-    renderTournaments(app)
+    renderTournaments(app, authenticated);
   }
 }
 
 // Navigation bar component
-async function renderNavBar(activePage: 'home' | 'login' | 'play' | 'tournaments'): Promise<string> {
-  const authenticated = await isAuthenticated()
+async function renderNavBar(
+  activePage: 'home' | 'login' | 'play' | 'tournaments',
+  authenticated?: boolean
+): Promise<string> {
+  const isAuth = authenticated ?? (await isAuthenticated());
   return `
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -99,7 +102,9 @@ async function renderNavBar(activePage: 'home' | 'login' | 'play' | 'tournaments
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               Home
             </button>
-            ${authenticated ? `
+            ${
+              isAuth
+                ? `
               <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Play
               </button>
@@ -109,21 +114,23 @@ async function renderNavBar(activePage: 'home' | 'login' | 'play' | 'tournaments
               <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
                 Logout
               </button>
-            ` : `
+            `
+                : `
               <button id="nav-login" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
                 Login
               </button>
-            `}
+            `
+            }
           </div>
         </div>
       </div>
     </nav>
-  `
+  `;
 }
 
 // Home page
 async function renderHome(app: HTMLElement) {
-  const navBar = await renderNavBar('home')
+  const navBar = await renderNavBar('home');
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${navBar}
@@ -149,15 +156,15 @@ async function renderHome(app: HTMLElement) {
         </div>
       </div>
     </div>
-  `
+  `;
 
   // Setup navigation
-  setupNavigation()
+  setupNavigation();
 }
 
 // Tournaments page
-async function renderTournaments(app: HTMLElement) {
-  const navBar = await renderNavBar('tournaments')
+async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
+  const navBar = await renderNavBar('tournaments', authenticated);
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${navBar}
@@ -204,70 +211,70 @@ async function renderTournaments(app: HTMLElement) {
         </div>
       </div>
     </div>
-  `
+  `;
 
   // Setup navigation
-  setupNavigation()
+  setupNavigation();
 
   // Setup tournament loading
-  setupTournamentLoader()
+  setupTournamentLoader();
 }
 
 // Setup navigation
 function setupNavigation() {
-  const homeBtn = document.getElementById('nav-home')
-  const playBtn = document.getElementById('nav-play')
-  const tournamentsBtn = document.getElementById('nav-tournaments')
-  const loginBtn = document.getElementById('nav-login')
-  const logoutBtn = document.getElementById('nav-logout')
+  const homeBtn = document.getElementById('nav-home');
+  const playBtn = document.getElementById('nav-play');
+  const tournamentsBtn = document.getElementById('nav-tournaments');
+  const loginBtn = document.getElementById('nav-login');
+  const logoutBtn = document.getElementById('nav-logout');
 
-  homeBtn?.addEventListener('click', () => navigate('home'))
-  playBtn?.addEventListener('click', () => navigate('play'))
-  tournamentsBtn?.addEventListener('click', () => navigate('tournaments'))
-  loginBtn?.addEventListener('click', () => navigate('login'))
+  homeBtn?.addEventListener('click', () => navigate('home'));
+  playBtn?.addEventListener('click', () => navigate('play'));
+  tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
+  loginBtn?.addEventListener('click', () => navigate('login'));
 
   logoutBtn?.addEventListener('click', async () => {
-    await logout()
-    navigate('home')
-  })
+    await logout();
+    navigate('home');
+  });
 }
 
 // Setup tournament loader
 function setupTournamentLoader() {
-  const loadBtn = document.getElementById('load-tournament')
-  const tournamentIdInput = document.getElementById('tournament-id') as HTMLInputElement
-  const matchesContainer = document.getElementById('matches-container')
-  const loadingEl = document.getElementById('loading')
-  const errorMessageEl = document.getElementById('error-message')
+  const loadBtn = document.getElementById('load-tournament');
+  const tournamentIdInput = document.getElementById('tournament-id') as HTMLInputElement;
+  const matchesContainer = document.getElementById('matches-container');
+  const loadingEl = document.getElementById('loading');
+  const errorMessageEl = document.getElementById('error-message');
 
-  if (!loadBtn || !tournamentIdInput || !matchesContainer || !loadingEl || !errorMessageEl) return
+  if (!loadBtn || !tournamentIdInput || !matchesContainer || !loadingEl || !errorMessageEl) return;
 
   const showLoading = () => {
-    loadingEl.classList.remove('hidden')
-    matchesContainer.innerHTML = ''
-    errorMessageEl.classList.add('hidden')
-  }
+    loadingEl.classList.remove('hidden');
+    matchesContainer.innerHTML = '';
+    errorMessageEl.classList.add('hidden');
+  };
 
   const hideLoading = () => {
-    loadingEl.classList.add('hidden')
-  }
+    loadingEl.classList.add('hidden');
+  };
 
   const showError = (message: string) => {
-    errorMessageEl.querySelector('p')!.textContent = message
-    errorMessageEl.classList.remove('hidden')
-    hideLoading()
-  }
+    errorMessageEl.querySelector('p')!.textContent = message;
+    errorMessageEl.classList.remove('hidden');
+    hideLoading();
+  };
 
   const renderMatches = (data: TournamentData) => {
-    hideLoading()
+    hideLoading();
 
     if (data.matches.length === 0) {
       matchesContainer.innerHTML = `
         <div class="text-center py-12 text-gray-500">
           No matches found for tournament ${data.tournamentId}
         </div>
-      `
-      return
+      `;
+      return;
     }
 
     matchesContainer.innerHTML = `
@@ -275,7 +282,9 @@ function setupTournamentLoader() {
         <h3 class="font-semibold text-blue-900">Tournament ID: ${data.tournamentId}</h3>
         <p class="text-blue-700 text-sm">Total Matches: ${data.matches.length}</p>
       </div>
-      ${data.matches.map(match => `
+      ${data.matches
+        .map(
+          (match) => `
         <div class="bg-white border rounded-lg p-6 hover:shadow-md transition">
           <div class="flex justify-between items-start mb-4">
             <div>
@@ -308,56 +317,64 @@ function setupTournamentLoader() {
             <div>Recorded by: <span class="font-mono">${formatAddress(match.recordedBy)}</span></div>
           </div>
         </div>
-      `).join('')}
-    `
-  }
+      `
+        )
+        .join('')}
+    `;
+  };
 
   const loadTournament = async () => {
-    const tournamentId = tournamentIdInput.value.trim()
+    const tournamentId = tournamentIdInput.value.trim();
 
     if (!tournamentId || isNaN(Number(tournamentId))) {
-      showError('Please enter a valid tournament ID')
-      return
+      showError('Please enter a valid tournament ID');
+      return;
     }
 
-    showLoading()
+    showLoading();
 
     try {
-      const response = await fetch(`/api/tournaments/${tournamentId}/matches`)
+      const response = await fetch(`/api/tournaments/${tournamentId}/matches`);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: TournamentData = await response.json()
-      renderMatches(data)
+      const data: TournamentData = await response.json();
+      renderMatches(data);
     } catch (err) {
-      console.error('Error loading tournament:', err)
-      showError(`Failed to load tournament matches: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      console.error('Error loading tournament:', err);
+      showError(
+        `Failed to load tournament matches: ${err instanceof Error ? err.message : 'Unknown error'}`
+      );
     }
-  }
+  };
 
-  loadBtn.addEventListener('click', loadTournament)
+  loadBtn.addEventListener('click', loadTournament);
 
   tournamentIdInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-      loadTournament()
+      loadTournament();
     }
-  })
+  });
 }
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   // Determine initial page from URL
-  const path = window.location.pathname.substring(1) // Remove leading slash
+  const path = window.location.pathname.substring(1); // Remove leading slash
   if (path === 'play' || path === 'tournaments' || path === 'login') {
-    currentPage = path
+    currentPage = path;
   } else {
-    currentPage = 'home'
+    currentPage = 'home';
   }
 
   // Set initial history state
-  window.history.replaceState({ page: currentPage }, '', `/${currentPage === 'home' ? '' : currentPage}`)
+  window.history.replaceState(
+    { page: currentPage },
+    '',
+    `/${currentPage === 'home' ? '' : currentPage}`
+  );
 
-  render()
-})
+  render();
+});

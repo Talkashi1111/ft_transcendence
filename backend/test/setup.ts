@@ -7,13 +7,13 @@
  * 3. Cleans the database before tests run
  */
 
-import { execSync } from "child_process";
-import { beforeAll, afterAll } from "vitest";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client.js";
+import { execSync } from 'child_process';
+import { beforeAll, afterAll } from 'vitest';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaClient } from '../src/generated/prisma/client.js';
 
 // Use a separate test database
-const TEST_DATABASE_URL = "file:/app/data/database.test.db";
+const TEST_DATABASE_URL = 'file:/app/data/database.test.db';
 
 // Set the environment variable for all imports
 process.env.DATABASE_URL = TEST_DATABASE_URL;
@@ -21,20 +21,20 @@ process.env.DATABASE_URL = TEST_DATABASE_URL;
 let prisma: PrismaClient;
 
 beforeAll(async () => {
-  console.log("\n🧪 Setting up test database...");
+  console.log('\n🧪 Setting up test database...');
 
   // Run migrations on test database
   try {
-    execSync("npx prisma migrate deploy", {
+    execSync('npx prisma migrate deploy', {
       env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
-      stdio: "pipe",
+      stdio: 'pipe',
       cwd: process.cwd(),
     });
-    console.log("✅ Migrations applied to test database");
+    console.log('✅ Migrations applied to test database');
   } catch (error) {
     // Log the actual error for debugging (could be permissions, syntax errors, etc.)
-    console.error("Migration error:", error);
-    console.log("ℹ️  Migrations may already be applied or check error above");
+    console.error('Migration error:', error);
+    console.log('ℹ️  Migrations may already be applied or check error above');
   }
 
   // Connect to test database and clean it
@@ -43,7 +43,7 @@ beforeAll(async () => {
 
   // Clean all tables before running tests
   await prisma.user.deleteMany();
-  console.log("🧹 Test database cleaned");
+  console.log('🧹 Test database cleaned');
   console.log(`📍 Using: ${TEST_DATABASE_URL}\n`);
 });
 

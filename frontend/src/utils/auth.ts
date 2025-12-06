@@ -10,15 +10,25 @@
 
 // Login response type (no token in body - it's in cookie)
 interface LoginResponse {
-	  success: boolean;
+  success: boolean;
 }
 
 // Current user info (fresh from API)
 export interface AuthUser {
-	  id: string;
-	  email: string;
-	  alias: string;      // Always current - fetched from database
-	  createdAt: string;
+  id: string;
+  email: string;
+  alias: string; // Always current - fetched from database
+  createdAt: string;
+}
+
+/**
+ * Custom error class for login errors
+ */
+class LoginError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LoginError';
+  }
 }
 
 /**
@@ -26,55 +36,53 @@ export interface AuthUser {
  * Cookie is set by backend automatically (httpOnly)
  */
 export async function login(email: string, password: string) {
-	  const response = await fetch('/api/users/login', {
-	    method: 'POST',
-	    headers: {
-	      'Content-Type': 'application/json',
-	    },
-	    body: JSON.stringify({ email, password }),
-	    credentials: 'include', // Include cookies in request
-	  });
+  const response = await fetch('/api/users/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }),
+    credentials: 'include', // Include cookies in request
+  });
 
-	  if (!response.ok) {
-	    // Try to parse error response
-	    try {
-	      const errorData = await response.json();
-	      // Handle different error cases based on status code
-	      if (response.status === 401) {
-	        throw new Error('Invalid email or password');
-	      } else if (response.status === 400) {
-	        throw new Error('Please check your email and password format');
-	      } else {
-	        throw new Error(errorData.message || 'Login failed');
-	      }
-	    } catch (parseError) {
-	      // If it's an Error we threw above, rethrow it
-	      if (parseError instanceof Error && parseError.message && !parseError.message.includes('Unexpected') && !parseError.message.includes('JSON')) {
-	        throw parseError;
-	      }
-	      // Otherwise, it's a JSON parsing error (network issue)
-	      throw new Error('Network error. Please check your connection and try again.');
-	    }
-	  }
+  if (!response.ok) {
+    // Try to parse error response
+    try {
+      const errorData = await response.json();
+      // Handle different error cases based on status code
+      if (response.status === 401) {
+        throw new LoginError('Invalid email or password');
+      } else if (response.status === 400) {
+        throw new LoginError('Please check your email and password format');
+      } else {
+        throw new LoginError(errorData.message || 'Login failed');
+      }
+    } catch (parseError) {
+      // If it's our custom LoginError, rethrow it
+      if (parseError instanceof LoginError) {
+        throw parseError;
+      }
+      // Otherwise, it's a JSON parsing error (network issue)
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+  }
 
-	  const data: LoginResponse = await response.json();
-	  return data.success;
+  const data: LoginResponse = await response.json();
+  return data.success;
 }
-
-
 
 /**
  * Logout - calls backend to clear cookie
  */
 export async function logout(): Promise<void> {
-	  try {
-	    await fetch('/api/users/logout', {
-	      method: 'POST',
-	      credentials: 'include', // Include cookies
-	    });
-	  } catch {
-	    // Ignore errors - cookie might already be expired
-	  }
+  try {
+    await fetch('/api/users/logout', {
+      method: 'POST',
+      credentials: 'include', // Include cookies
+    });
+  } catch {
+    // Ignore errors - cookie might already be expired
+  }
 }
 
 /**
@@ -83,8 +91,8 @@ export async function logout(): Promise<void> {
  * This will return true only if the cookie exists and is valid
  */
 export async function isAuthenticated(): Promise<boolean> {
-	  const user = await getCurrentUser();
-	  return user !== null;
+  const user = await getCurrentUser();
+  return user !== null;
 }
 
 /**
@@ -126,4 +134,3 @@ export async function getUserId(): Promise<string | null> {
 export function getAuthHeaders(): RequestInit {
   return { credentials: 'include' };
 }
-

@@ -1,7 +1,12 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import * as z from 'zod';
 import { createUser, findUserByEmail, findUsers, findUserById } from './user.service.js';
-import { createUserSchema, loginSchema, type CreateUserInput, type LoginInput } from './user.schema.js';
+import {
+  createUserSchema,
+  loginSchema,
+  type CreateUserInput,
+  type LoginInput,
+} from './user.schema.js';
 import { verifyPassword } from '../../utils/hash.js';
 
 // Prisma error type for unique constraint violations
@@ -136,10 +141,7 @@ export async function loginHandler(
   }
 }
 
-export async function getUsersHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function getUsersHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
     const users = await findUsers();
     return reply.send(
@@ -158,10 +160,7 @@ export async function getUsersHandler(
   }
 }
 
-export async function getMeHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function getMeHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
     // Get user ID from JWT token (only id and email are in JWT)
     const { id } = request.user as { id: string; email: string };
@@ -193,10 +192,7 @@ export async function getMeHandler(
   }
 }
 
-export async function logoutHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function logoutHandler(request: FastifyRequest, reply: FastifyReply) {
   // Clear the authentication cookie
   reply.clearCookie('token', {
     path: '/',
