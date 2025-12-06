@@ -31,7 +31,7 @@ export const userResponseSchema = z.object({
 });
 
 export const loginResponseSchema = z.object({
-  accessToken: z.string(),
+  success: z.boolean(),
 });
 
 export const usersResponseSchema = z.array(userResponseSchema);

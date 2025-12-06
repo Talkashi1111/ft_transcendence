@@ -11,23 +11,23 @@
  *   NODE_ENV=development # Seeds demo users for testing
  */
 
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client.js";
-import { hashPassword } from "../src/utils/hash.js";
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaClient } from '../src/generated/prisma/client.js';
+import { hashPassword } from '../src/utils/hash.js';
 
-const DATABASE_URL = process.env.DATABASE_URL || "file:/app/data/database.db";
+const DATABASE_URL = process.env.DATABASE_URL || 'file:/app/data/database.db';
 const adapter = new PrismaBetterSqlite3({ url: DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-const isProduction = process.env.NODE_ENV === "production";
-const shouldClean = process.argv.includes("--clean");
+const isProduction = process.env.NODE_ENV === 'production';
+const shouldClean = process.argv.includes('--clean');
 
 // Demo users for development
 const demoUsers = [
-  { email: "alice@example.com", alias: "alice", password: "password123" },
-  { email: "bob@example.com", alias: "bob", password: "password123" },
-  { email: "charlie@example.com", alias: "charlie", password: "password123" },
-  { email: "demo@example.com", alias: "demo", password: "demo1234" },
+  { email: 'alice@example.com', alias: 'alice', password: 'password123' },
+  { email: 'bob@example.com', alias: 'bob', password: 'password123' },
+  { email: 'charlie@example.com', alias: 'charlie', password: 'password123' },
+  { email: 'demo@example.com', alias: 'demo', password: 'demo1234' },
 ];
 
 // Essential users for production (e.g., admin account)
@@ -37,9 +37,9 @@ const prodUsers: typeof demoUsers = [
 ];
 
 async function cleanDatabase() {
-  console.log("🧹 Cleaning database...");
+  console.log('🧹 Cleaning database...');
   await prisma.user.deleteMany();
-  console.log("✅ Database cleaned");
+  console.log('✅ Database cleaned');
 }
 
 async function seedUsers(users: typeof demoUsers) {
@@ -70,8 +70,8 @@ async function seedUsers(users: typeof demoUsers) {
 }
 
 async function main() {
-  console.log("🌱 Starting database seed...");
-  console.log(`   Environment: ${isProduction ? "production" : "development"}`);
+  console.log('🌱 Starting database seed...');
+  console.log(`   Environment: ${isProduction ? 'production' : 'development'}`);
   console.log(`   Database: ${DATABASE_URL}`);
 
   if (shouldClean) {
@@ -83,19 +83,19 @@ async function main() {
     if (prodUsers.length > 0) {
       await seedUsers(prodUsers);
     } else {
-      console.log("ℹ️  No production seed data configured");
+      console.log('ℹ️  No production seed data configured');
     }
   } else {
     // Development: seed demo users
     await seedUsers(demoUsers);
   }
 
-  console.log("🎉 Seed completed!");
+  console.log('🎉 Seed completed!');
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", e);
+    console.error('❌ Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

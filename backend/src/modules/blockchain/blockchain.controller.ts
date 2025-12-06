@@ -40,7 +40,7 @@ export async function getTournamentMatchesHandler(
 
     return reply.status(200).send({
       tournamentId,
-      matchIds: matchIds.map(id => id.toString()),
+      matchIds: matchIds.map((id) => id.toString()),
       matches,
     });
   } catch (err) {
@@ -57,7 +57,8 @@ export async function recordMatchHandler(
   reply: FastifyReply
 ) {
   try {
-    const { tournamentId, player1Id, player1Alias, player2Id, player2Alias, score1, score2 } = request.body;
+    const { tournamentId, player1Id, player1Alias, player2Id, player2Alias, score1, score2 } =
+      request.body;
 
     const result = await blockchainService.recordMatch(
       tournamentId,
@@ -87,10 +88,7 @@ export async function recordMatchHandler(
 /**
  * Get total number of matches recorded
  */
-export async function getTotalMatchesHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function getTotalMatchesHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
     const total = await blockchainService.getTotalMatches();
     return reply.status(200).send({ total: total.toString() });

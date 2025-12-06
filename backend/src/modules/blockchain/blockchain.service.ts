@@ -83,8 +83,8 @@ function getWalletClient(): WalletClient {
 
   // Normalize private key format (ensure it starts with 0x)
   const normalizedKey = privateKey.startsWith('0x')
-    ? privateKey as `0x${string}`
-    : `0x${privateKey}` as `0x${string}`;
+    ? (privateKey as `0x${string}`)
+    : (`0x${privateKey}` as `0x${string}`);
 
   const rpcUrl = process.env.FUJI_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
   const account = privateKeyToAccount(normalizedKey);
@@ -171,7 +171,11 @@ export async function recordMatch(
     // The first log should be the MatchRecorded event
     // matchId is the first indexed parameter (after topics[0] which is the event signature)
     const matchRecordedLog = receipt.logs[0];
-    if (matchRecordedLog.topics && matchRecordedLog.topics.length > 1 && matchRecordedLog.topics[1]) {
+    if (
+      matchRecordedLog.topics &&
+      matchRecordedLog.topics.length > 1 &&
+      matchRecordedLog.topics[1]
+    ) {
       matchId = BigInt(matchRecordedLog.topics[1]);
     }
   }
@@ -201,7 +205,7 @@ export async function getMatch(matchId: number): Promise<{
 }> {
   const contract = getContractInstance(true);
 
-  const result = await contract.read.getMatch([BigInt(matchId)]) as [
+  const result = (await contract.read.getMatch([BigInt(matchId)])) as [
     bigint,
     bigint,
     string,
@@ -210,7 +214,7 @@ export async function getMatch(matchId: number): Promise<{
     bigint,
     bigint,
     bigint,
-    string
+    string,
   ];
 
   return {
@@ -235,7 +239,7 @@ export async function getMatch(matchId: number): Promise<{
 export async function getTournamentMatches(tournamentId: number): Promise<bigint[]> {
   const contract = getContractInstance(true);
 
-  const matchIds = await contract.read.getTournamentMatches([BigInt(tournamentId)]) as bigint[];
+  const matchIds = (await contract.read.getTournamentMatches([BigInt(tournamentId)])) as bigint[];
   return matchIds;
 }
 
@@ -247,7 +251,7 @@ export async function getTournamentMatches(tournamentId: number): Promise<bigint
 export async function getTotalMatches(): Promise<bigint> {
   const contract = getContractInstance(true);
 
-  const count = await contract.read.getTotalMatches([]) as bigint;
+  const count = (await contract.read.getTotalMatches([])) as bigint;
   return count;
 }
 
@@ -258,11 +262,7 @@ export function isBlockchainConfigured(): boolean {
   try {
     // Try to load ABI to verify it exists
     loadContractABI();
-    return !!(
-      process.env.CONTRACT_ADDRESS &&
-      process.env.FUJI_RPC_URL &&
-      process.env.PRIVATE_KEY
-    );
+    return !!(process.env.CONTRACT_ADDRESS && process.env.FUJI_RPC_URL && process.env.PRIVATE_KEY);
   } catch {
     return false;
   }

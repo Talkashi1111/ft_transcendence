@@ -1,7 +1,12 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import * as z from 'zod';
 import { createUser, findUserByEmail, findUsers, findUserById } from './user.service.js';
-import { createUserSchema, loginSchema, type CreateUserInput, type LoginInput } from './user.schema.js';
+import {
+  createUserSchema,
+  loginSchema,
+  type CreateUserInput,
+  type LoginInput,
+} from './user.schema.js';
 import { verifyPassword } from '../../utils/hash.js';
 
 // Prisma error type for unique constraint violations
@@ -97,16 +102,27 @@ export async function loginHandler(
     }
 
     // Generate JWT token
+    // Only include immutable fields (id, email)
+    // DO NOT include mutable fields like alias (can change during session)
     const accessToken = request.server.jwt.sign(
       {
         id: user.id,
         email: user.email,
-        alias: user.alias,
       },
       { expiresIn: '7d' }
     );
 
-    return reply.send({ accessToken });
+    // Set httpOnly cookie (production-ready)
+    reply.setCookie('token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax', // CSRF protection
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    });
+
+    // Return success without token in body (it's in cookie)
+    return reply.send({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return reply.status(400).send({
@@ -125,10 +141,7 @@ export async function loginHandler(
   }
 }
 
-export async function getUsersHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function getUsersHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
     const users = await findUsers();
     return reply.send(
@@ -147,15 +160,12 @@ export async function getUsersHandler(
   }
 }
 
-export async function getMeHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function getMeHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
-    // Get user ID from JWT token
-    const { id } = request.user as { id: string; email: string; alias: string };
+    // Get user ID from JWT token (only id and email are in JWT)
+    const { id } = request.user as { id: string; email: string };
 
-    // Fetch full user from database
+    // Fetch full user from database (including current alias)
     const user = await findUserById(id);
 
     if (!user) {
@@ -180,4 +190,13 @@ export async function getMeHandler(
       message: 'Something went wrong',
     });
   }
+}
+
+export async function logoutHandler(request: FastifyRequest, reply: FastifyReply) {
+  // Clear the authentication cookie
+  reply.clearCookie('token', {
+    path: '/',
+  });
+
+  return reply.send({ success: true });
 }

@@ -1,9 +1,9 @@
-import type { Tournament, TournamentPlayer, TournamentMatch } from '../types/tournament'
+import type { Tournament, TournamentPlayer, TournamentMatch } from '../types/tournament';
 
 export class TournamentManager {
-  private tournament: Tournament
-  private nextPlayerId: number = 1
-  private nextMatchId: number = 1
+  private tournament: Tournament;
+  private nextPlayerId: number = 1;
+  private nextMatchId: number = 1;
 
   constructor() {
     this.tournament = {
@@ -13,7 +13,7 @@ export class TournamentManager {
       currentMatchIndex: 0,
       status: 'registration',
       winner: null,
-    }
+    };
   }
 
   /**
@@ -26,25 +26,25 @@ export class TournamentManager {
    */
   addPlayer(alias: string): boolean {
     if (this.tournament.players.length >= 8) {
-      return false // Tournament is full
+      return false; // Tournament is full
     }
 
     if (this.tournament.status !== 'registration') {
-      return false // Tournament already started
+      return false; // Tournament already started
     }
 
     // Check for duplicate aliases
     if (this.tournament.players.some((p) => p.alias === alias)) {
-      return false // Alias already exists
+      return false; // Alias already exists
     }
 
     const player: TournamentPlayer = {
       id: this.nextPlayerId++,
       alias,
-    }
+    };
 
-    this.tournament.players.push(player)
-    return true
+    this.tournament.players.push(player);
+    return true;
   }
 
   /**
@@ -56,16 +56,16 @@ export class TournamentManager {
    */
   removePlayer(playerId: number): boolean {
     if (this.tournament.status !== 'registration') {
-      return false
+      return false;
     }
 
-    const index = this.tournament.players.findIndex((p) => p.id === playerId)
+    const index = this.tournament.players.findIndex((p) => p.id === playerId);
     if (index === -1) {
-      return false
+      return false;
     }
 
-    this.tournament.players.splice(index, 1)
-    return true
+    this.tournament.players.splice(index, 1);
+    return true;
   }
 
   /**
@@ -78,24 +78,24 @@ export class TournamentManager {
    */
   startTournament(): boolean {
     if (this.tournament.players.length < 2) {
-      return false // Need at least 2 players
+      return false; // Need at least 2 players
     }
 
     if (this.tournament.status !== 'registration') {
-      return false // Already started
+      return false; // Already started
     }
 
     // Generate single elimination bracket
-    this.generateBracket()
-    this.tournament.status = 'in-progress'
-    return true
+    this.generateBracket();
+    this.tournament.status = 'in-progress';
+    return true;
   }
 
   private generateBracket(): void {
-    const players = [...this.tournament.players]
-    const playerCount = players.length
+    const players = [...this.tournament.players];
+    const playerCount = players.length;
 
-    if (playerCount < 2 || playerCount > 8) return
+    if (playerCount < 2 || playerCount > 8) return;
 
     /**
      * Bracket Generation Templates
@@ -189,21 +189,21 @@ export class TournamentManager {
         [2, -3, -4], // Match #5 (Round 2): Winner of Match #2 vs Winner of Match #3
         [3, -5, -6], // Match #6 (Finals): Winner of Match #4 vs Winner of Match #5
       ],
-    }
+    };
 
-    const template = bracketTemplates[playerCount]
-    if (!template) return
+    const template = bracketTemplates[playerCount];
+    if (!template) return;
 
     // Create matches from template
     this.tournament.matches = template.map(([round, p1Idx, p2Idx]) => {
       const getPlayer = (idx: number): TournamentPlayer => {
         if (idx >= 0) {
-          return players[idx]
+          return players[idx];
         } else {
           // TBD placeholder with reference to which match it depends on
-          return { id: idx, alias: 'TBD' }
+          return { id: idx, alias: 'TBD' };
         }
-      }
+      };
 
       return {
         matchId: this.nextMatchId++,
@@ -214,10 +214,10 @@ export class TournamentManager {
         winner: null,
         status: 'pending',
         round,
-      }
-    })
+      };
+    });
 
-    this.tournament.currentMatchIndex = 0
+    this.tournament.currentMatchIndex = 0;
   }
 
   /**
@@ -230,8 +230,8 @@ export class TournamentManager {
   getCurrentMatch(): TournamentMatch | null {
     const pendingMatch = this.tournament.matches.find(
       (m) => m.status === 'pending' && m.player1.id > 0 && m.player2.id > 0
-    )
-    return pendingMatch || null
+    );
+    return pendingMatch || null;
   }
 
   /**
@@ -247,66 +247,66 @@ export class TournamentManager {
    *   - Winner ID doesn't match either player
    */
   recordMatchResult(matchId: number, winnerId: number, score1: number, score2: number): boolean {
-    const match = this.tournament.matches.find((m) => m.matchId === matchId)
+    const match = this.tournament.matches.find((m) => m.matchId === matchId);
     if (!match || match.status === 'finished') {
-      return false
+      return false;
     }
 
     // Validate that winnerId matches one of the players
     if (winnerId !== match.player1.id && winnerId !== match.player2.id) {
-      return false
+      return false;
     }
 
-    match.player1Score = score1
-    match.player2Score = score2
-    match.winner = winnerId === match.player1.id ? match.player1 : match.player2
-    match.status = 'finished'
+    match.player1Score = score1;
+    match.player2Score = score2;
+    match.winner = winnerId === match.player1.id ? match.player1 : match.player2;
+    match.status = 'finished';
 
     // Immediately update the next round match with the winner
-    this.advanceWinnerToNextRound(match)
+    this.advanceWinnerToNextRound(match);
 
     // Check if tournament is complete
-    this.checkTournamentComplete()
+    this.checkTournamentComplete();
 
-    return true
+    return true;
   }
 
   private advanceWinnerToNextRound(finishedMatch: TournamentMatch): void {
-    if (!finishedMatch.winner) return
+    if (!finishedMatch.winner) return;
 
     // Find the index of the finished match in the matches array
     const finishedMatchIndex = this.tournament.matches.findIndex(
       (m) => m.matchId === finishedMatch.matchId
-    )
-    if (finishedMatchIndex === -1) return
+    );
+    if (finishedMatchIndex === -1) return;
 
     // The negative index reference for this match winner
     // -1 means "winner of match at index 0", -2 means "winner of match at index 1", etc.
-    const winnerReference = -(finishedMatchIndex + 1)
+    const winnerReference = -(finishedMatchIndex + 1);
 
     // Find the match that should receive this winner based on the negative index
     for (const match of this.tournament.matches) {
       if (match.player1.id === winnerReference) {
-        match.player1 = finishedMatch.winner
-        return
+        match.player1 = finishedMatch.winner;
+        return;
       }
       if (match.player2.id === winnerReference) {
-        match.player2 = finishedMatch.winner
-        return
+        match.player2 = finishedMatch.winner;
+        return;
       }
     }
   }
 
   private checkTournamentComplete(): void {
     // Check if all matches are finished
-    const allFinished = this.tournament.matches.every((m) => m.status === 'finished')
+    const allFinished = this.tournament.matches.every((m) => m.status === 'finished');
 
     if (allFinished && this.tournament.matches.length > 0) {
       // The last match's winner is the tournament winner
-      const finalMatch = this.tournament.matches[this.tournament.matches.length - 1]
+      const finalMatch = this.tournament.matches[this.tournament.matches.length - 1];
       if (finalMatch.winner) {
-        this.tournament.winner = finalMatch.winner
-        this.tournament.status = 'finished'
+        this.tournament.winner = finalMatch.winner;
+        this.tournament.status = 'finished';
       }
     }
   }
@@ -320,22 +320,22 @@ export class TournamentManager {
    *   Returns empty array if tournament hasn't started.
    */
   getBracket(): TournamentMatch[][] {
-    const bracket: TournamentMatch[][] = []
-    const matches = [...this.tournament.matches]
+    const bracket: TournamentMatch[][] = [];
+    const matches = [...this.tournament.matches];
 
-    if (matches.length === 0) return bracket
+    if (matches.length === 0) return bracket;
 
     // Group matches by their assigned round number
-    const maxRound = Math.max(...matches.map(m => m.round || 1))
+    const maxRound = Math.max(...matches.map((m) => m.round || 1));
 
     for (let roundNum = 1; roundNum <= maxRound; roundNum++) {
-      const roundMatches = matches.filter(m => (m.round || 1) === roundNum)
+      const roundMatches = matches.filter((m) => (m.round || 1) === roundNum);
       if (roundMatches.length > 0) {
-        bracket.push(roundMatches)
+        bracket.push(roundMatches);
       }
     }
 
-    return bracket
+    return bracket;
   }
 
   /**
@@ -343,7 +343,7 @@ export class TournamentManager {
    * @returns The full tournament object including players, matches, status, and winner
    */
   getTournament(): Tournament {
-    return this.tournament
+    return this.tournament;
   }
 
   /**
@@ -351,7 +351,7 @@ export class TournamentManager {
    * @returns The number of players currently in the tournament
    */
   getPlayerCount(): number {
-    return this.tournament.players.length
+    return this.tournament.players.length;
   }
 
   /**
@@ -359,7 +359,7 @@ export class TournamentManager {
    * @returns true if tournament is in registration phase and has less than 8 players
    */
   canAddPlayers(): boolean {
-    return this.tournament.status === 'registration' && this.tournament.players.length < 8
+    return this.tournament.status === 'registration' && this.tournament.players.length < 8;
   }
 
   /**
@@ -367,6 +367,6 @@ export class TournamentManager {
    * @returns true if tournament is in registration phase and has at least 2 players
    */
   canStartTournament(): boolean {
-    return this.tournament.status === 'registration' && this.tournament.players.length >= 2
+    return this.tournament.status === 'registration' && this.tournament.players.length >= 2;
   }
 }

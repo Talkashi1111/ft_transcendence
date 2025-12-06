@@ -1,7 +1,9 @@
 ## Description
+
 <!-- Provide a brief description of the changes in this PR -->
 
 ## Type of Change
+
 <!-- Mark the relevant option with an "x" -->
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
@@ -13,6 +15,7 @@
 - [ ] Test update
 
 ## Testing
+
 <!-- Describe the tests you ran and/or added -->
 
 - [ ] Tests pass locally (`make test`)
@@ -22,6 +25,7 @@
 - [ ] Coverage thresholds are met
 
 ## Checklist
+
 <!-- Mark completed items with an "x" -->
 
 - [ ] My code follows the project's style guidelines
@@ -33,7 +37,9 @@
 - [ ] Any dependent changes have been merged and published
 
 ## Screenshots (if applicable)
+
 <!-- Add screenshots to help explain your changes -->
 
 ## Additional Notes
+
 <!-- Add any other context about the PR here -->

@@ -76,9 +76,11 @@ ft_transcendence/
 
 ```bash
 make dev            # Run both frontend + backend
-make test           # Test all (frontend + backend + blockchain)
+make format         # Format all files with Prettier
 make lint           # Lint all
+make test           # Test all (frontend + backend + blockchain)
 make build          # Build frontend + backend
+make all            # Format, lint, test, and build
 
 # Run separately
 make frontend       # Frontend only
@@ -194,9 +196,6 @@ pnpm i @sinclair/typebox
 # Setup SQLite3
 pnpm add better-sqlite3
 pnpm add -D @types/better-sqlite3
-
-# Approve build scripts (if needed)
-pnpm approve-builds
 ```
 
 ### Blockchain Setup
@@ -372,14 +371,15 @@ Database is automatically persisted in Docker volume `sqlite-data`.
 
 ## 📚 Tech Stack
 
-| Layer          | Technology                                           |
-| -------------- | ---------------------------------------------------- |
-| **Frontend**   | TypeScript (vanilla), Vite, Tailwind CSS             |
-| **Backend**    | Fastify, Prisma ORM, Zod validation, Argon2, JWT     |
-| **Database**   | SQLite                                               |
-| **Blockchain** | Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji |
-| **Dev Env**    | DevContainer (Node.js 22)                            |
-| **Deploy**     | Docker, Docker Compose                               |
+| Layer          | Technology                                                 |
+| -------------- | ---------------------------------------------------------- |
+| **Frontend**   | TypeScript (vanilla), Vite, Tailwind CSS                   |
+| **Backend**    | Fastify, @fastify/cookie, @fastify/jwt, Prisma ORM, Argon2 |
+| **Auth**       | httpOnly cookies, JWT (7-day expiration)                   |
+| **Database**   | SQLite                                                     |
+| **Blockchain** | Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji       |
+| **Dev Env**    | DevContainer (Node.js 22), Prettier, ESLint                |
+| **Deploy**     | Docker, Docker Compose                                     |
 
 ---
 

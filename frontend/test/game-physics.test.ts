@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   updateBallPosition,
   checkWallCollision,
@@ -6,9 +6,9 @@ import {
   checkScore,
   resetBall,
   movePaddle,
-} from '../src/game/physics'
-import type { Ball, Paddle } from '../src/types/game'
-import { GAME_CONFIG } from '../src/game/config'
+} from '../src/game/physics';
+import type { Ball, Paddle } from '../src/types/game';
+import { GAME_CONFIG } from '../src/game/config';
 
 describe('Physics Module', () => {
   describe('updateBallPosition', () => {
@@ -20,13 +20,13 @@ describe('Physics Module', () => {
         velocityY: 3,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      updateBallPosition(ball)
+      updateBallPosition(ball);
 
-      expect(ball.x).toBe(405)
-      expect(ball.y).toBe(303)
-    })
+      expect(ball.x).toBe(405);
+      expect(ball.y).toBe(303);
+    });
 
     it('should handle negative velocity', () => {
       const ball: Ball = {
@@ -36,14 +36,14 @@ describe('Physics Module', () => {
         velocityY: -3,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      updateBallPosition(ball)
+      updateBallPosition(ball);
 
-      expect(ball.x).toBe(395)
-      expect(ball.y).toBe(297)
-    })
-  })
+      expect(ball.x).toBe(395);
+      expect(ball.y).toBe(297);
+    });
+  });
 
   describe('checkWallCollision', () => {
     it('should bounce ball off top wall', () => {
@@ -54,12 +54,12 @@ describe('Physics Module', () => {
         velocityY: -3,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      checkWallCollision(ball)
+      checkWallCollision(ball);
 
-      expect(ball.velocityY).toBe(3) // Reversed
-    })
+      expect(ball.velocityY).toBe(3); // Reversed
+    });
 
     it('should bounce ball off bottom wall', () => {
       const ball: Ball = {
@@ -69,12 +69,12 @@ describe('Physics Module', () => {
         velocityY: 3,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      checkWallCollision(ball)
+      checkWallCollision(ball);
 
-      expect(ball.velocityY).toBe(-3) // Reversed
-    })
+      expect(ball.velocityY).toBe(-3); // Reversed
+    });
 
     it('should not bounce if not hitting wall', () => {
       const ball: Ball = {
@@ -84,13 +84,13 @@ describe('Physics Module', () => {
         velocityY: 3,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      checkWallCollision(ball)
+      checkWallCollision(ball);
 
-      expect(ball.velocityY).toBe(3) // Unchanged
-    })
-  })
+      expect(ball.velocityY).toBe(3); // Unchanged
+    });
+  });
 
   describe('checkPaddleCollision', () => {
     it('should bounce ball off left paddle', () => {
@@ -101,7 +101,7 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
       const leftPaddle: Paddle = {
         x: 20,
@@ -110,13 +110,13 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      const result = checkPaddleCollision(ball, leftPaddle)
+      const result = checkPaddleCollision(ball, leftPaddle);
 
-      expect(result).toBe(true)
-      expect(ball.velocityX).toBeGreaterThan(0) // Reversed to positive
-    })
+      expect(result).toBe(true);
+      expect(ball.velocityX).toBeGreaterThan(0); // Reversed to positive
+    });
 
     it('should bounce ball off right paddle', () => {
       const ball: Ball = {
@@ -126,7 +126,7 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
       const rightPaddle: Paddle = {
         x: 765,
@@ -135,13 +135,13 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      const result = checkPaddleCollision(ball, rightPaddle)
+      const result = checkPaddleCollision(ball, rightPaddle);
 
-      expect(result).toBe(true)
-      expect(ball.velocityX).toBeLessThan(0) // Reversed to negative
-    })
+      expect(result).toBe(true);
+      expect(ball.velocityX).toBeLessThan(0); // Reversed to negative
+    });
 
     it('should increase ball speed on paddle hit', () => {
       const ball: Ball = {
@@ -151,7 +151,7 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
       const leftPaddle: Paddle = {
         x: 20,
@@ -160,12 +160,12 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      checkPaddleCollision(ball, leftPaddle)
+      checkPaddleCollision(ball, leftPaddle);
 
-      expect(ball.speed).toBeGreaterThan(5) // Speed increased
-    })
+      expect(ball.speed).toBeGreaterThan(5); // Speed increased
+    });
 
     it('should cap ball speed at maxSpeed', () => {
       const ball: Ball = {
@@ -175,7 +175,7 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 11.5, // Near max
-      }
+      };
 
       const leftPaddle: Paddle = {
         x: 20,
@@ -184,12 +184,12 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      checkPaddleCollision(ball, leftPaddle)
+      checkPaddleCollision(ball, leftPaddle);
 
-      expect(ball.speed).toBeLessThanOrEqual(GAME_CONFIG.ballMaxSpeed)
-    })
+      expect(ball.speed).toBeLessThanOrEqual(GAME_CONFIG.ballMaxSpeed);
+    });
 
     it('should adjust vertical velocity based on hit position', () => {
       const ball: Ball = {
@@ -199,7 +199,7 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
       const leftPaddle: Paddle = {
         x: 20,
@@ -208,12 +208,12 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      checkPaddleCollision(ball, leftPaddle)
+      checkPaddleCollision(ball, leftPaddle);
 
-      expect(ball.velocityY).toBeLessThan(0) // Should go upward
-    })
+      expect(ball.velocityY).toBeLessThan(0); // Should go upward
+    });
 
     it('should return false if ball misses paddle', () => {
       const ball: Ball = {
@@ -223,7 +223,7 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
       const leftPaddle: Paddle = {
         x: 20,
@@ -232,14 +232,14 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      const result = checkPaddleCollision(ball, leftPaddle)
+      const result = checkPaddleCollision(ball, leftPaddle);
 
-      expect(result).toBe(false)
-      expect(ball.velocityX).toBe(-5) // Unchanged
-    })
-  })
+      expect(result).toBe(false);
+      expect(ball.velocityX).toBe(-5); // Unchanged
+    });
+  });
 
   describe('checkScore', () => {
     it('should detect left side score (player 2 scores)', () => {
@@ -250,12 +250,12 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      const result = checkScore(ball)
+      const result = checkScore(ball);
 
-      expect(result).toBe('player2')
-    })
+      expect(result).toBe('player2');
+    });
 
     it('should detect right side score (player 1 scores)', () => {
       const ball: Ball = {
@@ -265,12 +265,12 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      const result = checkScore(ball)
+      const result = checkScore(ball);
 
-      expect(result).toBe('player1')
-    })
+      expect(result).toBe('player1');
+    });
 
     it('should return null if no score', () => {
       const ball: Ball = {
@@ -280,13 +280,13 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      const result = checkScore(ball)
+      const result = checkScore(ball);
 
-      expect(result).toBeNull()
-    })
-  })
+      expect(result).toBeNull();
+    });
+  });
 
   describe('resetBall', () => {
     it('should center ball position', () => {
@@ -297,13 +297,13 @@ describe('Physics Module', () => {
         velocityY: 3,
         radius: 8,
         speed: 10,
-      }
+      };
 
-      resetBall(ball)
+      resetBall(ball);
 
-      expect(ball.x).toBe(GAME_CONFIG.canvasWidth / 2)
-      expect(ball.y).toBe(GAME_CONFIG.canvasHeight / 2)
-    })
+      expect(ball.x).toBe(GAME_CONFIG.canvasWidth / 2);
+      expect(ball.y).toBe(GAME_CONFIG.canvasHeight / 2);
+    });
 
     it('should reset speed to initial', () => {
       const ball: Ball = {
@@ -313,12 +313,12 @@ describe('Physics Module', () => {
         velocityY: 3,
         radius: 8,
         speed: 10,
-      }
+      };
 
-      resetBall(ball)
+      resetBall(ball);
 
-      expect(ball.speed).toBe(GAME_CONFIG.ballInitialSpeed)
-    })
+      expect(ball.speed).toBe(GAME_CONFIG.ballInitialSpeed);
+    });
 
     it('should set random velocity direction', () => {
       const ball: Ball = {
@@ -328,16 +328,16 @@ describe('Physics Module', () => {
         velocityY: 0,
         radius: 8,
         speed: 5,
-      }
+      };
 
-      resetBall(ball)
+      resetBall(ball);
 
       // Should have some velocity
-      expect(Math.abs(ball.velocityX)).toBeGreaterThan(0)
+      expect(Math.abs(ball.velocityX)).toBeGreaterThan(0);
       // VelocityY might be 0 if angle is exactly horizontal
-      expect(ball.velocityX !== 0 || ball.velocityY !== 0).toBe(true)
-    })
-  })
+      expect(ball.velocityX !== 0 || ball.velocityY !== 0).toBe(true);
+    });
+  });
 
   describe('movePaddle', () => {
     it('should move paddle up', () => {
@@ -348,12 +348,12 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      movePaddle(paddle, 'up')
+      movePaddle(paddle, 'up');
 
-      expect(paddle.y).toBe(294) // 300 - 6
-    })
+      expect(paddle.y).toBe(294); // 300 - 6
+    });
 
     it('should move paddle down', () => {
       const paddle: Paddle = {
@@ -363,12 +363,12 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      movePaddle(paddle, 'down')
+      movePaddle(paddle, 'down');
 
-      expect(paddle.y).toBe(306) // 300 + 6
-    })
+      expect(paddle.y).toBe(306); // 300 + 6
+    });
 
     it('should not move paddle above top boundary', () => {
       const paddle: Paddle = {
@@ -378,12 +378,12 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      movePaddle(paddle, 'up')
+      movePaddle(paddle, 'up');
 
-      expect(paddle.y).toBe(0) // Clamped at 0
-    })
+      expect(paddle.y).toBe(0); // Clamped at 0
+    });
 
     it('should not move paddle below bottom boundary', () => {
       const paddle: Paddle = {
@@ -393,11 +393,11 @@ describe('Physics Module', () => {
         height: 100,
         speed: 6,
         score: 0,
-      }
+      };
 
-      movePaddle(paddle, 'down')
+      movePaddle(paddle, 'down');
 
-      expect(paddle.y).toBe(500) // Clamped at canvasHeight - height
-    })
-  })
-})
+      expect(paddle.y).toBe(500); // Clamped at canvasHeight - height
+    });
+  });
+});

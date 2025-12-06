@@ -158,11 +158,9 @@ The CI pipeline will **automatically** check everything:
 ### One-Time Setup
 
 1. **Install Docker Desktop**
-
    - [Download for your OS](https://www.docker.com/products/docker-desktop)
 
 2. **Install VS Code**
-
    - [Download](https://code.visualstudio.com/)
 
 3. **Install Dev Containers Extension**
@@ -180,7 +178,6 @@ The CI pipeline will **automatically** check everything:
    ```
 
 5. **Reopen in Container**
-
    - VS Code will prompt: "Reopen in Container"
    - Or: Cmd/Ctrl + Shift + P → "Dev Containers: Reopen in Container"
 
