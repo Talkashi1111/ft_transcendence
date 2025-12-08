@@ -96,12 +96,13 @@ describe('Login Page', () => {
       expect(googleBtn).toBeTruthy();
     });
 
-    it('should render Google icon SVG in the OAuth button', async () => {
+    it('should render Google icon SVG in the OAuth button with aria-hidden', async () => {
       await renderLoginPage(container, mockRenderNavBar, mockSetupNavigation, mockOnLoginSuccess);
 
       const googleBtn = container.querySelector('#google-login-btn');
       const svg = googleBtn?.querySelector('svg');
       expect(svg).toBeTruthy();
+      expect(svg?.getAttribute('aria-hidden')).toBe('true');
     });
   });
 

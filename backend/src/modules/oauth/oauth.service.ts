@@ -9,6 +9,7 @@ import { prisma } from '../../utils/prisma.js';
 interface GoogleProfile {
   sub: string; // Google's unique user ID
   email: string;
+  email_verified?: boolean; // Whether Google has verified this email
   name?: string;
   given_name?: string;
   family_name?: string;
@@ -62,6 +63,11 @@ function generateAliasFromName(name?: string): string {
  * 3. Otherwise, create new user with googleId (no password)
  */
 export async function upsertOAuthUser(profile: GoogleProfile) {
+  // Validate required fields
+  if (!profile.sub || !profile.email) {
+    throw new Error('Invalid Google profile: missing required fields');
+  }
+
   // First, try to find by googleId
   const existingByGoogleId = await prisma.user.findUnique({
     where: { googleId: profile.sub },
@@ -72,16 +78,23 @@ export async function upsertOAuthUser(profile: GoogleProfile) {
   }
 
   // Try to find by email (for account linking)
+  // SECURITY: Only link accounts if Google has verified the email
+  // This prevents attackers from using unverified emails to hijack accounts
   const existingByEmail = await prisma.user.findUnique({
     where: { email: profile.email },
   });
 
   if (existingByEmail) {
-    // Link Google account to existing user
-    return await prisma.user.update({
-      where: { id: existingByEmail.id },
-      data: { googleId: profile.sub },
-    });
+    if (profile.email_verified) {
+      // Link Google account to existing user (email is verified by Google)
+      return await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: { googleId: profile.sub },
+      });
+    } else {
+      // User exists but email is not verified - reject login to prevent account takeover
+      throw new Error('Google email is not verified and cannot be linked to existing account');
+    }
   }
 
   // Create new OAuth user
@@ -102,10 +115,18 @@ export async function upsertOAuthUser(profile: GoogleProfile) {
       });
     } catch (error) {
       const prismaError = error as { code?: string; meta?: { target?: string[] } };
-      if (prismaError.code === 'P2002' && prismaError.meta?.target?.includes('alias')) {
-        // Alias collision, try with new random suffix
-        finalAlias = generateAliasFromName(profile.name);
-        attempts++;
+      if (prismaError.code === 'P2002') {
+        if (prismaError.meta?.target?.includes('alias')) {
+          // Alias collision, try with new random suffix
+          finalAlias = generateAliasFromName(profile.name);
+          attempts++;
+        } else if (prismaError.meta?.target?.includes('email')) {
+          // Email collision due to race condition - retry the whole upsert
+          // This will now find the user in the initial checks
+          return upsertOAuthUser(profile);
+        } else {
+          throw error;
+        }
       } else {
         throw error;
       }

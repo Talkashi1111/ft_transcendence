@@ -115,7 +115,7 @@ describe('OAuth Module', () => {
       expect(secondLogin.googleId).toBe(testGoogleProfile.sub);
     });
 
-    it('should link Google account to existing password user', async () => {
+    it('should link Google account to existing password user when email is verified', async () => {
       const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
 
       // Create existing password user first
@@ -127,10 +127,11 @@ describe('OAuth Module', () => {
         },
       });
 
-      // OAuth login with same email should link accounts
+      // OAuth login with same email AND verified email should link accounts
       const linkedProfile = {
         sub: 'google-link-id-999',
         email: 'existing-password-user@gmail.com',
+        email_verified: true, // Email is verified by Google
         name: 'Existing User',
       };
 
@@ -139,6 +140,50 @@ describe('OAuth Module', () => {
       expect(linkedUser.id).toBe(existingUser.id);
       expect(linkedUser.googleId).toBe(linkedProfile.sub);
       expect(linkedUser.password).toBe('hashed-password'); // Password preserved
+    });
+
+    it('should throw error when valid profile fields are missing', async () => {
+      const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
+
+      const invalidProfile = {
+        sub: '',
+        email: '',
+      };
+
+      await expect(upsertOAuthUser(invalidProfile)).rejects.toThrow(
+        'Invalid Google profile: missing required fields'
+      );
+    });
+
+    it('should reject login when email is not verified and user exists (security)', async () => {
+      const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
+
+      // Create existing password user
+      await prisma.user.create({
+        data: {
+          email: 'victim-user@gmail.com',
+          alias: 'victimuser',
+          password: 'hashed-password',
+        },
+      });
+
+      // Attacker tries OAuth with unverified email matching victim's email
+      const attackerProfile = {
+        sub: 'attacker-google-id-666',
+        email: 'victim-user@gmail.com', // Same email as victim
+        email_verified: false, // But NOT verified!
+        name: 'Attacker',
+      };
+
+      // Should REJECT login, preventing account takeover
+      await expect(upsertOAuthUser(attackerProfile)).rejects.toThrow(
+        'Google email is not verified and cannot be linked to existing account'
+      );
+
+      // Clean up
+      await prisma.user.deleteMany({
+        where: { OR: [{ email: 'victim-user@gmail.com' }, { googleId: attackerProfile.sub }] },
+      });
     });
 
     it('should generate unique alias when name is not provided', async () => {

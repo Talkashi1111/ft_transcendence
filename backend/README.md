@@ -241,7 +241,7 @@ pnpm run dev
 │          │ (validates state, exchanges code for token)                      │
 │          ▼                                                                  │
 │  5. Fetch Google profile, upsert user in DB                                 │
-│          │ (links to existing account if email matches)                     │
+│          │ (links to existing account ONLY if email is verified by Google)  │
 │          ▼                                                                  │
 │  6. Set JWT cookie, redirect to home                                        │
 │                                                                             │
