@@ -8,16 +8,14 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import oauthPlugin from '@fastify/oauth2';
 import { fetchGoogleProfile, upsertOAuthUser } from './oauth.service.js';
 
-// Validate required environment variables
+// Validate required environment variables - returns null if not configured
 function getOAuthConfig() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const callbackUri = process.env.OAUTH_CALLBACK_URI;
 
   if (!clientId || !clientSecret || !callbackUri) {
-    throw new Error(
-      'Missing OAuth configuration. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and OAUTH_CALLBACK_URI in .env'
-    );
+    return null;
   }
 
   return { clientId, clientSecret, callbackUri };
@@ -41,6 +39,12 @@ declare module 'fastify' {
 
 async function oauthRoutes(server: FastifyInstance) {
   const config = getOAuthConfig();
+
+  // Skip OAuth registration if not configured (e.g., in CI without secrets)
+  if (!config) {
+    server.log.warn('OAuth not configured - Google login will be unavailable');
+    return;
+  }
 
   // Register Google OAuth2 plugin
   await server.register(oauthPlugin, {

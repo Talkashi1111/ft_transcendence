@@ -75,6 +75,34 @@ describe('Login Page', () => {
 
       expect(mockSetupNavigation).toHaveBeenCalled();
     });
+
+    it('should render Google OAuth button with correct attributes', async () => {
+      await renderLoginPage(container, mockRenderNavBar, mockSetupNavigation, mockOnLoginSuccess);
+
+      const googleBtn = container.querySelector('#google-login-btn') as HTMLAnchorElement;
+      expect(googleBtn).toBeTruthy();
+      expect(googleBtn.href).toContain('/api/oauth/google');
+      expect(googleBtn.textContent).toContain('Continue with Google');
+    });
+
+    it('should render divider with "or" separator before Google button', async () => {
+      await renderLoginPage(container, mockRenderNavBar, mockSetupNavigation, mockOnLoginSuccess);
+
+      // Check for divider separator text
+      expect(container.innerHTML).toContain('or');
+
+      // Check that Google button comes after the divider
+      const googleBtn = container.querySelector('#google-login-btn');
+      expect(googleBtn).toBeTruthy();
+    });
+
+    it('should render Google icon SVG in the OAuth button', async () => {
+      await renderLoginPage(container, mockRenderNavBar, mockSetupNavigation, mockOnLoginSuccess);
+
+      const googleBtn = container.querySelector('#google-login-btn');
+      const svg = googleBtn?.querySelector('svg');
+      expect(svg).toBeTruthy();
+    });
   });
 
   describe('Form Validation', () => {
