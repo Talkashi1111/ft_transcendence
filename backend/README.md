@@ -178,11 +178,14 @@ cp .env.example .env
 
 Key variables:
 
-| Variable       | Description        | Default                      |
-| -------------- | ------------------ | ---------------------------- |
-| `DATABASE_URL` | SQLite file path   | `file:/app/data/database.db` |
-| `JWT_SECRET`   | JWT signing secret | Change in production!        |
-| `PORT`         | Server port        | `3000`                       |
+| Variable               | Description            | Default                                           |
+| ---------------------- | ---------------------- | ------------------------------------------------- |
+| `DATABASE_URL`         | SQLite file path       | `file:/app/data/database.db`                      |
+| `JWT_SECRET`           | JWT signing secret     | Change in production!                             |
+| `PORT`                 | Server port            | `3000`                                            |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID | (required for OAuth)                              |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth secret    | (required for OAuth)                              |
+| `OAUTH_CALLBACK_URI`   | OAuth callback URL     | `http://localhost:5173/api/oauth/google/callback` |
 
 ## Development
 
@@ -203,12 +206,68 @@ pnpm run dev
 
 ### Users
 
-| Method | Endpoint           | Description              | Auth     |
-| ------ | ------------------ | ------------------------ | -------- |
-| POST   | `/api/users`       | Register new user        | No       |
-| POST   | `/api/users/login` | Login (returns JWT)      | No       |
-| GET    | `/api/users`       | List all users           | Required |
-| GET    | `/api/users/me`    | Get current user profile | Required |
+| Method | Endpoint            | Description              | Auth     |
+| ------ | ------------------- | ------------------------ | -------- |
+| POST   | `/api/users`        | Register new user        | No       |
+| POST   | `/api/users/login`  | Login (returns JWT)      | No       |
+| GET    | `/api/users`        | List all users           | Required |
+| GET    | `/api/users/me`     | Get current user profile | Required |
+| POST   | `/api/users/logout` | Logout (clear cookie)    | No       |
+
+### OAuth (Google Authentication)
+
+| Method | Endpoint                     | Description                  | Auth |
+| ------ | ---------------------------- | ---------------------------- | ---- |
+| GET    | `/api/oauth/google`          | Start Google OAuth flow      | No   |
+| GET    | `/api/oauth/google/callback` | OAuth callback (sets cookie) | No   |
+
+#### OAuth Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            Google OAuth 2.0 Flow                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. User clicks "Continue with Google"                                      │
+│          │                                                                  │
+│          ▼                                                                  │
+│  2. GET /api/oauth/google                                                   │
+│          │ (sets state cookie, redirects to Google)                         │
+│          ▼                                                                  │
+│  3. Google Authorization Page                                               │
+│          │ (user grants permission)                                         │
+│          ▼                                                                  │
+│  4. GET /api/oauth/google/callback?code=xxx&state=xxx                       │
+│          │ (validates state, exchanges code for token)                      │
+│          ▼                                                                  │
+│  5. Fetch Google profile, upsert user in DB                                 │
+│          │ (links to existing account if email matches)                     │
+│          ▼                                                                  │
+│  6. Set JWT cookie, redirect to home                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Google Cloud Console Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select existing)
+3. Navigate to **APIs & Services > Credentials**
+4. Click **Create Credentials > OAuth client ID**
+5. Select **Web application**
+6. Configure:
+   - **Name**: ft_transcendence (or your app name)
+   - **Authorized JavaScript origins**: `http://localhost:5173`
+   - **Authorized redirect URIs**: `http://localhost:5173/api/oauth/google/callback`
+7. Copy **Client ID** and **Client Secret** to your `.env`:
+
+```bash
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+OAUTH_CALLBACK_URI=http://localhost:5173/api/oauth/google/callback
+```
+
+> **Production**: Update redirect URIs to your production domain
 
 ### Blockchain (Tournament Scores)
 

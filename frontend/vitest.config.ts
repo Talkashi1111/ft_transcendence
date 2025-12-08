@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html', 'json', 'json-summary'],
+      reporter: ['text', 'text-summary', 'html', 'json', 'json-summary'],
       // Set minimum coverage thresholds (only lines enforced)
       thresholds: {
         // statements: 60,

@@ -90,6 +90,28 @@ build: check-deps ## build all packages
 
 .PHONY: all
 all: format lint test build ## run format, lint, test, and build
+	@echo ""
+	@echo "========================================"
+	@echo "            ✅ ALL PASSED"
+	@echo "========================================"
+	@echo ""
+	@echo "📊 Test Coverage Summary:"
+	@echo "----------------------------------------"
+	@if [ -f backend/coverage/coverage-summary.json ]; then \
+		BACKEND_LINES=$$(grep -o '"total"[^}]*"lines"[^}]*"pct":[0-9.]*' backend/coverage/coverage-summary.json | head -1 | grep -o '[0-9.]*$$'); \
+		echo "  Backend:    $${BACKEND_LINES}%"; \
+	else \
+		echo "  Backend:    N/A"; \
+	fi
+	@if [ -f frontend/coverage/coverage-summary.json ]; then \
+		FRONTEND_LINES=$$(grep -o '"total"[^}]*"lines"[^}]*"pct":[0-9.]*' frontend/coverage/coverage-summary.json | head -1 | grep -o '[0-9.]*$$'); \
+		echo "  Frontend:   $${FRONTEND_LINES}%"; \
+	else \
+		echo "  Frontend:   N/A"; \
+	fi
+	@echo "  Blockchain: ✓ (Solidity tests passed)"
+	@echo "========================================"
+	@echo ""
 
 ## ============================================
 ## Blockchain targets (run INSIDE devcontainer)
