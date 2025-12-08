@@ -102,7 +102,8 @@ export async function login(email: string, password: string) {
       const errorData = await response.json();
       // Handle different error cases based on status code
       if (response.status === 401) {
-        throw new LoginError('Invalid email or password');
+        // Use server message (handles OAuth-only users), fallback to generic message
+        throw new LoginError(errorData.message || 'Invalid email or password');
       } else if (response.status === 400) {
         throw new LoginError('Please check your email and password format');
       } else {

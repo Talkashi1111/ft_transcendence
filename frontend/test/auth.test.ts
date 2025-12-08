@@ -47,10 +47,24 @@ describe('Auth Utility', () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 401,
-        json: async () => ({ message: 'Unauthorized' }),
+        json: async () => ({ message: 'Invalid email or password' }),
       });
 
       await expect(login('test@test.com', 'wrong')).rejects.toThrow('Invalid email or password');
+    });
+
+    it('should show Google login message for OAuth-only users', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          message: 'This account uses Google login. Please sign in with Google.',
+        }),
+      });
+
+      await expect(login('oauth@test.com', 'anypassword')).rejects.toThrow(
+        'This account uses Google login. Please sign in with Google.'
+      );
     });
 
     it('should throw error on 400 (validation error)', async () => {

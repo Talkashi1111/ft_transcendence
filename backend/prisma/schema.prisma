@@ -14,7 +14,8 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   alias     String   @unique
-  password  String
+  password  String?  // Nullable for OAuth-only users
+  googleId  String?  @unique // Google OAuth subject ID
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

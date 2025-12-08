@@ -375,7 +375,7 @@ Database is automatically persisted in Docker volume `sqlite-data`.
 | -------------- | ---------------------------------------------------------- |
 | **Frontend**   | TypeScript (vanilla), Vite, Tailwind CSS                   |
 | **Backend**    | Fastify, @fastify/cookie, @fastify/jwt, Prisma ORM, Argon2 |
-| **Auth**       | httpOnly cookies, JWT (7-day expiration)                   |
+| **Auth**       | httpOnly cookies, JWT (24h), Google OAuth 2.0              |
 | **Database**   | SQLite                                                     |
 | **Blockchain** | Hardhat 3.0.9, Solidity 0.8.28, Viem, Avalanche Fuji       |
 | **Dev Env**    | DevContainer (Node.js 22), Prettier, ESLint                |

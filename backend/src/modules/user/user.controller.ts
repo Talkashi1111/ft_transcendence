@@ -98,6 +98,15 @@ export async function loginHandler(
       });
     }
 
+    // Check if user has a password (OAuth-only users don't)
+    if (!user.password) {
+      return reply.status(401).send({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'This account uses Google login. Please sign in with Google.',
+      });
+    }
+
     // Verify password (argon2 hash includes salt)
     const isValidPassword = await verifyPassword(validatedData.password, user.password);
     if (!isValidPassword) {
@@ -116,7 +125,7 @@ export async function loginHandler(
         id: user.id,
         email: user.email,
       },
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
     // Set httpOnly cookie (production-ready)
@@ -125,7 +134,7 @@ export async function loginHandler(
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax', // CSRF protection
       path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      maxAge: 24 * 60 * 60, // 24 hours in seconds
     });
 
     // Return success without token in body (it's in cookie)
