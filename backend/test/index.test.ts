@@ -188,6 +188,43 @@ describe('API Server', () => {
 
       expect(response.statusCode).toBe(401);
     });
+
+    it('should reject OAuth-only user attempting password login', async () => {
+      // Import prisma to create an OAuth-only user directly
+      const { prisma } = await import('../src/utils/prisma.js');
+
+      const oauthEmail = 'oauth-only-user@example.com';
+
+      // Clean up any existing user
+      await prisma.user.deleteMany({ where: { email: oauthEmail } });
+
+      // Create an OAuth-only user (password is null)
+      await prisma.user.create({
+        data: {
+          email: oauthEmail,
+          alias: 'oauthonlyuser',
+          password: null, // OAuth-only user has no password
+          googleId: 'google-oauth-id-12345',
+        },
+      });
+
+      // Attempt to login with password credentials
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/users/login',
+        payload: {
+          email: oauthEmail,
+          password: 'anypassword',
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.payload);
+      expect(body.message).toBe('This account uses Google login. Please sign in with Google.');
+
+      // Clean up
+      await prisma.user.deleteMany({ where: { email: oauthEmail } });
+    });
   });
 
   describe('User logout', () => {

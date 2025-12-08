@@ -103,6 +103,50 @@ describe('Register Page', () => {
 
       expect(mockSetupNavigation).toHaveBeenCalled();
     });
+
+    it('should render Google OAuth button with correct attributes', async () => {
+      await renderRegisterPage(
+        container,
+        mockRenderNavBar,
+        mockSetupNavigation,
+        mockOnRegisterSuccess
+      );
+
+      const googleBtn = container.querySelector('#google-register-btn') as HTMLAnchorElement;
+      expect(googleBtn).toBeTruthy();
+      expect(googleBtn.href).toContain('/api/oauth/google');
+      expect(googleBtn.textContent).toContain('Sign up with Google');
+    });
+
+    it('should render divider with "or" separator before Google button', async () => {
+      await renderRegisterPage(
+        container,
+        mockRenderNavBar,
+        mockSetupNavigation,
+        mockOnRegisterSuccess
+      );
+
+      // Check for divider separator text
+      expect(container.innerHTML).toContain('or');
+
+      // Check that Google button comes after the divider
+      const googleBtn = container.querySelector('#google-register-btn');
+      expect(googleBtn).toBeTruthy();
+    });
+
+    it('should render Google icon SVG in the OAuth button with aria-hidden', async () => {
+      await renderRegisterPage(
+        container,
+        mockRenderNavBar,
+        mockSetupNavigation,
+        mockOnRegisterSuccess
+      );
+
+      const googleBtn = container.querySelector('#google-register-btn');
+      const svg = googleBtn?.querySelector('svg');
+      expect(svg).toBeTruthy();
+      expect(svg?.getAttribute('aria-hidden')).toBe('true');
+    });
   });
 
   describe('Form Validation', () => {

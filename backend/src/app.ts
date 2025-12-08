@@ -10,6 +10,7 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
 import blockchainRoutes from './modules/blockchain/blockchain.route.js';
+import oauthRoutes from './modules/oauth/oauth.route.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -152,6 +153,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register routes
   await server.register(userRoutes, { prefix: '/api/users' });
   await server.register(blockchainRoutes, { prefix: '/api' });
+  await server.register(oauthRoutes, { prefix: '/api/oauth' });
 
   // Health check endpoint
   server.get('/healthcheck', async () => {
