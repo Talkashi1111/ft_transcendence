@@ -162,7 +162,13 @@ describe('OAuth Module', () => {
   });
 
   describe('OAuth routes', () => {
-    it('GET /api/oauth/google should redirect to Google', async () => {
+    // Skip route tests if OAuth is not configured (e.g., in CI without secrets)
+    const oauthConfigured =
+      !!process.env.GOOGLE_CLIENT_ID &&
+      !!process.env.GOOGLE_CLIENT_SECRET &&
+      !!process.env.OAUTH_CALLBACK_URI;
+
+    it.skipIf(!oauthConfigured)('GET /api/oauth/google should redirect to Google', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/api/oauth/google',
@@ -173,15 +179,18 @@ describe('OAuth Module', () => {
       expect(response.headers.location).toContain('prompt=select_account');
     });
 
-    it('GET /api/oauth/google/callback without code should redirect to login with error', async () => {
-      const response = await server.inject({
-        method: 'GET',
-        url: '/api/oauth/google/callback',
-      });
+    it.skipIf(!oauthConfigured)(
+      'GET /api/oauth/google/callback without code should redirect to login with error',
+      async () => {
+        const response = await server.inject({
+          method: 'GET',
+          url: '/api/oauth/google/callback',
+        });
 
-      // Should redirect to login with error (no valid state/code)
-      expect(response.statusCode).toBe(302);
-      expect(response.headers.location).toContain('/login');
-    });
+        // Should redirect to login with error (no valid state/code)
+        expect(response.statusCode).toBe(302);
+        expect(response.headers.location).toContain('/login');
+      }
+    );
   });
 });
