@@ -50,13 +50,24 @@ We use **CI/CD** as the primary quality gate, not pre-commit hooks.
 
 ## Recommended Workflow
 
-### 1. Inside DevContainer (Development)
+### 1. Create Feature Branch
+
+```bash
+# ALWAYS create a feature branch (never work on main directly!)
+git checkout -b feature/add-user-endpoint
+```
+
+### 2. Inside DevContainer (Development)
 
 ```bash
 # Make your changes
 vim backend/src/index.ts
 
-# Before committing, run checks manually:
+# Before committing, run all checks:
+make all     # Runs format + lint + test + build
+
+# Or run checks individually if needed:
+make format  # Format code with Prettier
 make lint    # Check for linting errors
 make test    # Run tests with coverage
 make build   # Verify builds succeed
@@ -64,29 +75,41 @@ make build   # Verify builds succeed
 # All checks pass? Ready to commit!
 ```
 
-### 2. On Host Machine (Git Operations)
+### 3. On Host Machine (Git Operations)
 
 ```bash
 # Commit your changes (from host terminal)
 git add .
 git commit -m "feat: add new endpoint"
-git push
+
+# Push to your feature branch
+git push origin feature/add-user-endpoint
 ```
 
-### 3. CI/CD Automatically Runs
+### 4. Create Pull Request
+
+- Go to GitHub and open a PR from your feature branch to `main`
+- Add description and link any related issues
+- Request review from team members
+
+### 5. CI/CD Automatically Runs
 
 ```
-Push to GitHub → CI runs → Lint + Test + Build
-                    ↓
-              All pass? ✅
-                    ↓
-           Ready to merge!
+Push to GitHub → CI runs on PR → Lint + Test + Build
+                       ↓
+                 All pass? ✅
+                       ↓
+              Review approved? ✅
+                       ↓
+                 Merge to main!
 ```
 
 ## Make Commands (Inside DevContainer)
 
 | Command         | Description                             | When to Use        |
 | --------------- | --------------------------------------- | ------------------ |
+| `make all`      | Run format + lint + test + build        | Before committing  |
+| `make format`   | Format all files with Prettier          | Before committing  |
 | `make lint`     | Run ESLint on all packages              | Before committing  |
 | `make test`     | Run tests with 60% coverage requirement | Before committing  |
 | `make build`    | Build TypeScript + Vite                 | Before committing  |
@@ -99,7 +122,10 @@ Push to GitHub → CI runs → Lint + Test + Build
 Instead of automated hooks, use this manual checklist:
 
 ```bash
-# Run before every commit
+# Run before every commit (recommended)
+make all
+
+# Or run checks individually
 make lint && make test && make build
 ```
 
@@ -295,18 +321,23 @@ code ft_transcendence
 
 # 2. Reopen in DevContainer (VS Code prompt)
 
-# 3. Inside DevContainer: Install and run
-make install
+# 3. Inside DevContainer: Start development
 make dev
 
-# 4. Before committing: Run checks
-make lint && make test && make build
+# 4. Create a feature branch (NEVER work on main directly!)
+git checkout -b feature/my-awesome-feature
 
-# 5. On host: Commit and push
+# 5. Make your changes, then run all checks
+make all
+
+# 6. On host: Commit and push to your feature branch
+git add .
 git commit -m "feat: my awesome feature"
-git push
+git push origin feature/my-awesome-feature
 
-# 6. CI automatically validates everything! ✅
+# 7. Create Pull Request on GitHub
+
+# 8. CI automatically validates everything! ✅
 ```
 
 That's it! Simple, clean, and follows DevContainer best practices. 🎉

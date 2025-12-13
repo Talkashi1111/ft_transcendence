@@ -134,6 +134,10 @@ blockchain-node: check-deps ## start local Hardhat node
 ## Database targets (run INSIDE devcontainer)
 ## ============================================
 
+.PHONY: db-init
+db-init: check-deps ## initialize database (only if not exists)
+	bash scripts/init-db.sh
+
 .PHONY: seed
 seed: check-deps ## seed database with demo data
 	cd backend && npx prisma db seed
