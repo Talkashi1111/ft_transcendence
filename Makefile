@@ -34,6 +34,7 @@ prune:	 ## prune unused docker resources
 	docker images | grep ft_transcendence | awk '{print $$2}' | xargs -r docker rmi -f
 	docker volume prune -f
 	docker builder prune -f
+	docker network prune -f
 
 .PHONY: release
 release:   ## build & push prod image
