@@ -31,7 +31,7 @@ destroy:    ## destroy dev stack
 prune:	 ## prune unused docker resources
 	docker image prune -f
 	docker container prune -f
-	docker images | grep ft_transcendence | awk '{print $$3}' | xargs -r docker rmi -f
+	docker images | grep ft_transcendence | awk '{print $$2}' | xargs -r docker rmi -f
 	docker volume prune -f
 	docker builder prune -f
 
