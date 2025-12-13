@@ -58,17 +58,6 @@ ghcr.io/talkashi1111/ft_transcendence:main         # Main branch
 ghcr.io/talkashi1111/ft_transcendence:main-abc123  # Specific commit
 ```
 
-### Optional: Docker Hub
-
-If you prefer Docker Hub, follow these steps:
-
-1. Create Docker Hub account and access token
-2. Add GitHub secrets:
-   - `DOCKER_USERNAME`
-   - `DOCKER_PASSWORD`
-3. Uncomment Docker Hub login in workflow
-4. Update metadata to include Docker Hub images
-
 ## Multi-Architecture Details
 
 ### Platforms Built
@@ -137,37 +126,6 @@ docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-### Kubernetes Deployment
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ft-transcendence
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: ft-transcendence
-  template:
-    metadata:
-      labels:
-        app: ft-transcendence
-    spec:
-      containers:
-        - name: backend
-          image: ghcr.io/talkashi1111/ft_transcendence:latest
-          ports:
-            - containerPort: 3000
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: ft-transcendence-data
-```
-
 ## GitHub Container Registry Setup
 
 ### Making Images Public
@@ -219,70 +177,6 @@ docker stop ft-transcendence
 docker rm ft-transcendence
 docker run -d --name ft-transcendence ... :main-abc123
 ```
-
-## Monitoring Builds
-
-### View Build Progress
-
-1. Go to your GitHub repo
-2. Click "Actions" tab
-3. Select the workflow run
-4. Watch logs in real-time
-
-### Build Times (Approximate)
-
-- **CI Job**: 3-5 minutes
-  - Lint: 30 seconds
-  - Test: 1-2 minutes
-  - Build: 1-2 minutes
-
-- **Deploy Job**: 5-10 minutes
-  - AMD64 build: 2-3 minutes
-  - ARM64 build: 3-5 minutes (cross-compilation)
-  - Push: 1-2 minutes
-
-**Total**: ~8-15 minutes from merge to deployed image
-
-### Caching
-
-GitHub Actions cache significantly speeds up builds:
-
-- First build: ~10-15 minutes
-- Subsequent builds: ~5-8 minutes (with cache)
-
-## Cost Considerations
-
-### GitHub Container Registry
-
-**Free tier:**
-
-- Public repos: Unlimited
-- Private repos: 500MB storage + 1GB transfer/month
-
-**If you exceed limits:**
-
-- Storage: $0.25/GB/month
-- Transfer: $0.50/GB
-
-### Build Minutes
-
-**GitHub Actions free tier:**
-
-- Public repos: Unlimited
-- Private repos: 2,000 minutes/month
-
-Multi-arch builds use ~10-15 minutes per deployment.
-
-**If you exceed limits:**
-
-- Additional minutes: $0.008/minute
-
-### Optimization Tips
-
-1. **Use cache** (already configured)
-2. **Limit rebuilds** - Only push on main branch
-3. **Clean up old images** - Delete unused tags
-4. **Use buildx efficiently** - Parallel builds when possible
 
 ## Security Best Practices
 
@@ -360,15 +254,6 @@ USER appuser
 3. **Add health checks** in Docker Compose
 4. **Configure monitoring** (Prometheus/Grafana)
 5. **Add staging environment** with separate images
-
-### Advanced: GitOps with ArgoCD
-
-For Kubernetes deployments:
-
-1. Store manifests in repo
-2. ArgoCD watches for new images
-3. Automatic rollout to cluster
-4. Built-in rollback capabilities
 
 ## Resources
 

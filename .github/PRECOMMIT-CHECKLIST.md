@@ -1,19 +1,54 @@
 # Quick Pre-Commit Checklist
 
-Before committing your changes, run these commands **inside the DevContainer**:
+## 1. Create a Feature Branch
+
+**Always work on a feature branch, never directly on `main`:**
 
 ```bash
-# Run all checks
-make lint && make test && make build
+# Create and switch to a new branch
+git checkout -b feature/your-feature-name
+
+# Or for bug fixes
+git checkout -b fix/bug-description
 ```
 
-Or individually:
+## 2. Run All Checks
+
+Before committing your changes, run this command **inside the DevContainer**:
 
 ```bash
+# Run all checks (format + lint + test + build)
+make all
+```
+
+Or run checks individually:
+
+```bash
+make format  # Format all files with Prettier (fast, ~1-2s)
 make lint    # Check linting (fast, ~1-3s)
 make test    # Run tests with coverage (moderate, ~5-15s)
 make build   # Verify builds (moderate, ~10-30s)
 ```
+
+## 3. Commit and Push
+
+```bash
+# Stage your changes
+git add .
+
+# Commit with a descriptive message
+git commit -m "feat: add user authentication endpoint"
+
+# Push to your feature branch
+git push origin feature/your-feature-name
+```
+
+## 4. Create Pull Request
+
+- Go to GitHub and create a PR from your feature branch to `main`
+- CI will automatically run all checks
+- Request review from team members
+- Merge only after CI passes and approval
 
 ## Why No Automated Pre-Commit Hooks?
 
@@ -54,7 +89,7 @@ Add to your workflow:
 
 ```bash
 # Inside DevContainer
-alias precommit="make lint && make test && make build"
+alias precommit="make all"
 ```
 
 Then before committing:

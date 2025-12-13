@@ -6,14 +6,52 @@ This project is about creating a website for the mighty Pong contest.
 
 ## 🚀 Quick Start
 
-### Development (Inside Devcontainer)
+### First Time Setup
 
-```bash
-# Run both frontend + backend
-pnpm run dev
-# or
-make dev
-```
+1. **Clone the repository**
+
+   ```bash
+   git clone <repository-url>
+   cd ft_transcendence
+   ```
+
+2. **Configure environment variables**
+
+   ```bash
+   # Copy example env file
+   cp backend/.env.example backend/.env
+
+   # Edit backend/.env and configure:
+   # - JWT_SECRET (change in production!)
+   # - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET (for OAuth)
+   # - PRIVATE_KEY (for blockchain, optional)
+   # - Other settings as needed
+   ```
+
+3. **Open in VS Code with DevContainer**
+
+   ```bash
+   # Open VS Code
+   code .
+
+   # VS Code will prompt: "Reopen in Container" - click it
+   # Or use Command Palette: "Dev Containers: Reopen in Container"
+   ```
+
+4. **DevContainer will automatically:**
+   - Install all dependencies (`pnpm install`)
+   - Generate Prisma client
+   - Initialize database (migrations + seed) if not exists
+   - This takes 2-3 minutes on first run
+
+5. **Start development servers**
+   ```bash
+   make dev
+   # or
+   pnpm run dev
+   ```
+
+### Development (Inside Devcontainer)
 
 | Service           | URL                        | Description                  |
 | ----------------- | -------------------------- | ---------------------------- |
@@ -93,13 +131,16 @@ make backend        # Backend only
 # Prisma Studio (can run from root!)
 make studio                    # Database GUI at http://localhost:5555
 
+# Migrations
+make migrate                   # Run pending migrations
+make migrate-reset             # Reset database and rerun all migrations
+
 # Database seeding
 make seed                      # Add demo data to dev database
 make seed-reset                # Clear and reseed database
 
-# Migrations
-make migrate                   # Run pending migrations
-make migrate-reset             # Reset database and rerun all migrations
+# Initialize database (migrations + seed)
+make db-init                   # Run migrations and seed (if DB not exists)
 
 # Other Prisma commands (must run from /app/backend)
 cd /app/backend
@@ -344,28 +385,165 @@ For more details, see [blockchain/README.md](blockchain/README.md)
 
 ## 🐛 Troubleshooting
 
+### Environment Variables Not Loading
+
+**Problem:** Backend fails to start with "JWT_SECRET must be set" or "GOOGLE_CLIENT_ID is undefined"
+
+**Solution:**
+
+```bash
+# 1. Verify .env file exists and is uncommented
+cat backend/.env
+
+# 2. Lines must NOT start with # (except actual comments)
+# WRONG:  # JWT_SECRET="secret"
+# RIGHT:  JWT_SECRET="secret"
+
+# 3. Restart dev server
+make dev
+```
+
+### Database Not Initialized
+
+**Problem:** "Table 'User' does not exist" or similar Prisma errors
+
+**Solution:**
+
+```bash
+# Manually initialize database
+make db-init
+
+# Or run migrations + seed separately
+make migrate
+make seed
+
+# Nuclear option: reset everything
+make migrate-reset
+```
+
+### OAuth Not Working
+
+**Problem:** Google OAuth fails or redirects incorrectly
+
+**Solution:**
+
+```bash
+# 1. Verify OAuth credentials in backend/.env
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+OAUTH_CALLBACK_URI=http://localhost:5173/api/oauth/google/callback
+
+# 2. Check Google Cloud Console settings:
+#    - Authorized JavaScript origins: http://localhost:5173
+#    - Authorized redirect URIs: http://localhost:5173/api/oauth/google/callback
+
+# 3. For production, update:
+#    - oauth.controller.ts line 101 with your production domain
+#    - OAUTH_CALLBACK_URI in production .env
+#    - Google Cloud Console with production URIs
+```
+
 ### Port Already in Use
+
+**Problem:** "Port 3000/5173/8080 already in use"
+
+**Solution:**
 
 ```bash
 # Find what's using the port
+lsof -i :3000
+lsof -i :5173
 lsof -i :8080
 
-# Or change port in docker-compose.prod.yml
+# Kill the process or change port in docker-compose.yml
 ports:
   - "9090:3000"  # Change 8080 to any free port
 ```
 
 ### Build Fails
 
+**Problem:** Production build or TypeScript compilation errors
+
+**Solution:**
+
 ```bash
-# Clean and rebuild
+# Clean and rebuild everything
 docker compose -f docker-compose.prod.yml down --volumes
 docker compose -f docker-compose.prod.yml up --build --force-recreate
+
+# Inside devcontainer, test build
+make build
 ```
 
-### Database Issues
+### Database Locked or Corrupted
 
-Database is automatically persisted in Docker volume `sqlite-data`.
+**Problem:** "database is locked" or other SQLite errors
+
+**Solution:**
+
+```bash
+# 1. Stop all processes using database
+pkill -f node
+
+# 2. Check for .db-journal or .db-wal files
+ls -la data/
+
+# 3. Reset database (WARNING: deletes all data)
+rm data/database.db*
+make db-init
+
+# Or use Prisma's reset
+make migrate-reset
+```
+
+### DevContainer Fails to Build
+
+**Problem:** DevContainer build errors or hangs
+
+**Solution:**
+
+```bash
+# 1. Rebuild container from VS Code
+# Command Palette: "Dev Containers: Rebuild Container"
+
+# 2. Or from command line (exit devcontainer first)
+exit
+docker compose -f docker-compose.dev.yml down --volumes
+docker compose -f docker-compose.dev.yml up --build
+
+# 3. Clear Docker cache if still failing
+docker system prune -a
+```
+
+### Prisma Client Not Generated
+
+**Problem:** "Cannot find module '@prisma/client'" or similar
+
+**Solution:**
+
+```bash
+# Regenerate Prisma client
+cd backend
+npx prisma generate
+
+# Or use make command from root
+make install  # Runs postinstall hook which generates Prisma client
+```
+
+### Missing Dependencies
+
+**Problem:** "Cannot find module 'fastify'" or similar import errors
+
+**Solution:**
+
+```bash
+# Reinstall all dependencies
+pnpm install
+
+# Or clean install
+rm -rf node_modules frontend/node_modules backend/node_modules
+pnpm install
+```
 
 ---
 
