@@ -2,6 +2,46 @@
 
 This is a Hardhat 3 project for the ft_transcendence blockchain module. It stores tournament match scores on the Avalanche Fuji testnet.
 
+## 🚀 Quick Start
+
+### View Contract & Transactions Online
+
+Your deployed contract is live on Avalanche Fuji testnet! View it here:
+
+**Contract Address:** [View on Snowtrace](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D)
+
+**What you can see:**
+
+- 📜 **Contract Code** - Verified Solidity source code with comments
+- 📊 **Transactions** - All match recordings in real-time
+- 💰 **Balance** - Contract's AVAX balance
+- 📝 **Events** - `MatchRecorded` events with player data
+- 🔍 **Read Contract** - Query match details, tournament stats, owner address
+- ✍️ **Write Contract** - Record new matches (owner only)
+
+**Example URLs:**
+
+```
+Contract Overview:  https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D
+Recent Transactions: https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D#txs
+Contract Code:      https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D#code
+```
+
+### Test the Contract (Backend Integration)
+
+Inside the devcontainer, interact with the deployed contract:
+
+```bash
+# Check contract status on Fuji testnet
+cd /app/blockchain
+npx hardhat run scripts/check-fuji.ts --network fuji
+
+# Record a test match (requires AVAX in your wallet)
+npx hardhat run scripts/interact-fuji.ts --network fuji
+```
+
+After running, check [Snowtrace](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D#txs) to see your transaction!
+
 ## Features
 
 - **Smart Contract**: `TournamentScores.sol` - Stores match results with player IDs and aliases
@@ -131,6 +171,19 @@ This will:
 - Display the verification status and link
 
 You can then view your verified contract at: `https://testnet.snowtrace.io/address/<your-contract-address>#code`
+
+**View Transactions:**
+
+Every time the backend records a match, you'll see a new transaction:
+
+1. Go to [your contract on Snowtrace](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D)
+2. Click **"Transactions"** tab to see all match recordings
+3. Click any transaction hash to see details:
+   - Gas used
+   - Transaction fee (in AVAX)
+   - Input data (encoded match details)
+   - Logs/Events (decoded player data)
+4. Click **"Events"** tab to see `MatchRecorded` events with readable player names and scores
 
 ### Architecture Notes
 
