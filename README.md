@@ -76,20 +76,146 @@ cd /app/backend && npx prisma studio --port 5555
 # 1. Exit devcontainer first
 exit
 
-# 2. Deploy production (uses pre-built image from GitHub)
+# 2. Deploy production with HTTPS (uses Caddy reverse proxy)
 docker compose -f docker-compose.prod.yml up -d
 
 # Or rebuild locally if you made changes
 docker compose -f docker-compose.prod.yml up --build
 ```
 
-**Access:** http://localhost:8080
+**Access:** https://localhost (HTTPS on port 443)
 
 > **Note:**
 >
-> - Production uses pre-built images from GitHub Actions CI
+> - Production uses HTTPS with Caddy reverse proxy
+> - Browser will show certificate warning (self-signed) - click "Advanced" → "Proceed"
+> - HTTP automatically redirects to HTTPS
+> - Uses pre-built images from GitHub Actions CI
 > - To use latest image, update the tag in `docker-compose.prod.yml`
 > - Or uncomment the `build` section to build locally
+
+---
+
+## 🔐 HTTPS Setup (Production & Defense)
+
+Production requires HTTPS for all connections. The project uses **Caddy** as a reverse proxy with automatic TLS.
+
+### Quick Start (localhost only)
+
+```bash
+# Add to /etc/hosts (one-time setup)
+echo "127.0.0.1 mooo.com" | sudo tee -a /etc/hosts
+
+# Create .env.prod with JWT secret
+cp .env.prod.example .env.prod
+# Edit .env.prod and set JWT_SECRET (generate with: openssl rand -hex 32)
+
+# Start production stack
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+# Access at https://mooo.com
+# Accept the self-signed certificate warning in your browser
+```
+
+### Local Network Defense (School/Hotspot)
+
+For defense presentations where others need to access your site via `mooo.com`:
+
+1. **Find your server's IP address:**
+
+   ```bash
+   # macOS
+   ipconfig getifaddr en0
+
+   # Linux
+   hostname -I | awk '{print $1}'
+
+   # Windows
+   ipconfig  # Look for IPv4 Address
+   ```
+
+2. **On the SERVER machine, add to `/etc/hosts`:**
+
+   ```bash
+   echo "127.0.0.1 mooo.com" | sudo tee -a /etc/hosts
+   ```
+
+3. **On EACH CLIENT machine, add to `/etc/hosts`:**
+
+   ```bash
+   # Replace 192.168.1.100 with the server's actual IP
+   echo "192.168.1.100 mooo.com" | sudo tee -a /etc/hosts
+   ```
+
+   - **macOS/Linux:** `/etc/hosts`
+   - **Windows:** `C:\Windows\System32\drivers\etc\hosts` (run notepad as Admin)
+
+4. **Setup Google OAuth (one-time):**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Add `https://mooo.com` to Authorized JavaScript origins
+   - Add `https://mooo.com/api/oauth/google/callback` to Authorized redirect URIs
+
+5. **Start production on the server:**
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+   ```
+
+6. **Access from any device:**
+   - Open `https://mooo.com` in browser
+   - Accept the self-signed certificate warning
+   - OAuth login works from any device!
+
+### Architecture
+
+```
+Internet/Local Network
+         │
+         ▼
+    ┌─────────┐
+    │  Caddy  │ :443 (HTTPS) / :80 (HTTP→HTTPS redirect)
+    │  Proxy  │ TLS termination, routing
+    └────┬────┘
+         │ Internal network (HTTP)
+         ▼
+    ┌─────────┐
+    │ Backend │ :3000 (internal only)
+    │ Fastify │ API + Static files
+    └─────────┘
+         │
+         ▼
+    ┌─────────┐
+    │ SQLite  │ /app/data/database.db
+    └─────────┘
+```
+
+### Swagger UI Access
+
+Swagger UI (`/docs`) is accessible in production from:
+
+- localhost (127.0.0.1)
+- Private networks (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+
+Access from other IPs is blocked for security.
+
+### Troubleshooting HTTPS
+
+**Certificate warning in browser:**
+
+- This is expected with self-signed certificates
+- Click "Advanced" → "Proceed to [site]" (Chrome)
+- Or "Accept the Risk and Continue" (Firefox)
+
+**OAuth not working with HTTPS:**
+
+- Update `OAUTH_CALLBACK_URI` in `backend/.env` to use `https://`
+- Update Google Cloud Console with HTTPS redirect URIs
+
+**Can't access from other devices:**
+
+- Ensure firewall allows ports 443 and 80
+- Verify `/etc/hosts` on client points to server IP
+- Check that devices are on the same network
 
 ---
 
@@ -100,6 +226,9 @@ ft_transcendence/
 ├── frontend/          # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
 ├── backend/           # Fastify + Prisma + SQLite + JWT auth
 ├── blockchain/        # Hardhat + Solidity + Avalanche
+├── caddy/             # Caddy reverse proxy configuration
+│   ├── Caddyfile      # Routing and TLS configuration
+│   └── generate-certs.sh  # Self-signed certificate generator
 ├── data/              # SQLite database (persistent volume)
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml

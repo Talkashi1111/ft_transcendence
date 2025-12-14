@@ -10,7 +10,11 @@
   "shutdownAction": "stopCompose",
 
   // Features to add to the dev container. More info: https://containers.dev/features.
-  // "features": {},
+  "features": {
+    // Docker-outside-of-Docker: allows running docker commands from inside devcontainer
+    // Uses the host's Docker daemon via socket mount
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // This can be used to network with other containers or with the host.
