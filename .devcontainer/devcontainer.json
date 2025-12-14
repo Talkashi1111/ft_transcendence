@@ -17,7 +17,9 @@
   "forwardPorts": [3000, 5173],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "sudo chown -R node:node /app 2>/dev/null && pnpm install && bash /app/scripts/init-db.sh",
+  // Note: "|| true" after chown allows the command to continue even if some files
+  // (like .git internals) fail to change ownership on macOS Docker Desktop.
+  "postCreateCommand": "sudo chown -R node:node /app 2>/dev/null || true && pnpm install && bash /app/scripts/init-db.sh",
 
   // Configure tool-specific properties.
   "customizations": {

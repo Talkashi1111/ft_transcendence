@@ -438,7 +438,7 @@ OAUTH_CALLBACK_URI=http://localhost:5173/api/oauth/google/callback
 #    - Authorized redirect URIs: http://localhost:5173/api/oauth/google/callback
 
 # 3. For production, update:
-#    - oauth.controller.ts line 101 with your production domain
+#    - oauth.route.ts line 123 redirect URL to your production domain
 #    - OAUTH_CALLBACK_URI in production .env
 #    - Google Cloud Console with production URIs
 ```
