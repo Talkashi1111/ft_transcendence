@@ -1,8 +1,23 @@
-version: '3.8'
-
 name: ft_transcendence_prod # Different project name to avoid conflicts
 
 services:
+  # Caddy reverse proxy with TLS termination
+  caddy:
+    image: caddy:2-alpine
+    container_name: ft_transcendence-caddy
+    restart: unless-stopped
+    ports:
+      - '443:443' # HTTPS
+      - '80:80' # HTTP (redirects to HTTPS)
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - transcendence-prod
+    depends_on:
+      - app
+
   app:
     container_name: ft_transcendence-prod
     # Pre-built image from GitHub Actions CI
@@ -22,12 +37,28 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/database.db
-      - HOST_PORT=8080 # Host port for logging (should match ports mapping)
+      # Required secrets - set these before running!
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      # OAuth (optional - only if using Google login)
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - OAUTH_CALLBACK_URI=${OAUTH_CALLBACK_URI:-https://mooo.com/api/oauth/google/callback}
+      # Blockchain (optional)
+      - PRIVATE_KEY=${PRIVATE_KEY:-}
+      - FUJI_RPC_URL=${FUJI_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS:-}
+    # Internal port only - Caddy handles external traffic
+    expose:
+      - '3000'
+    # Expose Prisma Studio for database inspection during defense
+    # Access at http://localhost:5556 after running: docker exec -it ft_transcendence-prod npx prisma studio --url "file:/app/data/database.db" --browser none --port 5556
     ports:
-      - '8080:3000' # Production on 8080 (avoids conflict with devcontainer port 3000)
+      - '5556:5556'
 
 volumes:
   sqlite-data:
+  caddy_data:
+  caddy_config:
 
 networks:
   transcendence-prod:

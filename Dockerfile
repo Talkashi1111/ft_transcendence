@@ -72,10 +72,18 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 
+# Copy Prisma schema, migrations, and config for running migrations in production
+COPY --from=builder /app/backend/prisma ./backend/prisma
+COPY --from=builder /app/backend/prisma.config.ts ./backend/prisma.config.ts
+
+# Copy startup script
+COPY scripts/start-prod.sh /app/start-prod.sh
+RUN chmod +x /app/start-prod.sh
+
 # Create data directory
 RUN mkdir -p /app/data
 
 EXPOSE 3000
 ENV NODE_ENV=production
 
-CMD ["pnpm", "--filter", "backend", "run", "start"]
+CMD ["/app/start-prod.sh"]
