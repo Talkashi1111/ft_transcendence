@@ -1,0 +1,52 @@
+# Caddy reverse proxy configuration for ft_transcendence
+
+# Provides TLS termination and routes traffic to backend services
+
+# Main HTTPS site - mooo.com for defense, localhost for local dev
+
+# Configure client machines via /etc/hosts: <server-ip> mooo.com
+
+localhost, mooo.com {
+	tls internal
+
+	# Swagger UI - accessible with IP whitelist for local networks
+	# Allows access from localhost and common private network ranges
+	handle /docs* {
+		@allowed remote_ip 127.0.0.1 ::1 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12
+		handle @allowed {
+			reverse_proxy app:3000
+		}
+		# Block access from non-allowed IPs
+		respond "Access denied" 403
+	}
+
+	# API routes - proxy to backend
+	handle /api/* {
+		reverse_proxy app:3000
+	}
+
+	# WebSocket support (for future real-time features)
+	handle /ws/* {
+		reverse_proxy app:3000 {
+			# Required headers for WebSocket upgrade
+			header_up Upgrade {http.request.header.Upgrade}
+			header_up Connection "Upgrade"
+		}
+	}
+
+	# Health check endpoint
+	handle /healthcheck {
+		reverse_proxy app:3000
+	}
+
+	# All other routes - serve frontend (static files in production)
+	handle {
+		reverse_proxy app:3000
+	}
+}
+
+# HTTP to HTTPS redirect
+
+http://localhost, http://mooo.com {
+	redir https://{host}{uri} permanent
+}
