@@ -50,6 +50,10 @@ services:
     # Internal port only - Caddy handles external traffic
     expose:
       - '3000'
+    # Expose Prisma Studio for database inspection during defense
+    # Access at http://localhost:5556 after running: docker exec -it ft_transcendence-prod npx prisma studio --url "file:/app/data/database.db" --browser none --port 5556
+    ports:
+      - '5556:5556'
 
 volumes:
   sqlite-data:

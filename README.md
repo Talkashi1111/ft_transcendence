@@ -228,7 +228,6 @@ ft_transcendence/
 ├── blockchain/        # Hardhat + Solidity + Avalanche
 ├── caddy/             # Caddy reverse proxy configuration
 │   ├── Caddyfile      # Routing and TLS configuration
-│   └── generate-certs.sh  # Self-signed certificate generator
 ├── data/              # SQLite database (persistent volume)
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
