@@ -88,9 +88,8 @@ echo "127.0.0.1 mooo.com" | sudo tee -a /etc/hosts
 # Create production environment file
 cp .env.prod.example .env.prod
 
-# Generate and set JWT_SECRET
-openssl rand -hex 32
-# Edit .env.prod and paste the generated secret as JWT_SECRET
+# Generate and set JWT_SECRET automatically
+sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env.prod
 ```
 
 ### 2. Start Production
