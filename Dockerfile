@@ -72,6 +72,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 
+# Copy blockchain artifacts (contract ABI needed at runtime)
+COPY --from=builder /app/blockchain/artifacts/contracts ./blockchain/artifacts/contracts
+
 # Copy Prisma schema, migrations, and config for running migrations in production
 COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/backend/prisma.config.ts ./backend/prisma.config.ts

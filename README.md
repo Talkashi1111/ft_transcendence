@@ -70,103 +70,68 @@ make studio
 cd /app/backend && npx prisma studio --port 5555
 ```
 
-### Production (From Host Machine)
-
-```bash
-# 1. Exit devcontainer first
-exit
-
-# 2. Deploy production with HTTPS (uses Caddy reverse proxy)
-docker compose -f docker-compose.prod.yml up -d
-
-# Or rebuild locally if you made changes
-docker compose -f docker-compose.prod.yml up --build
-```
-
-**Access:** https://localhost (HTTPS on port 443)
-
-> **Note:**
->
-> - Production uses HTTPS with Caddy reverse proxy
-> - Browser will show certificate warning (self-signed) - click "Advanced" → "Proceed"
-> - HTTP automatically redirects to HTTPS
-> - Uses pre-built images from GitHub Actions CI
-> - To use latest image, update the tag in `docker-compose.prod.yml`
-> - Or uncomment the `build` section to build locally
-
 ---
 
-## 🔐 HTTPS Setup (Production & Defense)
+## 🔐 Production Deployment
 
-Production requires HTTPS for all connections. The project uses **Caddy** as a reverse proxy with automatic TLS.
+Production uses **Caddy** as a reverse proxy with HTTPS (self-signed certificates).
 
-### Quick Start (localhost only)
+### 1. Setup (First Time Only)
 
 ```bash
-# Add to /etc/hosts (one-time setup)
+# Exit devcontainer if you're inside one
+exit
+
+# Add domain to /etc/hosts
 echo "127.0.0.1 mooo.com" | sudo tee -a /etc/hosts
 
-# Create .env.prod with JWT secret
+# Create production environment file
 cp .env.prod.example .env.prod
-# Edit .env.prod and set JWT_SECRET (generate with: openssl rand -hex 32)
 
-# Start production stack
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
-
-# Access at https://mooo.com
-# Accept the self-signed certificate warning in your browser
+# Generate and set JWT_SECRET
+openssl rand -hex 32
+# Edit .env.prod and paste the generated secret as JWT_SECRET
 ```
 
-### Local Network Defense (School/Hotspot)
+### 2. Start Production
 
-For defense presentations where others need to access your site via `mooo.com`:
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up
+```
 
-1. **Find your server's IP address:**
+**Access:** https://mooo.com (accept the self-signed certificate warning)
+
+### 3. Defense Setup (Multiple Devices)
+
+For defense presentations where others need to access your site:
+
+1. **Find your server's IP:**
 
    ```bash
    # macOS
    ipconfig getifaddr en0
-
    # Linux
    hostname -I | awk '{print $1}'
-
-   # Windows
-   ipconfig  # Look for IPv4 Address
    ```
 
-2. **On the SERVER machine, add to `/etc/hosts`:**
+2. **On EACH CLIENT machine, add to `/etc/hosts`:**
 
    ```bash
-   echo "127.0.0.1 mooo.com" | sudo tee -a /etc/hosts
-   ```
-
-3. **On EACH CLIENT machine, add to `/etc/hosts`:**
-
-   ```bash
-   # Replace 192.168.1.100 with the server's actual IP
+   # Replace 192.168.1.100 with server's actual IP
    echo "192.168.1.100 mooo.com" | sudo tee -a /etc/hosts
    ```
 
    - **macOS/Linux:** `/etc/hosts`
-   - **Windows:** `C:\Windows\System32\drivers\etc\hosts` (run notepad as Admin)
+   - **Windows:** `C:\Windows\System32\drivers\etc\hosts` (run Notepad as Admin)
 
-4. **Setup Google OAuth (one-time):**
+3. **Configure Google OAuth (one-time):**
    - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    - Add `https://mooo.com` to Authorized JavaScript origins
    - Add `https://mooo.com/api/oauth/google/callback` to Authorized redirect URIs
 
-5. **Start production on the server:**
+4. **Access from any device:** https://mooo.com
 
-   ```bash
-   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
-   ```
-
-6. **Access from any device:**
-   - Open `https://mooo.com` in browser
-   - Accept the self-signed certificate warning
-   - OAuth login works from any device!
-
-### Architecture
+### Production Architecture
 
 ```
 Internet/Local Network
@@ -293,13 +258,16 @@ make blockchain-deploy-local
 make blockchain-deploy-fuji
 ```
 
-### Production
+### Production Commands
 
 ```bash
-# Start
-docker compose -f docker-compose.prod.yml up -d --build
+# Start (foreground)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up --build
 
-# Logs
+# Start (background)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+# Logs (if running in background)
 docker compose -f docker-compose.prod.yml logs -f
 
 # Stop
@@ -307,7 +275,7 @@ docker compose -f docker-compose.prod.yml down
 
 # Rebuild from scratch
 docker compose -f docker-compose.prod.yml down --volumes
-docker compose -f docker-compose.prod.yml up --build --force-recreate
+docker compose -f docker-compose.prod.yml --env-file .env.prod up --build --force-recreate
 ```
 
 ---
