@@ -16,6 +16,11 @@ model User {
   alias     String   @unique
   password  String?  // Nullable for OAuth-only users
   googleId  String?  @unique // Google OAuth subject ID
+
+  // Two-Factor Authentication
+  twoFactorSecret   String?           // TOTP secret (AES-256-GCM encrypted)
+  twoFactorEnabled  Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

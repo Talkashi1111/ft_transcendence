@@ -22,7 +22,7 @@ services:
     container_name: ft_transcendence-prod
     # Pre-built image from GitHub Actions CI
     # To use latest: change tag to 'main-<commit-hash>' or use 'latest'
-    image: ghcr.io/talkashi1111/ft_transcendence:main-d2cf417
+    image: ghcr.io/talkashi1111/ft_transcendence:main-76d7bbe
     # Uncomment to build locally instead of using pre-built image
     # build:
     #   context: .
@@ -42,6 +42,8 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - OAUTH_CALLBACK_URI=${OAUTH_CALLBACK_URI:-https://mooo.com/api/oauth/google/callback}
+      # Two-Factor Authentication (optional)
+      - TWO_FACTOR_ENCRYPTION_KEY=${TWO_FACTOR_ENCRYPTION_KEY:-}
       # Blockchain (optional)
       - PRIVATE_KEY=${PRIVATE_KEY:-}
       - FUJI_RPC_URL=${FUJI_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}

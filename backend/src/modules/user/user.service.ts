@@ -21,6 +21,15 @@ export async function createUser(input: CreateUserInput) {
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({
     where: { email },
+    select: {
+      id: true,
+      email: true,
+      alias: true,
+      password: true,
+      googleId: true,
+      twoFactorEnabled: true,
+      createdAt: true,
+    },
   });
 }
 
@@ -48,6 +57,7 @@ export async function findUserById(id: string) {
       id: true,
       email: true,
       alias: true,
+      twoFactorEnabled: true,
       createdAt: true,
     },
   });

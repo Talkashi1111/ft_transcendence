@@ -18,7 +18,7 @@ describe('Login Page', () => {
     mockOnLoginSuccess = vi.fn();
 
     // Mock login function
-    vi.spyOn(auth, 'login').mockResolvedValue(true);
+    vi.spyOn(auth, 'login').mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
@@ -181,7 +181,7 @@ describe('Login Page', () => {
     it('should disable button and show loading state during login', async () => {
       // Mock a slow login
       vi.spyOn(auth, 'login').mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(true), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve({ success: true }), 100))
       );
 
       await renderLoginPage(container, mockRenderNavBar, mockSetupNavigation, mockOnLoginSuccess);
@@ -311,7 +311,7 @@ describe('Login Page', () => {
       expect(errorMessage?.classList.contains('hidden')).toBe(false);
 
       // Mock successful login for second attempt
-      vi.spyOn(auth, 'login').mockResolvedValue(true);
+      vi.spyOn(auth, 'login').mockResolvedValue({ success: true });
       passwordInput.value = 'correctpassword';
 
       // Second submission - error should be hidden

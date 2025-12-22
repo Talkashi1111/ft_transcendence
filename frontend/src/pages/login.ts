@@ -1,4 +1,4 @@
-import { login } from '../utils/auth';
+import { login, verify2FA } from '../utils/auth';
 
 export async function renderLoginPage(
   app: HTMLElement,
@@ -69,6 +69,44 @@ export async function renderLoginPage(
               </button>
             </form>
 
+            <!-- 2FA Verification Form (hidden initially) -->
+            <div id="2fa-form" class="hidden space-y-4">
+              <div class="text-center mb-4">
+                <div class="text-4xl mb-2">🔐</div>
+                <h3 class="text-lg font-semibold text-gray-900">Two-Factor Authentication</h3>
+                <p class="text-sm text-gray-600">Enter the 6-digit code from your authenticator app</p>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  id="2fa-code"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                  placeholder="000000"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div id="2fa-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-3">
+                <p class="text-red-700 text-sm"></p>
+              </div>
+
+              <button
+                id="verify-2fa-btn"
+                class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Verify
+              </button>
+
+              <button
+                id="back-to-login-btn"
+                class="w-full text-gray-500 hover:text-gray-700 text-sm"
+              >
+                ← Back to login
+              </button>
+            </div>
+
             <!-- Divider -->
             <div class="mt-6 flex items-center">
               <div class="flex-grow border-t border-gray-300"></div>
@@ -117,7 +155,17 @@ function setupLoginForm(onLoginSuccess: () => void): void {
   const errorText = errorMessage.querySelector('p')!;
   const registerLink = document.getElementById('register-link') as HTMLButtonElement;
 
+  // 2FA elements
+  const twoFAForm = document.getElementById('2fa-form') as HTMLElement;
+  const twoFACode = document.getElementById('2fa-code') as HTMLInputElement;
+  const twoFAError = document.getElementById('2fa-error') as HTMLElement;
+  const verifyBtn = document.getElementById('verify-2fa-btn') as HTMLButtonElement;
+  const backBtn = document.getElementById('back-to-login-btn') as HTMLButtonElement;
+
   if (!form || !emailInput || !passwordInput || !loginBtn) return;
+
+  // Store temp token for 2FA verification
+  let tempToken: string | null = null;
 
   const showError = (message: string) => {
     errorText.textContent = message;
@@ -127,6 +175,38 @@ function setupLoginForm(onLoginSuccess: () => void): void {
   const hideError = () => {
     errorMessage.classList.add('hidden');
   };
+
+  const show2FAError = (message: string) => {
+    const errorP = twoFAError.querySelector('p');
+    if (errorP) errorP.textContent = message;
+    twoFAError.classList.remove('hidden');
+  };
+
+  const hide2FAError = () => {
+    twoFAError.classList.add('hidden');
+  };
+
+  const showTwoFAForm = () => {
+    form.classList.add('hidden');
+    twoFAForm?.classList.remove('hidden');
+    twoFACode?.focus();
+  };
+
+  const hideTwoFAForm = () => {
+    form.classList.remove('hidden');
+    twoFAForm?.classList.add('hidden');
+    if (twoFACode) twoFACode.value = '';
+    hide2FAError();
+  };
+
+  // Check URL parameters for 2FA (from OAuth redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('requires2FA') === 'true' && urlParams.get('tempToken')) {
+    tempToken = urlParams.get('tempToken');
+    showTwoFAForm();
+    // Clean URL
+    window.history.replaceState({}, '', '/login');
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -144,10 +224,19 @@ function setupLoginForm(onLoginSuccess: () => void): void {
     loginBtn.textContent = 'Logging in...';
 
     try {
-      await login(email, password);
-      // Reset form
+      const result = await login(email, password);
+
+      // Check if 2FA is required
+      if (result.requires2FA && result.tempToken) {
+        tempToken = result.tempToken;
+        showTwoFAForm();
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+        return;
+      }
+
+      // Normal login success - reset form and redirect
       form.reset();
-      // Call callback to redirect
       onLoginSuccess();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -156,6 +245,54 @@ function setupLoginForm(onLoginSuccess: () => void): void {
       loginBtn.textContent = 'Login';
     }
   });
+
+  // 2FA verification handler
+  if (verifyBtn && twoFACode) {
+    verifyBtn.addEventListener('click', async () => {
+      hide2FAError();
+      const code = twoFACode.value.trim();
+
+      if (!/^\d{6}$/.test(code)) {
+        show2FAError('Please enter a valid 6-digit code');
+        return;
+      }
+
+      if (!tempToken) {
+        show2FAError('Session expired. Please login again.');
+        hideTwoFAForm();
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+
+      try {
+        await verify2FA(tempToken, code);
+        // Success - redirect to home
+        onLoginSuccess();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Invalid code. Please try again.';
+        show2FAError(message);
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify';
+      }
+    });
+
+    // Allow Enter key to submit
+    twoFACode.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        verifyBtn.click();
+      }
+    });
+  }
+
+  // Back to login button
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      tempToken = null;
+      hideTwoFAForm();
+    });
+  }
 
   // Navigate to register page
   registerLink.addEventListener('click', () => {

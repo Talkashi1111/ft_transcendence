@@ -101,6 +101,21 @@ async function oauthRoutes(server: FastifyInstance) {
       // Upsert user in database
       const user = await upsertOAuthUser(profile);
 
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled) {
+        // Generate temp token for 2FA verification
+        // We need to import generateTempToken from 2fa.controller
+        // Since we can't easily import from another module's controller in this structure without circular deps or awkwardness,
+        // let's just replicate the simple signing logic here or move it to a shared util.
+        // For now, replicating is safest to avoid refactoring widely.
+        const tempToken = server.jwt.sign(
+          { id: user.id, email: user.email, type: '2fa-pending' },
+          { expiresIn: '5m' }
+        );
+
+        return reply.redirect(`/login?requires2FA=true&tempToken=${tempToken}`);
+      }
+
       // Generate JWT token (same as regular login)
       const accessToken = server.jwt.sign(
         {

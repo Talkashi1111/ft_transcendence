@@ -88,7 +88,7 @@ export async function loginHandler(
     // Validate input with Zod
     const validatedData = loginSchema.parse(request.body);
 
-    // Find user by email
+    // Find user by email (include 2FA fields)
     const user = await findUserByEmail(validatedData.email);
     if (!user) {
       return reply.status(401).send({
@@ -117,9 +117,23 @@ export async function loginHandler(
       });
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Generate short-lived temp token for 2FA verification
+      const tempToken = request.server.jwt.sign(
+        { id: user.id, email: user.email, type: '2fa-pending' },
+        { expiresIn: '5m' }
+      );
+
+      return reply.send({
+        success: false,
+        requires2FA: true,
+        tempToken,
+      });
+    }
+
+    // No 2FA - proceed with normal login
     // Generate JWT token
-    // Only include immutable fields (id, email)
-    // DO NOT include mutable fields like alias (can change during session)
     const accessToken = request.server.jwt.sign(
       {
         id: user.id,
@@ -196,6 +210,7 @@ export async function getMeHandler(request: FastifyRequest, reply: FastifyReply)
       id: user.id,
       email: user.email,
       alias: user.alias,
+      twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt.toISOString(),
     });
   } catch (error) {

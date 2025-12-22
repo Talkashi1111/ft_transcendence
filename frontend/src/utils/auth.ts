@@ -8,9 +8,11 @@
  * - Backend sets/clears cookies; frontend just makes API calls
  */
 
-// Login response type (no token in body - it's in cookie)
+// Login response type (with 2FA support)
 interface LoginResponse {
   success: boolean;
+  requires2FA?: boolean;
+  tempToken?: string;
 }
 
 // Current user info (fresh from API)
@@ -18,6 +20,7 @@ export interface AuthUser {
   id: string;
   email: string;
   alias: string; // Always current - fetched from database
+  twoFactorEnabled: boolean;
   createdAt: string;
 }
 
@@ -85,8 +88,10 @@ export async function register(alias: string, email: string, password: string): 
 /**
  * Login with email and password
  * Cookie is set by backend automatically (httpOnly)
+ * Returns { success: true } for normal login
+ * Returns { success: false, requires2FA: true, tempToken: string } if 2FA is required
  */
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string): Promise<LoginResponse> {
   const response = await fetch('/api/users/login', {
     method: 'POST',
     headers: {
@@ -120,7 +125,7 @@ export async function login(email: string, password: string) {
   }
 
   const data: LoginResponse = await response.json();
-  return data.success;
+  return data;
 }
 
 /**
@@ -185,4 +190,79 @@ export async function getUserId(): Promise<string | null> {
  */
 export function getAuthHeaders(): RequestInit {
   return { credentials: 'include' };
+}
+
+// ============================================================================
+// Two-Factor Authentication (2FA) Functions
+// ============================================================================
+
+interface Setup2FAResponse {
+  secret: string;
+  qrCodeDataUrl: string;
+}
+
+/**
+ * Setup 2FA - generates TOTP secret and QR code
+ */
+export async function setup2FA(): Promise<Setup2FAResponse> {
+  const response = await fetch('/api/2fa/setup', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to setup 2FA');
+  }
+
+  return response.json();
+}
+
+/**
+ * Enable 2FA after verifying the TOTP code
+ */
+export async function enable2FA(code: string): Promise<void> {
+  const response = await fetch('/api/2fa/enable', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to enable 2FA');
+  }
+}
+
+/**
+ * Disable 2FA
+ */
+export async function disable2FA(): Promise<void> {
+  const response = await fetch('/api/2fa/disable', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to disable 2FA');
+  }
+}
+
+/**
+ * Verify 2FA code during login (uses temp token)
+ */
+export async function verify2FA(tempToken: string, code: string): Promise<void> {
+  const response = await fetch('/api/2fa/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tempToken, code }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Invalid verification code');
+  }
 }
