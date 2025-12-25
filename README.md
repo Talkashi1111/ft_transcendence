@@ -4,6 +4,15 @@ This project is about creating a website for the mighty Pong contest.
 
 ---
 
+## ✨ Features
+
+- **Pong Game**: Classic Pong gameplay experience.
+- **Authentication**: Secure login with JWT and Google OAuth.
+- **Security**:
+  - Two-Factor Authentication (2FA) support via TOTP (Google Authenticator).
+  - HttpOnly cookies for session management.
+- **Blockchain**: Tournament scores recorded on Avalanche Fuji testnet.
+
 ## 🚀 Quick Start
 
 ### First Time Setup

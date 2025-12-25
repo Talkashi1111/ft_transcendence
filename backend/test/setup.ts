@@ -17,6 +17,8 @@ const TEST_DATABASE_URL = 'file:/app/data/database.test.db';
 
 // Set the environment variable for all imports
 process.env.DATABASE_URL = TEST_DATABASE_URL;
+process.env.TWO_FACTOR_ENCRYPTION_KEY =
+  '0000000000000000000000000000000000000000000000000000000000000000'; // 64 hex chars
 
 let prisma: PrismaClient;
 

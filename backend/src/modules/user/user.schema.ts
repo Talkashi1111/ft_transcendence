@@ -30,8 +30,19 @@ export const userResponseSchema = z.object({
   createdAt: z.string(),
 });
 
+// Response schema for /me endpoint that includes 2FA status
+export const userMeResponseSchema = z.object({
+  id: z.string(),
+  email: z.email(),
+  alias: z.string(),
+  twoFactorEnabled: z.boolean(),
+  createdAt: z.string(),
+});
+
 export const loginResponseSchema = z.object({
   success: z.boolean(),
+  requires2FA: z.boolean().optional(),
+  // Note: tempToken is sent via HTTP-only cookie (not in response body)
 });
 
 export const usersResponseSchema = z.array(userResponseSchema);
@@ -45,5 +56,6 @@ export type UserResponse = z.infer<typeof userResponseSchema>;
 export const createUserJsonSchema = z.toJSONSchema(createUserSchema, { target: 'draft-7' });
 export const loginJsonSchema = z.toJSONSchema(loginSchema, { target: 'draft-7' });
 export const userResponseJsonSchema = z.toJSONSchema(userResponseSchema, { target: 'draft-7' });
+export const userMeResponseJsonSchema = z.toJSONSchema(userMeResponseSchema, { target: 'draft-7' });
 export const loginResponseJsonSchema = z.toJSONSchema(loginResponseSchema, { target: 'draft-7' });
 export const usersResponseJsonSchema = z.toJSONSchema(usersResponseSchema, { target: 'draft-7' });

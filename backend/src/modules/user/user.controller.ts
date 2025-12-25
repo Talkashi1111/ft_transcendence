@@ -8,6 +8,7 @@ import {
   type LoginInput,
 } from './user.schema.js';
 import { verifyPassword } from '../../utils/hash.js';
+import { generateTempToken, getTempTokenExpiry } from '../../utils/auth-helpers.js';
 
 // Prisma error type for unique constraint violations
 interface PrismaClientKnownRequestError extends Error {
@@ -88,7 +89,7 @@ export async function loginHandler(
     // Validate input with Zod
     const validatedData = loginSchema.parse(request.body);
 
-    // Find user by email
+    // Find user by email (include 2FA fields)
     const user = await findUserByEmail(validatedData.email);
     if (!user) {
       return reply.status(401).send({
@@ -117,9 +118,28 @@ export async function loginHandler(
       });
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Generate short-lived temp token for 2FA verification
+      const tempToken = generateTempToken(request.server, user.id, user.email);
+
+      // Store tempToken in HTTP-only cookie (same as OAuth flow)
+      reply.setCookie('2fa-temp-token', tempToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: getTempTokenExpiry(), // 5 minutes (matches JWT expiration)
+      });
+
+      return reply.send({
+        success: false,
+        requires2FA: true,
+      });
+    }
+
+    // No 2FA - proceed with normal login
     // Generate JWT token
-    // Only include immutable fields (id, email)
-    // DO NOT include mutable fields like alias (can change during session)
     const accessToken = request.server.jwt.sign(
       {
         id: user.id,
@@ -196,6 +216,7 @@ export async function getMeHandler(request: FastifyRequest, reply: FastifyReply)
       id: user.id,
       email: user.email,
       alias: user.alias,
+      twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt.toISOString(),
     });
   } catch (error) {
