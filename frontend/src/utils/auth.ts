@@ -12,7 +12,6 @@
 interface LoginResponse {
   success: boolean;
   requires2FA?: boolean;
-  tempToken?: string;
 }
 
 // Current user info (fresh from API)
@@ -89,7 +88,8 @@ export async function register(alias: string, email: string, password: string): 
  * Login with email and password
  * Cookie is set by backend automatically (httpOnly)
  * Returns { success: true } for normal login
- * Returns { success: false, requires2FA: true, tempToken: string } if 2FA is required
+ * Returns { success: false, requires2FA: true } if 2FA is required
+ * Note: When 2FA is required, tempToken is set in HTTP-only cookie (not in response body)
  */
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const response = await fetch('/api/users/login', {
@@ -251,14 +251,16 @@ export async function disable2FA(): Promise<void> {
 }
 
 /**
- * Verify 2FA code during login (uses temp token)
+ * Verify 2FA code during login
+ * tempToken is automatically sent via HTTP-only cookie
+ * @param code - 6-digit TOTP code
  */
-export async function verify2FA(tempToken: string, code: string): Promise<void> {
+export async function verify2FA(code: string): Promise<void> {
   const response = await fetch('/api/2fa/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tempToken, code }),
-    credentials: 'include',
+    body: JSON.stringify({ code }),
+    credentials: 'include', // Sends HTTP-only cookie with tempToken
   });
 
   if (!response.ok) {

@@ -8,6 +8,7 @@ import {
   type LoginInput,
 } from './user.schema.js';
 import { verifyPassword } from '../../utils/hash.js';
+import { generateTempToken, getTempTokenExpiry } from '../../utils/auth-helpers.js';
 
 // Prisma error type for unique constraint violations
 interface PrismaClientKnownRequestError extends Error {
@@ -120,15 +121,20 @@ export async function loginHandler(
     // Check if 2FA is enabled
     if (user.twoFactorEnabled) {
       // Generate short-lived temp token for 2FA verification
-      const tempToken = request.server.jwt.sign(
-        { id: user.id, email: user.email, type: '2fa-pending' },
-        { expiresIn: '5m' }
-      );
+      const tempToken = generateTempToken(request.server, user.id, user.email);
+
+      // Store tempToken in HTTP-only cookie (same as OAuth flow)
+      reply.setCookie('2fa-temp-token', tempToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: getTempTokenExpiry(), // 5 minutes (matches JWT expiration)
+      });
 
       return reply.send({
         success: false,
         requires2FA: true,
-        tempToken,
       });
     }
 

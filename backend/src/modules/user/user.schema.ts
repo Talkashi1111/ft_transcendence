@@ -42,7 +42,7 @@ export const userMeResponseSchema = z.object({
 export const loginResponseSchema = z.object({
   success: z.boolean(),
   requires2FA: z.boolean().optional(),
-  tempToken: z.string().optional(),
+  // Note: tempToken is sent via HTTP-only cookie (not in response body)
 });
 
 export const usersResponseSchema = z.array(userResponseSchema);

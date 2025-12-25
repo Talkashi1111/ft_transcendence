@@ -84,6 +84,7 @@ export async function renderSettingsPage(
                     type="text"
                     id="verification-code"
                     maxlength="6"
+                    inputmode="numeric"
                     pattern="[0-9]{6}"
                     placeholder="000000"
                     class="w-32 px-4 py-2 border border-gray-300 rounded-lg text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -179,6 +180,12 @@ function setup2FAHandlers(): void {
 
   // Verify & Enable button
   if (verifyBtn && verificationCode) {
+    // Filter non-numeric input in real-time
+    verificationCode.addEventListener('input', (e) => {
+      const input = e.target as HTMLInputElement;
+      input.value = input.value.replace(/[^\d]/g, '');
+    });
+
     verifyBtn.addEventListener('click', async () => {
       hideMessage();
       const code = verificationCode.value.trim();

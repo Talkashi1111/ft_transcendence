@@ -7,6 +7,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import oauthPlugin from '@fastify/oauth2';
 import { fetchGoogleProfile, upsertOAuthUser } from './oauth.service.js';
+import { generateTempToken, getTempTokenExpiry } from '../../utils/auth-helpers.js';
 
 // Validate required environment variables - returns null if not configured
 function getOAuthConfig() {
@@ -104,16 +105,18 @@ async function oauthRoutes(server: FastifyInstance) {
       // Check if 2FA is enabled
       if (user.twoFactorEnabled) {
         // Generate temp token for 2FA verification
-        // We need to import generateTempToken from 2fa.controller
-        // Since we can't easily import from another module's controller in this structure without circular deps or awkwardness,
-        // let's just replicate the simple signing logic here or move it to a shared util.
-        // For now, replicating is safest to avoid refactoring widely.
-        const tempToken = server.jwt.sign(
-          { id: user.id, email: user.email, type: '2fa-pending' },
-          { expiresIn: '5m' }
-        );
+        const tempToken = generateTempToken(server, user.id, user.email);
 
-        return reply.redirect(`/login?requires2FA=true&tempToken=${tempToken}`);
+        // Store tempToken in HTTP-only cookie instead of URL (security best practice)
+        reply.setCookie('2fa-temp-token', tempToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: getTempTokenExpiry(), // 5 minutes (matches JWT expiration)
+        });
+
+        return reply.redirect('/login?requires2FA=true');
       }
 
       // Generate JWT token (same as regular login)

@@ -15,13 +15,16 @@ import {
 } from './2fa.schema.js';
 import { prisma } from '../../utils/prisma.js';
 import { decrypt } from '../../utils/crypto.js';
+import { getTempTokenExpiry } from '../../utils/auth-helpers.js';
 
 // Temporary storage for pending 2FA secrets (in production, use Redis or similar)
 // Key: userId, Value: { secret, expiresAt }
 const pending2FASecrets = new Map<string, { secret: string; expiresAt: number }>();
 
-// Temp token secret (for 2FA pending verification)
-const TEMP_TOKEN_EXPIRY = 5 * 60; // 5 minutes in seconds
+// Rate limiting for 2FA verification attempts to prevent brute force attacks
+// Key: tempToken hash, Value: { attempts, expiresAt }
+const verificationAttempts = new Map<string, { attempts: number; expiresAt: number }>();
+const MAX_VERIFICATION_ATTEMPTS = 5; // Max attempts per temp token
 
 /**
  * Generate TOTP secret and QR code for 2FA setup.
@@ -170,10 +173,21 @@ export async function verify2FAHandler(
   try {
     const validatedData = verify2FASchema.parse(request.body);
 
+    // Get tempToken from HTTP-only cookie (both regular login and OAuth)
+    const tempToken = request.cookies['2fa-temp-token'];
+
+    if (!tempToken) {
+      return reply.status(401).send({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'No temporary token provided. Please login again.',
+      });
+    }
+
     // Verify the temp token
     let tempPayload: { id: string; email: string; type: string };
     try {
-      tempPayload = request.server.jwt.verify(validatedData.tempToken) as typeof tempPayload;
+      tempPayload = request.server.jwt.verify(tempToken) as typeof tempPayload;
     } catch {
       return reply.status(401).send({
         statusCode: 401,
@@ -188,6 +202,19 @@ export async function verify2FAHandler(
         statusCode: 401,
         error: 'Unauthorized',
         message: 'Invalid token type',
+      });
+    }
+
+    // Rate limiting: Check verification attempts for this temp token
+    cleanupExpiredAttempts();
+    const attemptKey = tempToken; // Use token itself as key (already unique per session)
+    const attempt = verificationAttempts.get(attemptKey);
+
+    if (attempt && attempt.attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      return reply.status(429).send({
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Too many verification attempts. Please login again.',
       });
     }
 
@@ -208,12 +235,22 @@ export async function verify2FAHandler(
     // Decrypt and verify the code
     const secret = decrypt(user.twoFactorSecret);
     if (!verifyTOTPCode(secret, validatedData.code)) {
+      // Increment failed attempt counter
+      const currentAttempts = attempt ? attempt.attempts + 1 : 1;
+      verificationAttempts.set(attemptKey, {
+        attempts: currentAttempts,
+        expiresAt: Date.now() + getTempTokenExpiry() * 1000, // Convert seconds to milliseconds
+      });
+
       return reply.status(401).send({
         statusCode: 401,
         error: 'Unauthorized',
         message: 'Invalid verification code',
       });
     }
+
+    // Success - clear rate limiting for this token
+    verificationAttempts.delete(attemptKey);
 
     // Generate full JWT token
     const accessToken = request.server.jwt.sign(
@@ -229,6 +266,9 @@ export async function verify2FAHandler(
       path: '/',
       maxAge: 24 * 60 * 60, // 24 hours
     });
+
+    // Clear the temporary 2FA token cookie (if it exists from OAuth flow)
+    reply.clearCookie('2fa-temp-token', { path: '/' });
 
     return reply.send({ success: true });
   } catch (error) {
@@ -262,16 +302,13 @@ function cleanupPendingSecrets() {
 }
 
 /**
- * Generate a temporary token for 2FA verification during login.
- * Called from user.controller.ts login handler.
+ * Cleanup expired verification attempts to prevent memory leaks.
  */
-export function generateTempToken(
-  server: { jwt: { sign: (payload: object, options: object) => string } },
-  userId: string,
-  email: string
-): string {
-  return server.jwt.sign(
-    { id: userId, email, type: '2fa-pending' },
-    { expiresIn: `${TEMP_TOKEN_EXPIRY}s` }
-  );
+function cleanupExpiredAttempts() {
+  const now = Date.now();
+  for (const [key, data] of verificationAttempts.entries()) {
+    if (data.expiresAt < now) {
+      verificationAttempts.delete(key);
+    }
+  }
 }

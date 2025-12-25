@@ -82,6 +82,7 @@ export async function renderLoginPage(
                   type="text"
                   id="2fa-code"
                   maxlength="6"
+                  inputmode="numeric"
                   pattern="[0-9]{6}"
                   placeholder="000000"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -164,9 +165,6 @@ function setupLoginForm(onLoginSuccess: () => void): void {
 
   if (!form || !emailInput || !passwordInput || !loginBtn) return;
 
-  // Store temp token for 2FA verification
-  let tempToken: string | null = null;
-
   const showError = (message: string) => {
     errorText.textContent = message;
     errorMessage.classList.remove('hidden');
@@ -199,12 +197,11 @@ function setupLoginForm(onLoginSuccess: () => void): void {
     hide2FAError();
   };
 
-  // Check URL parameters for 2FA (from OAuth redirect)
+  // Check URL parameters for 2FA
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('requires2FA') === 'true' && urlParams.get('tempToken')) {
-    tempToken = urlParams.get('tempToken');
+  if (urlParams.get('requires2FA') === 'true') {
+    // tempToken is in HTTP-only cookie (sent automatically with verify request)
     showTwoFAForm();
-    // Clean URL
     window.history.replaceState({}, '', '/login');
   }
 
@@ -227,8 +224,8 @@ function setupLoginForm(onLoginSuccess: () => void): void {
       const result = await login(email, password);
 
       // Check if 2FA is required
-      if (result.requires2FA && result.tempToken) {
-        tempToken = result.tempToken;
+      if (result.requires2FA) {
+        // tempToken is in HTTP-only cookie (set by backend)
         showTwoFAForm();
         loginBtn.disabled = false;
         loginBtn.textContent = 'Login';
@@ -257,18 +254,12 @@ function setupLoginForm(onLoginSuccess: () => void): void {
         return;
       }
 
-      if (!tempToken) {
-        show2FAError('Session expired. Please login again.');
-        hideTwoFAForm();
-        return;
-      }
-
+      // tempToken is in HTTP-only cookie (sent automatically)
       verifyBtn.disabled = true;
       verifyBtn.textContent = 'Verifying...';
 
       try {
-        await verify2FA(tempToken, code);
-        // Success - redirect to home
+        await verify2FA(code);
         onLoginSuccess();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Invalid code. Please try again.';
@@ -276,6 +267,12 @@ function setupLoginForm(onLoginSuccess: () => void): void {
         verifyBtn.disabled = false;
         verifyBtn.textContent = 'Verify';
       }
+    });
+
+    // Filter non-numeric input in real-time
+    twoFACode.addEventListener('input', (e) => {
+      const input = e.target as HTMLInputElement;
+      input.value = input.value.replace(/[^\d]/g, '');
     });
 
     // Allow Enter key to submit
@@ -289,7 +286,6 @@ function setupLoginForm(onLoginSuccess: () => void): void {
   // Back to login button
   if (backBtn) {
     backBtn.addEventListener('click', () => {
-      tempToken = null;
       hideTwoFAForm();
     });
   }

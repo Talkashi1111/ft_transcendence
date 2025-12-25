@@ -111,10 +111,8 @@ describe('2FA Module', () => {
   });
 
   describe('Login with 2FA', () => {
-    let tempToken: string;
-
     it('should require 2FA during login', async () => {
-      // Logout first
+      // Logout first (use module-level cookies from previous test group)
       await server.inject({
         method: 'POST',
         url: '/api/users/logout',
@@ -135,9 +133,14 @@ describe('2FA Module', () => {
       const body = JSON.parse(response.payload);
       expect(body.success).toBe(false);
       expect(body.requires2FA).toBe(true);
-      expect(body.tempToken).toBeDefined();
+      // tempToken is now in HTTP-only cookie
+      expect(response.headers['set-cookie']).toBeDefined();
+      const setCookieHeader = response.headers['set-cookie'] as string | string[];
+      const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+      expect(cookieArray.some((c) => c.startsWith('2fa-temp-token='))).toBe(true);
 
-      tempToken = body.tempToken;
+      // Store cookies for 2FA verification
+      cookies = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
     });
 
     it('should verify 2FA code and issue token', async () => {
@@ -145,8 +148,8 @@ describe('2FA Module', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/2fa/verify',
+        headers: { cookie: cookies }, // tempToken is in cookie now
         payload: {
-          tempToken,
           code,
         },
       });
@@ -164,13 +167,141 @@ describe('2FA Module', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/2fa/verify',
+        headers: { cookie: cookies }, // tempToken is in cookie
         payload: {
-          tempToken,
           code: '000000',
         },
       });
 
       expect(response.statusCode).toBe(401);
+    });
+
+    it('should rate limit after too many failed attempts', async () => {
+      // First, logout and login again to get a fresh temp token
+      await server.inject({
+        method: 'POST',
+        url: '/api/users/logout',
+        headers: { cookie: cookies },
+      });
+
+      const loginResponse = await server.inject({
+        method: 'POST',
+        url: '/api/users/login',
+        payload: {
+          email: testUser.email,
+          password: testUser.password,
+        },
+      });
+
+      const freshCookies = loginResponse.headers['set-cookie'] as string;
+
+      // Try 5 times with invalid code (should all fail)
+      for (let i = 0; i < 5; i++) {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/api/2fa/verify',
+          headers: { cookie: freshCookies },
+          payload: {
+            code: '000000',
+          },
+        });
+        expect(response.statusCode).toBe(401);
+      }
+
+      // 6th attempt should be rate limited
+      const rateLimitedResponse = await server.inject({
+        method: 'POST',
+        url: '/api/2fa/verify',
+        headers: { cookie: freshCookies },
+        payload: {
+          code: '000000',
+        },
+      });
+
+      expect(rateLimitedResponse.statusCode).toBe(429);
+      const body = JSON.parse(rateLimitedResponse.payload);
+      expect(body.message).toContain('Too many verification attempts');
+    });
+
+    it('should reject expired temp token', async () => {
+      // Create an expired temp token (1 second expiry)
+      const expiredToken = server.jwt.sign(
+        { id: testUser.email, email: testUser.email, type: '2fa-pending' },
+        { expiresIn: '1s' }
+      );
+
+      // Wait for token to expire
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+
+      // Try to use expired token
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/2fa/verify',
+        headers: { cookie: `2fa-temp-token=${expiredToken}` },
+        payload: {
+          code: generateToken(totpSecret),
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.payload);
+      expect(body.message).toContain('Invalid or expired temporary token');
+    });
+
+    it('should reject reused temp token after successful verification', async () => {
+      // Logout and login to get fresh temp token
+      await server.inject({
+        method: 'POST',
+        url: '/api/users/logout',
+        headers: { cookie: cookies },
+      });
+
+      const loginResponse = await server.inject({
+        method: 'POST',
+        url: '/api/users/login',
+        payload: {
+          email: testUser.email,
+          password: testUser.password,
+        },
+      });
+
+      const tempCookies = loginResponse.headers['set-cookie'] as string;
+
+      // First verification - should succeed
+      const firstAttempt = await server.inject({
+        method: 'POST',
+        url: '/api/2fa/verify',
+        headers: { cookie: tempCookies },
+        payload: {
+          code: generateToken(totpSecret),
+        },
+      });
+
+      expect(firstAttempt.statusCode).toBe(200);
+
+      // Extract the response cookies which should have the temp token cleared
+      const responseCookies = firstAttempt.headers['set-cookie'] as string | string[];
+      const cookieArray = Array.isArray(responseCookies) ? responseCookies : [responseCookies];
+
+      // Verify temp token was cleared (should be in the set-cookie header with Max-Age=0 or Expires in past)
+      const tempTokenCleared = cookieArray.some(
+        (c) => c.includes('2fa-temp-token') && (c.includes('Max-Age=0') || c.includes('Expires='))
+      );
+      expect(tempTokenCleared).toBe(true);
+
+      // Try to reuse the cleared cookie - should fail
+      const reuseAttempt = await server.inject({
+        method: 'POST',
+        url: '/api/2fa/verify',
+        headers: { cookie: cookieArray.join('; ') }, // Use response cookies which have cleared temp token
+        payload: {
+          code: generateToken(totpSecret),
+        },
+      });
+
+      expect(reuseAttempt.statusCode).toBe(401);
+      const body = JSON.parse(reuseAttempt.payload);
+      expect(body.message).toContain('No temporary token provided');
     });
   });
 

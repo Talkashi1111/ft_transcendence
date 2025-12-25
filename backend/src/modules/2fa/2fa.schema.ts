@@ -9,7 +9,6 @@ export const enable2FASchema = z.object({
 });
 
 export const verify2FASchema = z.object({
-  tempToken: z.string({ message: 'Temp token is required' }),
   code: z
     .string({ message: 'Verification code is required' })
     .length(6, 'Verification code must be 6 digits')
