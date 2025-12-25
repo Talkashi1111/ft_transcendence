@@ -10,6 +10,7 @@ import {
   createUserJsonSchema,
   loginJsonSchema,
   userResponseJsonSchema,
+  userMeResponseJsonSchema,
   loginResponseJsonSchema,
   usersResponseJsonSchema,
 } from './user.schema.js';
@@ -70,11 +71,11 @@ async function userRoutes(server: FastifyInstance) {
     {
       onRequest: [server.authenticate],
       schema: {
-        description: 'Get current user profile',
+        description: 'Get current user profile (includes 2FA status)',
         tags: ['Users'],
         security: [{ bearerAuth: [] }],
         response: {
-          200: userResponseJsonSchema,
+          200: userMeResponseJsonSchema,
         },
       },
     },

@@ -11,6 +11,8 @@ Fastify REST API with Prisma ORM and SQLite database.
 - **Validation**: [Zod](https://zod.dev/) v4
 - **Password Hashing**: [Argon2](https://github.com/ranisalt/node-argon2) (Argon2id)
 - **Authentication**: JWT (`@fastify/jwt`)
+- **2FA**: TOTP (`otpauth`, `qrcode`)
+- **Encryption**: AES-256-GCM (Node.js `crypto`)
 - **API Docs**: Swagger (`@fastify/swagger`)
 
 ## Project Structure
@@ -26,10 +28,12 @@ backend/
 │   ├── generated/prisma/   # Generated Prisma Client (gitignored)
 │   ├── modules/
 │   │   ├── user/           # User module (auth, registration)
+│   │   ├── 2fa/            # Two-Factor Authentication module
 │   │   └── blockchain/     # Blockchain module (tournament scores)
 │   └── utils/
 │       ├── prisma.ts       # Prisma client singleton
-│       └── hash.ts         # Argon2 password hashing
+│       ├── hash.ts         # Argon2 password hashing
+│       └── crypto.ts       # AES-256-GCM encryption for 2FA secrets
 ├── test/                   # Vitest tests
 ├── prisma.config.ts        # Prisma configuration
 ├── .env                    # Environment variables (gitignored)
@@ -178,14 +182,17 @@ cp .env.example .env
 
 Key variables:
 
-| Variable               | Description            | Default                                           |
-| ---------------------- | ---------------------- | ------------------------------------------------- |
-| `DATABASE_URL`         | SQLite file path       | `file:/app/data/database.db`                      |
-| `JWT_SECRET`           | JWT signing secret     | Change in production!                             |
-| `PORT`                 | Server port            | `3000`                                            |
-| `GOOGLE_CLIENT_ID`     | Google OAuth client ID | (required for OAuth)                              |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth secret    | (required for OAuth)                              |
-| `OAUTH_CALLBACK_URI`   | OAuth callback URL     | `http://localhost:5173/api/oauth/google/callback` |
+| Variable                    | Description               | Default                                           |
+| --------------------------- | ------------------------- | ------------------------------------------------- |
+| `DATABASE_URL`              | SQLite file path          | `file:/app/data/database.db`                      |
+| `JWT_SECRET`                | JWT signing secret        | Change in production!                             |
+| `TWO_FACTOR_ENCRYPTION_KEY` | 2FA secret encryption key | Generate with: `openssl rand -hex 32`             |
+| `PORT`                      | Server port               | `3000`                                            |
+| `GOOGLE_CLIENT_ID`          | Google OAuth client ID    | (required for OAuth)                              |
+| `GOOGLE_CLIENT_SECRET`      | Google OAuth secret       | (required for OAuth)                              |
+| `OAUTH_CALLBACK_URI`        | OAuth callback URL        | `http://localhost:5173/api/oauth/google/callback` |
+
+> **Security Note:** The `TWO_FACTOR_ENCRYPTION_KEY` must be exactly 64 hexadecimal characters (32 bytes). This key encrypts TOTP secrets stored in the database using AES-256-GCM.
 
 ## Development
 
@@ -213,6 +220,75 @@ pnpm run dev
 | GET    | `/api/users`        | List all users           | Required |
 | GET    | `/api/users/me`     | Get current user profile | Required |
 | POST   | `/api/users/logout` | Logout (clear cookie)    | No       |
+
+### Two-Factor Authentication (2FA)
+
+| Method | Endpoint           | Description                      | Auth     |
+| ------ | ------------------ | -------------------------------- | -------- |
+| POST   | `/api/2fa/setup`   | Generate new 2FA secret (QR)     | Required |
+| POST   | `/api/2fa/enable`  | Verify code and enable 2FA       | Required |
+| POST   | `/api/2fa/disable` | Disable 2FA                      | Required |
+| POST   | `/api/2fa/verify`  | Verify code during login process | No       |
+
+#### 2FA Overview
+
+The application implements TOTP-based Two-Factor Authentication compatible with Google Authenticator.
+
+**Key Features:**
+
+- TOTP secrets encrypted at rest using AES-256-GCM
+- 6-digit codes, 30-second validity window
+- ±30 second clock drift tolerance
+- Works with both password-based and OAuth login
+- Optional - OFF by default, enabled per-user in settings
+
+#### 2FA Setup Flow
+
+```
+User                    Frontend                   Backend
+  |                        |                          |
+  |-- Go to Settings ----->|                          |
+  |-- Click "Enable 2FA" ->|                          |
+  |                        |-- POST /2fa/setup ------>|
+  |                        |<-- { secret, qrCodeUrl }-|
+  |<-- Show QR code -------|                          |
+  |-- Scan with app ------>|                          |
+  |-- Enter code --------->|                          |
+  |                        |-- POST /2fa/enable ----->|
+  |                        |   { code: "123456" }     |
+  |                        |<-- { success: true } ----|
+  |<-- "2FA Enabled!" -----|                          |
+```
+
+#### Login Flow (Without 2FA)
+
+```
+User                    Frontend                   Backend
+  |                        |                          |
+  |-- Enter credentials -->|                          |
+  |                        |-- POST /login ---------->|
+  |                        |<-- JWT cookie -----------|
+  |<-- Redirect home ------|                          |
+```
+
+#### Login Flow (With 2FA Enabled)
+
+```
+User                    Frontend                   Backend
+  |                        |                          |
+  |-- Enter credentials -->|                          |
+  |                        |-- POST /login ---------->|
+  |                        |<-- { requires2FA: true,  |
+  |                        |      tempToken: "..." } -|
+  |<-- Show 2FA input -----|                          |
+  |-- Enter 6-digit code ->|                          |
+  |                        |-- POST /2fa/verify ----->|
+  |                        |   { tempToken, code }    |
+  |                        |<-- JWT cookie -----------|
+  |<-- Redirect home ------|                          |
+```
+
+**Temporary Token:** When 2FA is required, the backend issues a short-lived temporary token (5 minutes) that can only be used for 2FA verification. This token cannot access protected routes and is single-purpose only.
 
 ### OAuth (Google Authentication)
 
@@ -267,7 +343,9 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 OAUTH_CALLBACK_URI=http://localhost:5173/api/oauth/google/callback
 ```
 
-> **Production**: Update redirect URIs to your production domain
+> **Production:** Update redirect URIs to your production domain
+
+> **Note:** TOTP-based 2FA works completely offline with no Google API calls. Any TOTP-compatible app (Google Authenticator, Authy, Microsoft Authenticator) will work.
 
 ### Blockchain (Tournament Scores)
 

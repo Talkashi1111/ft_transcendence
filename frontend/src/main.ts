@@ -2,6 +2,7 @@ import './index.css';
 import { renderPlayPage } from './pages/play';
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
+import { renderSettingsPage } from './pages/settings';
 import { isAuthenticated, logout } from './utils/auth';
 
 // Types
@@ -33,9 +34,9 @@ function formatAddress(address: string): string {
 }
 
 // Router
-let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' = 'home';
+let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' = 'home';
 
-function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments') {
+function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings') {
   currentPage = page;
   // Update browser history
   window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
@@ -86,12 +87,20 @@ async function render() {
       return;
     }
     renderTournaments(app, authenticated);
+  } else if (currentPage === 'settings') {
+    // Protect settings page - redirect to login if not authenticated
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      navigate('login');
+      return;
+    }
+    renderSettingsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   }
 }
 
 // Navigation bar component
 async function renderNavBar(
-  activePage: 'home' | 'login' | 'register' | 'play' | 'tournaments',
+  activePage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings',
   authenticated?: boolean
 ): Promise<string> {
   const isAuth = authenticated ?? (await isAuthenticated());
@@ -116,6 +125,9 @@ async function renderNavBar(
               </button>
               <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Tournaments
+              </button>
+              <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+                Settings
               </button>
               <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
                 Logout
@@ -234,6 +246,7 @@ function setupNavigation() {
   const homeBtn = document.getElementById('nav-home');
   const playBtn = document.getElementById('nav-play');
   const tournamentsBtn = document.getElementById('nav-tournaments');
+  const settingsBtn = document.getElementById('nav-settings');
   const loginBtn = document.getElementById('nav-login');
   const registerBtn = document.getElementById('nav-register');
   const logoutBtn = document.getElementById('nav-logout');
@@ -241,6 +254,7 @@ function setupNavigation() {
   homeBtn?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => navigate('play'));
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
+  settingsBtn?.addEventListener('click', () => navigate('settings'));
   loginBtn?.addEventListener('click', () => navigate('login'));
   registerBtn?.addEventListener('click', () => navigate('register'));
 
@@ -374,7 +388,13 @@ function setupTournamentLoader() {
 document.addEventListener('DOMContentLoaded', () => {
   // Determine initial page from URL
   const path = window.location.pathname.substring(1); // Remove leading slash
-  if (path === 'play' || path === 'tournaments' || path === 'login' || path === 'register') {
+  if (
+    path === 'play' ||
+    path === 'tournaments' ||
+    path === 'login' ||
+    path === 'register' ||
+    path === 'settings'
+  ) {
     currentPage = path;
   } else {
     currentPage = 'home';
@@ -384,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.history.replaceState(
     { page: currentPage },
     '',
-    `/${currentPage === 'home' ? '' : currentPage}`
+    `/${currentPage === 'home' ? '' : currentPage}${window.location.search}`
   );
 
   // Listen for custom navigation events (from login/register links)
@@ -395,7 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
       page === 'login' ||
       page === 'register' ||
       page === 'play' ||
-      page === 'tournaments'
+      page === 'tournaments' ||
+      page === 'settings'
     ) {
       navigate(page);
     }

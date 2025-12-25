@@ -34,7 +34,7 @@ describe('Auth Utility', () => {
 
       const success = await login('test@test.com', 'password123');
 
-      expect(success).toBe(true);
+      expect(success).toEqual({ success: true });
       expect(fetch).toHaveBeenCalledWith('/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

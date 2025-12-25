@@ -11,6 +11,7 @@ import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
 import blockchainRoutes from './modules/blockchain/blockchain.route.js';
 import oauthRoutes from './modules/oauth/oauth.route.js';
+import twoFactorRoutes from './modules/2fa/2fa.route.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -47,8 +48,8 @@ declare module 'fastify' {
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { id: string; email: string };
-    user: { id: string; email: string };
+    payload: { id: string; email: string; type?: string };
+    user: { id: string; email: string; type?: string };
   }
 }
 
@@ -154,6 +155,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await server.register(userRoutes, { prefix: '/api/users' });
   await server.register(blockchainRoutes, { prefix: '/api' });
   await server.register(oauthRoutes, { prefix: '/api/oauth' });
+  await server.register(twoFactorRoutes, { prefix: '/api/2fa' });
 
   // Health check endpoint
   server.get('/healthcheck', async () => {

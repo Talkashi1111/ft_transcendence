@@ -7,6 +7,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import oauthPlugin from '@fastify/oauth2';
 import { fetchGoogleProfile, upsertOAuthUser } from './oauth.service.js';
+import { generateTempToken, getTempTokenExpiry } from '../../utils/auth-helpers.js';
 
 // Validate required environment variables - returns null if not configured
 function getOAuthConfig() {
@@ -100,6 +101,23 @@ async function oauthRoutes(server: FastifyInstance) {
 
       // Upsert user in database
       const user = await upsertOAuthUser(profile);
+
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled) {
+        // Generate temp token for 2FA verification
+        const tempToken = generateTempToken(server, user.id, user.email);
+
+        // Store tempToken in HTTP-only cookie instead of URL (security best practice)
+        reply.setCookie('2fa-temp-token', tempToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: getTempTokenExpiry(), // 5 minutes (matches JWT expiration)
+        });
+
+        return reply.redirect('/login?requires2FA=true');
+      }
 
       // Generate JWT token (same as regular login)
       const accessToken = server.jwt.sign(
