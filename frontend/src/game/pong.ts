@@ -19,7 +19,8 @@ export class PongGame {
   private countdownInterval: number | null = null;
   private onGameEnd?: (winner: string, player1Score: number, player2Score: number) => void;
   private lastFrameTime: number = 0;
-  private targetFrameTime: number = 1000 / GAME_CONFIG.fps; // ~16.67ms for 60fps
+  private accumulator: number = 0;
+  private readonly fixedTimeStep: number = 1000 / GAME_CONFIG.fps; // ~16.67ms for 60fps
 
   constructor(canvas: HTMLCanvasElement, player1Alias: string, player2Alias: string) {
     this.ctx = setupCanvas(canvas);
@@ -188,15 +189,29 @@ export class PongGame {
   private gameLoop = (currentTime: number): void => {
     // Calculate delta time in milliseconds
     const deltaTime = currentTime - this.lastFrameTime;
+    this.lastFrameTime = currentTime;
 
-    // Only update if enough time has passed (frame limiting for consistent 60fps)
-    if (deltaTime >= this.targetFrameTime) {
-      this.update();
-      render(this.ctx, this.gameState);
+    // Only accumulate time and run physics when actually playing
+    // This prevents the ball/paddles from "catching up" after pause or countdown
+    if (this.gameState.status === 'playing') {
+      // Clamp delta time to prevent spiral of death (e.g., after tab was inactive)
+      const clampedDelta = Math.min(deltaTime, 100);
 
-      // Keep track of time, accounting for any overflow
-      this.lastFrameTime = currentTime - (deltaTime % this.targetFrameTime);
+      // Accumulate time for fixed timestep physics updates
+      this.accumulator += clampedDelta;
+
+      // Run physics updates at fixed timestep for consistency
+      while (this.accumulator >= this.fixedTimeStep) {
+        this.update();
+        this.accumulator -= this.fixedTimeStep;
+      }
+    } else {
+      // Reset accumulator when not playing to prevent catch-up when resuming
+      this.accumulator = 0;
     }
+
+    // Always render every frame for smooth visuals
+    render(this.ctx, this.gameState);
 
     if (this.gameState.status !== 'finished') {
       this.animationId = requestAnimationFrame(this.gameLoop);

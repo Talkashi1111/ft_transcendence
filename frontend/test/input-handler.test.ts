@@ -249,4 +249,88 @@ describe('InputHandler', () => {
       expect(inputHandler.isPlayer1DownPressed()).toBe(true);
     });
   });
+
+  describe('stuck keys prevention', () => {
+    it('should clear all keys when window loses focus (blur)', () => {
+      // Press some keys
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+
+      expect(inputHandler.isPlayer1UpPressed()).toBe(true);
+      expect(inputHandler.isPlayer1DownPressed()).toBe(true);
+      expect(inputHandler.isPlayer2UpPressed()).toBe(true);
+
+      // Window loses focus
+      window.dispatchEvent(new Event('blur'));
+
+      // All keys should be cleared
+      expect(inputHandler.isPlayer1UpPressed()).toBe(false);
+      expect(inputHandler.isPlayer1DownPressed()).toBe(false);
+      expect(inputHandler.isPlayer2UpPressed()).toBe(false);
+    });
+
+    it('should clear all keys on right-click (context menu)', () => {
+      // Press some keys
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
+
+      expect(inputHandler.isPlayer1UpPressed()).toBe(true);
+      expect(inputHandler.isPlayer1DownPressed()).toBe(true);
+
+      // Right-click opens context menu
+      window.dispatchEvent(new Event('contextmenu'));
+
+      // All keys should be cleared
+      expect(inputHandler.isPlayer1UpPressed()).toBe(false);
+      expect(inputHandler.isPlayer1DownPressed()).toBe(false);
+    });
+
+    it('should clear all keys when tab becomes hidden', () => {
+      // Press some keys
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+      expect(inputHandler.isPlayer1UpPressed()).toBe(true);
+      expect(inputHandler.isPlayer2DownPressed()).toBe(true);
+
+      // Mock document.hidden to be true
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: true,
+      });
+
+      // Tab becomes hidden
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      // All keys should be cleared
+      expect(inputHandler.isPlayer1UpPressed()).toBe(false);
+      expect(inputHandler.isPlayer2DownPressed()).toBe(false);
+
+      // Reset document.hidden
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: false,
+      });
+    });
+
+    it('should not clear keys when tab becomes visible', () => {
+      // Press some keys
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }));
+
+      expect(inputHandler.isPlayer1UpPressed()).toBe(true);
+
+      // Make sure document.hidden is false
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: false,
+      });
+
+      // Tab becomes visible (not hidden)
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      // Keys should still be pressed
+      expect(inputHandler.isPlayer1UpPressed()).toBe(true);
+    });
+  });
 });
