@@ -191,16 +191,23 @@ export class PongGame {
     const deltaTime = currentTime - this.lastFrameTime;
     this.lastFrameTime = currentTime;
 
-    // Clamp delta time to prevent spiral of death (e.g., after tab was inactive)
-    const clampedDelta = Math.min(deltaTime, 100);
+    // Only accumulate time and run physics when actually playing
+    // This prevents the ball/paddles from "catching up" after pause or countdown
+    if (this.gameState.status === 'playing') {
+      // Clamp delta time to prevent spiral of death (e.g., after tab was inactive)
+      const clampedDelta = Math.min(deltaTime, 100);
 
-    // Accumulate time for fixed timestep physics updates
-    this.accumulator += clampedDelta;
+      // Accumulate time for fixed timestep physics updates
+      this.accumulator += clampedDelta;
 
-    // Run physics updates at fixed timestep for consistency
-    while (this.accumulator >= this.fixedTimeStep) {
-      this.update();
-      this.accumulator -= this.fixedTimeStep;
+      // Run physics updates at fixed timestep for consistency
+      while (this.accumulator >= this.fixedTimeStep) {
+        this.update();
+        this.accumulator -= this.fixedTimeStep;
+      }
+    } else {
+      // Reset accumulator when not playing to prevent catch-up when resuming
+      this.accumulator = 0;
     }
 
     // Always render every frame for smooth visuals
