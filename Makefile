@@ -73,8 +73,14 @@ studio: check-deps ## open Prisma Studio (database GUI) at http://localhost:5555
 	cd backend && npx prisma studio --port 5555
 
 .PHONY: test
-test: check-deps ## run Vitest + backend unit tests
+test: check-deps ## run fast unit tests (excludes slow integration tests)
 	pnpm --filter frontend --filter backend exec vitest run --coverage
+	pnpm --filter blockchain run test
+
+.PHONY: test-all
+test-all: check-deps ## run ALL tests including slow integration tests
+	INTEGRATION=true pnpm --filter frontend exec vitest run --coverage
+	INTEGRATION=true pnpm --filter backend exec vitest run --coverage
 	pnpm --filter blockchain run test
 
 .PHONY: lint
@@ -90,7 +96,7 @@ build: check-deps ## build all packages
 	pnpm run build
 
 .PHONY: all
-all: format lint test build ## run format, lint, test, and build
+all: format lint test-all build ## run format, lint, test, and build (including integration tests)
 	@echo ""
 	@echo "========================================"
 	@echo "            ✅ ALL PASSED"

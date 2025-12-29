@@ -7,11 +7,14 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyWebsocket from '@fastify/websocket';
 import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
 import blockchainRoutes from './modules/blockchain/blockchain.route.js';
 import oauthRoutes from './modules/oauth/oauth.route.js';
 import twoFactorRoutes from './modules/2fa/2fa.route.js';
+import gameRoutes from './modules/game/game.route.js';
+import { registerGameWebSocket } from './modules/game/game.gateway.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -95,6 +98,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register Cookie plugin
   await server.register(fastifyCookie);
 
+  // Register WebSocket plugin
+  await server.register(fastifyWebsocket);
+
   // Register JWT
   await server.register(fastifyJwt, {
     secret: JWT_SECRET,
@@ -156,6 +162,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   await server.register(blockchainRoutes, { prefix: '/api' });
   await server.register(oauthRoutes, { prefix: '/api/oauth' });
   await server.register(twoFactorRoutes, { prefix: '/api/2fa' });
+  await server.register(gameRoutes, { prefix: '/api/game' });
+
+  // Register WebSocket gateway for real-time game communication
+  await registerGameWebSocket(server);
 
   // Health check endpoint
   server.get('/healthcheck', async () => {

@@ -39,11 +39,12 @@ jobs:
           echo "✅ Linting passed"
 
       - name: Run tests with coverage (make test)
+        timeout-minutes: 10
         run: |
           echo "Running tests with coverage thresholds..."
           docker run --rm ft_transcendence:builder sh -c "
-            echo '=== Running Backend Tests ===' && \
-            pnpm --filter backend run test --coverage || exit 1 && \
+            echo '=== Running Backend Tests (including integration) ===' && \
+            INTEGRATION=true pnpm --filter backend run test --coverage || exit 1 && \
             echo '' && \
             echo '=== Running Frontend Tests ===' && \
             pnpm --filter frontend run test --coverage || exit 1

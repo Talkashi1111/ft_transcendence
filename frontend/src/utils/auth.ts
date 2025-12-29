@@ -175,6 +175,28 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 
 /**
+ * Update user's alias
+ * @param alias - New alias (3-30 characters)
+ * @returns Updated user info
+ * @throws Error if alias is taken or user is in active match
+ */
+export async function updateAlias(alias: string): Promise<AuthUser> {
+  const response = await fetch('/api/users/me/alias', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ alias }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update alias');
+  }
+
+  return response.json();
+}
+
+/**
  * Get user ID - requires API call since we can't read httpOnly cookie
  * For most cases, use getCurrentUser() instead to get full user info
  * @returns User ID or null
