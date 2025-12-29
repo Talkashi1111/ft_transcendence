@@ -9,6 +9,9 @@
   // All containers should stop if we close / reload the VSCode window.
   "shutdownAction": "stopCompose",
 
+  // Disable automatic user UID mapping. Uncomment to be able to run the project on a 42 school computer. You won't be able to modify files from the host unless you do "sudo chmod -R 777 ." inside the container.
+  //"updateRemoteUserUID": false,
+
   // Features to add to the dev container. More info: https://containers.dev/features.
   "features": {
     // Docker-outside-of-Docker: allows running docker commands from inside devcontainer
