@@ -66,7 +66,7 @@ Uncomment this line in .devcontainer/devcontainer.json before opening the projec
 "updateRemoteUserUID": false,
 ```
 
-### Development (Inside RestDevcontainer)
+### Development (Inside Devcontainer)
 
 | Service           | URL                        | Description                  |
 | ----------------- | -------------------------- | ---------------------------- |
