@@ -161,6 +161,45 @@ migrate-reset: check-deps ## reset database and run all migrations
 	cd backend && npx prisma migrate reset --force
 
 ## ============================================
+## Production targets (run on HOST machine)
+## ============================================
+
+# NOTE: Before using prod-build, update docker-compose.prod.yml:
+#   1. uncomment the build section under app service
+#   2. comment out the image line under app service
+.PHONY: prod-build
+prod-build: ## build and start production stack locally
+	docker compose -f docker-compose.prod.yml --env-file .env.prod up --build
+
+.PHONY: prod-up
+prod-up:   ## start production stack (pulls from registry)
+	docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+.PHONY: prod-down
+prod-down: ## stop production stack
+	docker compose -f docker-compose.prod.yml down
+
+.PHONY: prod-logs
+prod-logs: ## view production logs
+	docker compose -f docker-compose.prod.yml logs -f
+
+.PHONY: prod-seed
+prod-seed: ## seed production database with demo users
+	docker exec -it ft_transcendence-prod sh -c "cd /app/backend && npx tsx prisma/seed.ts --demo"
+
+.PHONY: prod-seed-clean
+prod-seed-clean: ## clean and reseed production database
+	docker exec -it ft_transcendence-prod sh -c "cd /app/backend && npx tsx prisma/seed.ts --clean --demo"
+
+.PHONY: prod-shell
+prod-shell: ## open shell in production container
+	docker exec -it ft_transcendence-prod sh
+
+.PHONY: prod-studio
+prod-studio: ## open Prisma Studio for production DB at http://localhost:5556
+	docker exec -it ft_transcendence-prod npx prisma studio --url "file:/app/data/database.db" --browser none --port 5556
+
+## ============================================
 ## Deployment targets (run INSIDE devcontainer)
 ## ============================================
 

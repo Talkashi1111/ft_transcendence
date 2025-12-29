@@ -21,9 +21,10 @@ services:
   app:
     container_name: ft_transcendence-prod
     # Pre-built image from GitHub Actions CI
-    # To use latest: change tag to 'main-<commit-hash>' or use 'latest'
-    image: ghcr.io/talkashi1111/ft_transcendence:main-76d7bbe
-    # Uncomment to build locally instead of using pre-built image
+    image: ghcr.io/talkashi1111/ft_transcendence:latest
+    # Always pull latest image from registry (see: https://docs.docker.com/reference/compose-file/services/#pull_policy)
+    pull_policy: always
+    # To build locally instead: uncomment build section and set pull_policy to 'build'
     # build:
     #   context: .
     #   dockerfile: Dockerfile

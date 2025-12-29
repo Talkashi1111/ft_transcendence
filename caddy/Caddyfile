@@ -20,18 +20,18 @@ localhost, mooo.com {
 		respond "Access denied" 403
 	}
 
-	# API routes - proxy to backend
-	handle /api/* {
-		reverse_proxy app:3000
-	}
-
-	# WebSocket support (for future real-time features)
-	handle /ws/* {
+	# WebSocket endpoint for real-time game communication
+	handle /api/game/ws* {
 		reverse_proxy app:3000 {
 			# Required headers for WebSocket upgrade
 			header_up Upgrade {http.request.header.Upgrade}
 			header_up Connection "Upgrade"
 		}
+	}
+
+	# API routes - proxy to backend
+	handle /api/* {
+		reverse_proxy app:3000
 	}
 
 	# Health check endpoint

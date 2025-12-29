@@ -250,17 +250,12 @@ async function renderHome(app: HTMLElement) {
           <div class="bg-white rounded-lg shadow-lg p-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-6">Welcome</h2>
 
-            <div class="space-y-6">
-              <div class="p-4 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Technologies</h3>
-                <ul class="list-disc list-inside text-gray-600 space-y-1">
-                  <li>TypeScript (vanilla)</li>
-                  <li>Tailwind CSS</li>
-                  <li>Vite</li>
-                  <li>Fastify Backend</li>
-                  <li>Blockchain (Avalanche Fuji)</li>
-                </ul>
-              </div>
+            <div class="flex justify-center">
+              <img
+                src="https://i.pinimg.com/originals/6b/b3/d9/6bb3d9dcad1c5f787fedd6cc83d8bb6e.gif"
+                alt="Ping Pong Animation"
+                class="rounded-lg max-w-full h-auto"
+              />
             </div>
           </div>
         </div>
