@@ -51,7 +51,7 @@ Think of it as a "translator" between your code and your database.
 
 ### Why is it used here?
 
-1.  **Type Safety**: Since you are using TypeScript, Prisma automatically generates types for your database models. If you try to access `user.phonenumber` but that field doesn't exist in your schema, your code won't even compile.
+1.  **Type Safety**: Since you are using TypeScript, Prisma automatically generates types for your database models. If you try to access `user.phoneNumber` but that field doesn't exist in your schema, your code won't even compile.
 2.  **Auto-Completion**: In VS Code, when you type `prisma.user.`, it will show you all the available methods (`create`, `findMany`, `delete`, etc.) and fields.
 3.  **Migrations**: It manages changes to your database structure. When you edit schema.prisma (like adding a `score` field), Prisma generates the SQL commands to update your database safely.
 
