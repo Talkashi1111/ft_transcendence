@@ -732,9 +732,10 @@ By setting `"updateRemoteUserUID": false`, you stop the container from trying to
 
 On 42 school computers, this is often a necessary trade-off because the network filesystem (NFS) used for student sessions usually forbids Docker from changing file ownership (`chown`), which is what caused your initial crash.
 
-To make the folder on the host modifiable, run this command inside the container:
-`sudo chmod -R 777 .`
+To make the folder on the host modifiable, prefer more restrictive permissions instead of `777`. For example, inside the container you can run:
+`sudo chmod -R u+rwX .`
 
+This grants read/write/execute permissions recursively to the owner where appropriate, without opening the directory to all users. Avoid using `sudo chmod -R 777 .`, as it is overly permissive and considered insecure.
 ---
 ## Pro handling of a Pull Request
 Here is how professional teams typically handle this:
