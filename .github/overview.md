@@ -640,7 +640,7 @@ The key difference is **who** they are for:
 *   **Purpose:** To be shipped to the customer (deployed to the server). It is small, fast, and secure (~300MB).
 *   **When used:** When the app is actually running live for users.
 
-The production artifact is a **Docker image** containing the runtime + built files. (Here, runtime means he software environment that actually runs your program, Node.js)
+The production artifact is a **Docker image** containing the runtime + built files. (Here, runtime means the software environment that actually runs your program, Node.js)
 
 #### Concretely — what’s in a production Docker image for this project
 - **Base runtime image** (e.g., `node:18-alpine` or a minimal distro).  
