@@ -60,7 +60,7 @@ This project is about creating a website for the mighty Pong contest.
    pnpm run dev
    ```
 
-### If you are on a 42 school computer
+#### If you are on a 42 school computer
 Uncomment this line in .devcontainer/devcontainer.json before opening the project in the devContainer.
 ```json
 "updateRemoteUserUID": false,
@@ -88,7 +88,7 @@ cd /app/backend && npx prisma studio --port 5555
 ---
 ## 📝 Evaluation (subject to modifications)
 
-The production artifact is designed for real-world usage and is optimized to be lightweight. However, the subject states: "During the evaluation, a brief modification of the project may occasionally be requested. This could involve a minor behavior change, a few lines of code to write or rewrite, or an easy-to-add feature." Since we must show the code to evaluators and potentially modify it, the production build is not suitable for evaluation. Instead, the development environment should be used, utilizing Caddy instead of Vite.
+The production artifact is designed for real-world usage and is optimized to be lightweight. However, the subject states: "During the evaluation, a brief modification of the project may occasionally be requested. This could involve a minor behavior change, a few lines of code to write or rewrite, or an easy-to-add feature." Since we must show the code to evaluators and potentially modify it, the production build is not suitable for evaluation. Instead, the standard development environment should be used (Vite dev server for the frontend and Fastify for the backend). If you prefer to evaluate using a production-like setup, Caddy can act as the reverse proxy serving the built frontend instead of the Vite dev server.
 
 Note: On 42 school computers, students do not have permission to modify `/etc/hosts`.
 
@@ -118,7 +118,7 @@ Modifying files from the host machine will not be possible. Update the `.env` fi
     *(Or just use `:443` to accept all traffic)*
 
 3.  **Update Backend Configuration**:
-    Update the `OAUTH_CALLBACK_URI` in your production `.env` file (or `.env` if running in dev mode) to use the IP address instead of `mooo.com`.
+    Update the `OAUTH_CALLBACK_URI` in your backend `.env` file (for example `backend/.env`) to use the IP address instead of `mooo.com`.
     ```bash
     OAUTH_CALLBACK_URI=https://<YOUR_IP_ADDRESS>/api/oauth/google/callback
     ```

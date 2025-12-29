@@ -9,7 +9,7 @@
   // All containers should stop if we close / reload the VSCode window.
   "shutdownAction": "stopCompose",
 
-  // Uncomment the line below to disable automatic user UID mapping on 42 school computers where permission restrictions prevent the default behavior. Note: You won't be able to modify files from the host unless you run 'sudo chmod -R 777 .' inside the container.
+  // Uncomment the line below to disable automatic user UID mapping on 42 school computers where permission restrictions prevent the default behavior. Note: You won't be able to modify files from the host unless you adjust permissions inside the container (e.g., 'sudo chmod -R u+rwX .' for more secure permissions).
   //"updateRemoteUserUID": false,
 
   // Features to add to the dev container. More info: https://containers.dev/features.
