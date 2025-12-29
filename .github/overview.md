@@ -703,7 +703,7 @@ According to the dependabot.yml file I just read, it is currently configured to 
 *   **Benefit:** You don't have to manually check "Is there a new version of Node.js?" or "Is there a security fix for this library?". Dependabot does it for you.
 
 ---
-## Run the project on a 42 school computer
+## Running the project on a 42 school computer
 The problem is that VS Code is trying to synchronize your host computer's User ID (UID) and Group ID (GID) with the user inside the Docker container (the `node` user). This is done so that files created in the container have the same permissions as your files on the host.
 
 However, on **42 school computers**, the filesystem (often networked or restricted) and security policies frequently prevent Docker from performing `chown` (change ownership) operations. When the container tries to change the owner of its internal files to match your school account's ID, the system rejects it with the **"Invalid argument"** error, which crashes the build.
