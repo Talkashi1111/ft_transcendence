@@ -99,7 +99,7 @@ We have access to `/etc/hosts` and can simulate the domain name `mooo.com`.
 
 #### Option B
 Set `"updateRemoteUserUID": false,` in `.devcontainer/devcontainer.json`.
-Modifying files from the host machine will not be possible. Update the `.env` file manually, or run `sudo chmod -R 777 .` inside the container to allow copy-pasting a local `.env` file.
+Modifying files from the host machine will not be possible. Update the `.env` file manually, or adjust permissions only on the environment file (for example, run `sudo chmod 600 backend/.env` inside the container) to allow copy-pasting a local `.env` file without exposing the rest of the project.
 
 #### Multiple Devices
 1.  **Get your Server's IP**:
