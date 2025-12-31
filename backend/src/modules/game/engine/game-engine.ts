@@ -94,6 +94,12 @@ export class GameEngine {
   }
 
   private startCountdown(): void {
+    // Clear any existing countdown to prevent overlapping intervals
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+
     this.gameState.status = 'countdown';
     this.gameState.countdown = COUNTDOWN_SECONDS;
 
@@ -117,6 +123,12 @@ export class GameEngine {
   }
 
   private startGameLoop(): void {
+    // Clear any existing game loop to prevent multiple intervals running
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+
     this.tickInterval = setInterval(() => {
       this.tick();
     }, TICK_INTERVAL);

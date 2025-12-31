@@ -219,6 +219,12 @@ export class RemotePongGame {
    * Start the render loop
    */
   start(): void {
+    // Ensure we don't have multiple render loops running
+    if (this.animationId !== null) {
+      console.warn('[RemotePong] Render loop already running, stopping previous');
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
     this.renderLoop();
   }
 

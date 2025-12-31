@@ -119,8 +119,11 @@ async function connectGlobalWebSocket(): Promise<void> {
       await wsManager.connect();
       console.log('[App] Global WebSocket connected');
 
-      // Check for active match after connecting
-      wsManager.reconnectToMatch();
+      // Check for active match after connecting (for non-play pages)
+      // Play page handles its own reconnect via remoteGame.connect()
+      if (currentPage !== 'play') {
+        wsManager.reconnectToMatch();
+      }
     } catch (err) {
       console.warn('[App] Failed to connect global WebSocket:', err);
       // Non-fatal - features will fall back to REST or retry later
