@@ -254,8 +254,14 @@ function handlePlayerInput(socket: AuthenticatedSocket, data: ClientEvents['play
 function handleDisconnect(socket: AuthenticatedSocket): void {
   console.log(`[WS] User ${socket.username} disconnected`);
 
-  connectedSockets.delete(socket.userId);
-  matchManager.handleDisconnect(socket.userId);
+  // Only process disconnect if THIS socket is still the current one
+  // (prevents pausing game when old socket disconnects after being replaced by new tab)
+  if (connectedSockets.get(socket.userId) === socket) {
+    connectedSockets.delete(socket.userId);
+    matchManager.handleDisconnect(socket.userId);
+  } else {
+    console.log(`[WS] Ignoring disconnect for replaced socket (user ${socket.username})`);
+  }
 }
 
 /**
@@ -336,6 +342,14 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
       // Now do async work after handlers are attached
       // NOTE: We don't auto-reconnect here anymore. Client must explicitly
       // request reconnection via match:reconnect event when on play page.
+
+      // Tab Takeover: Close existing socket if user connects from another tab
+      const existingSocket = connectedSockets.get(auth.userId);
+      if (existingSocket && existingSocket !== authSocket) {
+        console.log(`[WS] User ${auth.username} opened new tab, closing old socket`);
+        // 4001 = custom close code for "session replaced"
+        (existingSocket as WebSocket).close(4001, 'session_replaced');
+      }
 
       // Store socket reference
       connectedSockets.set(auth.userId, authSocket);

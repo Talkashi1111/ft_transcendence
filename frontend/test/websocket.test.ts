@@ -125,16 +125,22 @@ describe('WebSocketManager', () => {
       expect(manager.isConnected).toBe(true);
     });
 
-    it('should connect with matchId', async () => {
-      const connectPromise = manager.connect('match-123');
+    it('should join match via joinMatch after connecting', async () => {
+      const connectPromise = manager.connect();
 
       const mockWs = getLastMockWs();
-      expect(mockWs!.url).toBe('ws://localhost:3000/api/game/ws?matchId=match-123');
+      expect(mockWs!.url).toBe('ws://localhost:3000/api/game/ws');
 
       mockWs!.simulateOpen();
       await connectPromise;
 
+      // Join match after connecting
+      manager.joinMatch('match-123');
+
       expect(manager.currentMatchId).toBe('match-123');
+      expect(mockWs!.send).toHaveBeenCalledWith(
+        JSON.stringify({ event: 'match:join', data: { matchId: 'match-123' } })
+      );
     });
 
     it('should use wss: for https:', async () => {
@@ -195,11 +201,13 @@ describe('WebSocketManager', () => {
     });
 
     it('should clear matchId on disconnect', async () => {
-      const connectPromise = manager.connect('match-123');
+      const connectPromise = manager.connect();
       const mockWs = getLastMockWs();
       mockWs!.simulateOpen();
       await connectPromise;
 
+      // Join a match
+      manager.joinMatch('match-123');
       expect(manager.currentMatchId).toBe('match-123');
 
       manager.disconnect();
@@ -316,10 +324,13 @@ describe('WebSocketManager', () => {
       manager.setStateChangeHandler((state) => stateChanges.push(state));
 
       // Connect first
-      const connectPromise = manager.connect('match-123');
+      const connectPromise = manager.connect();
       const mockWs = getLastMockWs();
       mockWs!.simulateOpen();
       await connectPromise;
+
+      // Join a match
+      manager.joinMatch('match-123');
 
       const instanceCountBefore = mockInstances.length;
 
@@ -335,7 +346,20 @@ describe('WebSocketManager', () => {
       expect(mockInstances.length).toBe(instanceCountBefore + 1);
       const newMockWs = getLastMockWs();
       expect(newMockWs).not.toBe(mockWs);
-      expect(newMockWs!.url).toContain('match-123'); // Should preserve matchId
+
+      // Connection URL should NOT contain matchId (we join via message now)
+      expect(newMockWs!.url).toBe('ws://localhost:3000/api/game/ws');
+
+      // Simulate successful reconnection
+      newMockWs!.simulateOpen();
+
+      // Wait for async reconnect handler to complete
+      await vi.waitFor(() => {
+        // After reconnecting, it should send match:reconnect to rejoin the match
+        expect(newMockWs!.send).toHaveBeenCalledWith(
+          JSON.stringify({ event: 'match:reconnect', data: {} })
+        );
+      });
     });
 
     it('should use exponential backoff for reconnection', async () => {

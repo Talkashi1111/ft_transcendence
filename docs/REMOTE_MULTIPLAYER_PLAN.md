@@ -112,6 +112,7 @@ export function resetWebSocketManager(): void {
 - Connect on successful login or authenticated page navigation
 - Single connection used by: game play, match list updates, (future) friends/online status
 - Disconnect on logout via `resetWebSocketManager()`
+- Only ONE connection per user allowed (Tab Takeover - see below)
 
 **Match Association (Explicit Reconnect):**
 
@@ -129,11 +130,28 @@ Frontend                          Backend
 
 This explicit flow prevents false reconnections when users navigate between pages. The server no longer auto-reconnects on WebSocket connection.
 
-**Match List Real-Time Updates:**
+**Tab Takeover (Duplicate Tab Handling):**
 
-- Backend broadcasts `matches:updated` event when matches are created, joined, or cancelled
-- Frontend subscribes via shared WebSocket manager
-- No polling required - instant updates across all connected clients
+Only one WebSocket connection per user is supported. When a user opens a duplicate tab:
+
+1. **New tab connects** → Server closes old tab's socket with code `4001` ("session_replaced")
+2. **Old tab** → Shows "Reclaim Session" modal, navigates to home if was in game
+3. **New tab** → Sends `match:reconnect`, auto-navigates to play page if match exists
+4. **Reclaim** → User can click "Reclaim Session" to take back control (kicks new tab)
+
+```
+Tab 1 (playing)                   Backend                    Tab 2 (new)
+    |                                |                            |
+    |                                |<-- WS connect -------------|
+    |<-- close(4001) ----------------|-- store Tab 2 socket       |
+    |                                |<-- match:reconnect --------|
+    | [Reclaim modal]                |-- match:joined ----------->|
+    | [→ home page]                  |<-- game continues ---------|
+```
+
+This ensures the game seamlessly transfers to the new tab without interruption.
+
+**Match List Real-Time Updates:**
 
 - Backend broadcasts `matches:updated` event when matches are created, joined, or cancelled
 - Frontend subscribes via shared WebSocket manager
@@ -312,7 +330,8 @@ interface MatchResponse {
   score1: number;
   score2: number;
   createdAt: string;
-  websocketUrl: string; // ws://host/api/game/ws?matchId=xxx
+  // Note: No websocketUrl - client uses singleton WebSocket connection
+  // and sends match:reconnect event to associate with match
 }
 ```
 
@@ -348,16 +367,21 @@ export class GameWebSocket {
   private maxReconnectAttempts: number = 5;
   private listeners: Map<string, Set<Function>> = new Map();
 
-  connect(matchId: string, token: string): Promise<void> {}
+  connect(): Promise<void> {} // Single connection, no matchId needed
   disconnect(): void {}
 
   send(event: string, data: any): void {}
   on(event: string, callback: Function): void {}
   off(event: string, callback: Function): void {}
 
+  reconnectToMatch(matchId?: string): void {} // Associate with match via event
   private handleReconnect(): void {}
   private handleMessage(event: MessageEvent): void {}
 }
+
+// Singleton pattern - single connection per user session
+export function getWebSocketManager(): GameWebSocket {}
+export function resetWebSocketManager(): void {} // Called on logout
 ```
 
 ### 3.3 Remote Pong Client
@@ -367,19 +391,23 @@ export class GameWebSocket {
 ```typescript
 export class RemotePongGame {
   private ctx: CanvasRenderingContext2D;
-  private ws: GameWebSocket;
+  private ws: WebSocketManager;
   private gameState: GameState | null = null;
   private inputHandler: InputHandler;
   private playerId: 'player1' | 'player2';
   private lastInput: 'up' | 'down' | 'none' = 'none';
 
   // Client-side interpolation for smooth rendering
-  private stateBuffer: GameState[] = [];
+  private previousBallX: number = 0;
+  private previousBallY: number = 0;
   private interpolationDelay: number = 100; // ms
 
-  constructor(canvas: HTMLCanvasElement, matchId: string) {}
+  constructor(canvas: HTMLCanvasElement) {}
 
-  connect(): Promise<void> {}
+  connect(matchId: string): Promise<void> {
+    // Uses singleton WebSocket manager
+    // Sends match:reconnect event to associate with match
+  }
   disconnect(): void {}
 
   private sendInput(): void {
@@ -387,8 +415,9 @@ export class RemotePongGame {
     // Only send if input changed
   }
 
-  private interpolateState(): GameState {
+  private interpolateState(): void {
     // Smooth interpolation between server states
+    // Detects ball reset (position jump > 100px) to skip interpolation
   }
 
   private render(): void {
@@ -632,12 +661,13 @@ curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match/<match-id
 ### 7.2 WebSocket CLI Testing
 
 ```bash
-# Connect via WebSocket using npx wscat
+# Connect via WebSocket using npx wscat (single connection, no matchId in URL)
 npx wscat -c 'ws://localhost:3000/api/game/ws' \
   -H "Cookie: $(grep token /tmp/cookies.txt | awk '{print $6\"=\"$7}')"
 
 # Then send events interactively:
 # {"event": "match:create", "data": {}}
+# {"event": "match:reconnect", "data": {}}   # Associate with active match
 # {"event": "player:input", "data": {"direction": "up"}}
 ```
 

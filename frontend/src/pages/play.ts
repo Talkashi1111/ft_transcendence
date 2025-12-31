@@ -7,7 +7,7 @@ import { toast } from '../utils/toast';
 import { showConfirmModal } from '../utils/modal';
 import { escapeHtml } from '../utils/sanitize';
 import { isAuthenticated } from '../utils/auth';
-import { resetWebSocketManager, getWebSocketManager } from '../utils/websocket';
+import { getWebSocketManager } from '../utils/websocket';
 import type { AvailableMatch } from '../utils/websocket';
 
 // Constants
@@ -1015,17 +1015,12 @@ function setupPlayPageEvents(): void {
       });
 
       // Connect to the match via WebSocket and start render loop
+      // Server auto-reconnects on connection when user has active match
       await remoteGame.connect(match.id);
       remoteGame.start();
 
       // Mark as in active remote game
       isInActiveRemoteGame = true;
-
-      // Explicitly request reconnection to the match
-      // (server no longer auto-reconnects on WebSocket connection)
-      // The game will start via onMatchJoined callback when WebSocket confirms
-      const wsManager = getWebSocketManager();
-      wsManager.reconnectToMatch();
     } catch (err) {
       console.error('[Play] Error checking for active match:', err);
       // Silently fail - user can still create new matches
@@ -1168,17 +1163,12 @@ function setupPlayPageEvents(): void {
       });
 
       // Connect WebSocket and start render loop
+      // REST API already added us to the match, just tell server we're ready
       await remoteGame.connect(matchId);
       remoteGame.start();
 
       // Mark as in active remote game
       isInActiveRemoteGame = true;
-
-      // Explicitly reconnect to match via WebSocket
-      // This associates the WebSocket with the match on the server
-      // The game will start via onOpponentJoined or onMatchJoined callbacks
-      const wsManager = getWebSocketManager();
-      wsManager.reconnectToMatch();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start game';
       toast.error(message);
@@ -1201,7 +1191,8 @@ function setupPlayPageEvents(): void {
       remoteGame.disconnect();
       remoteGame = null;
     }
-    resetWebSocketManager();
+    // Only reset WebSocket manager when truly cleaning up, not when starting a new game
+    // The WebSocket connection will be reused for the new game
     isInActiveRemoteGame = false;
   }
 

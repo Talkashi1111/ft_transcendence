@@ -61,8 +61,24 @@ export class RemotePongGame {
     // Game state updates
     this.unsubscribeFunctions.push(
       this.ws.on('game:state', (state) => {
-        this.previousState = this.currentState;
-        this.currentState = state as RemoteGameState;
+        const newState = state as RemoteGameState;
+
+        // Detect ball reset (e.g., after scoring) by checking for large position jump
+        // If ball jumped more than 100 pixels, it was likely reset - skip interpolation
+        if (this.currentState && this.currentState.status === 'playing') {
+          const dx = Math.abs(newState.ball.x - this.currentState.ball.x);
+          const dy = Math.abs(newState.ball.y - this.currentState.ball.y);
+          if (dx > 100 || dy > 100) {
+            // Ball was reset, don't interpolate from old position
+            this.previousState = null;
+          } else {
+            this.previousState = this.currentState;
+          }
+        } else {
+          this.previousState = this.currentState;
+        }
+
+        this.currentState = newState;
         this.lastStateTime = performance.now();
       })
     );
@@ -178,14 +194,25 @@ export class RemotePongGame {
   }
 
   /**
-   * Connect to server and optionally join a match
+   * Connect to server and notify it we're ready for game state
+   * @param matchId - Match ID to track (for display purposes)
    */
   async connect(matchId?: string): Promise<void> {
     // Store match ID immediately so it can be displayed while connecting
     if (matchId) {
       this.matchId = matchId;
     }
-    await this.ws.connect(matchId);
+
+    // Connect if not already connected (reuse existing connection)
+    if (!this.ws.isConnected) {
+      await this.ws.connect();
+    }
+
+    // The REST API already added us to the match (quickmatch, create, or join)
+    // Tell the server we're ready to receive game state via match:reconnect
+    if (matchId) {
+      this.ws.reconnectToMatch();
+    }
   }
 
   /**

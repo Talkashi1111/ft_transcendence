@@ -50,12 +50,77 @@ let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'setti
  * - Game state (remote games)
  * - Friends online status (future)
  */
+// Flag to skip auto-reconnect after session was replaced
+let sessionWasReplaced = false;
+
 async function connectGlobalWebSocket(): Promise<void> {
+  // Skip if we were just replaced by another tab (until user explicitly reclaims)
+  if (sessionWasReplaced) {
+    return;
+  }
+
   const wsManager = getWebSocketManager();
+
+  // Register handlers only once (when not connected)
   if (!wsManager.isConnected) {
+    // Handle session replaced by another tab
+    wsManager.on('session:replaced', async () => {
+      // Set flag to prevent auto-reconnect from render()
+      sessionWasReplaced = true;
+
+      // Clean up frozen game if needed (before showing modal)
+      const wasInGame = currentPage === 'play' && hasActiveRemoteGame();
+      if (wasInGame) {
+        cleanupPlayPage();
+        currentPage = 'home';
+        window.history.pushState({ page: 'home' }, '', '/');
+        render();
+      }
+
+      // Show modal with only "Reclaim Session" button
+      const reclaim = await showConfirmModal({
+        title: 'Session Opened Elsewhere',
+        message: wasInGame
+          ? 'You opened this game in another tab.\n\nYour game continues there. Click below to take back control.'
+          : 'You opened this site in another tab.\n\nClick below to use this tab instead.',
+        confirmText: 'Reclaim Session',
+        showCancel: false,
+      });
+
+      if (reclaim) {
+        // User wants to reclaim - reconnect (this will kick the other tab)
+        sessionWasReplaced = false; // Allow reconnection
+        try {
+          await wsManager.connect();
+          // If was in a game, navigate to play page to rejoin
+          if (wasInGame) {
+            currentPage = 'play';
+            window.history.pushState({ page: 'play' }, '', '/play');
+            render(); // This will call renderPlayPage which detects active match
+          }
+        } catch {
+          console.error('[App] Failed to reclaim session');
+        }
+      }
+    });
+
+    // Handle auto-reconnect to active match (e.g., when opening new tab)
+    wsManager.on('match:joined', (data) => {
+      // If not on play page and we got match:joined, navigate there
+      if (currentPage !== 'play' && data.matchId) {
+        console.log('[App] Active match detected, navigating to play page');
+        currentPage = 'play';
+        window.history.pushState({ page: 'play' }, '', '/play');
+        render();
+      }
+    });
+
     try {
       await wsManager.connect();
       console.log('[App] Global WebSocket connected');
+
+      // Check for active match after connecting
+      wsManager.reconnectToMatch();
     } catch (err) {
       console.warn('[App] Failed to connect global WebSocket:', err);
       // Non-fatal - features will fall back to REST or retry later

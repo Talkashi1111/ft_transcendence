@@ -524,6 +524,39 @@ User Action                  Frontend                        Backend
 - `wsManager.on(event, handler)` - Subscribe to events
 - `wsManager.off(event, handler)` - Unsubscribe from events
 
+**Tab Takeover (Duplicate Tab Handling):**
+
+Only one WebSocket connection per user is allowed. When a user opens a new tab:
+
+```
+Tab 1 (playing game)              Backend                    Tab 2 (new tab)
+    |                                |                            |
+    |<-- game:state (60Hz) ----------|                            |
+    |                                |                            |
+    |                                |<-- WS connect -------------|
+    |                                |                            |
+    |<-- close(4001, session_replaced)                            |
+    |                                |-- store Tab 2 socket ----->|
+    |                                |                            |
+    | [Shows "Reclaim Session" modal]|<-- match:reconnect --------|
+    |                                |-- match:joined ----------->|
+    | [Navigates to home]            |<-- game:state (60Hz) ------|
+    |                                |                            |
+    | [User clicks "Reclaim"]        |                            |
+    |-- WS connect ----------------->|                            |
+    |                                |-- close(4001) ------------>|
+    | [Navigates to /play]           |                            |
+    |<-- match:joined ---------------|  [Shows "Reclaim" modal]   |
+```
+
+**Key implementation details:**
+
+1. **Backend**: When new socket connects, close existing socket with code `4001` ("session_replaced")
+2. **Backend**: `handleDisconnect` ignores sockets that were replaced (prevents game pause)
+3. **Frontend**: Listen for close code `4001`, show "Reclaim Session" modal
+4. **Frontend**: `sessionWasReplaced` flag prevents auto-reconnect loops during `render()`
+5. **Frontend**: New tab sends `match:reconnect` to auto-join active match
+
 #### WebSocket Events
 
 **Client → Server:**
@@ -538,25 +571,26 @@ User Action                  Frontend                        Backend
 
 **Server → Client:**
 
-| Event                         | Data                                   | Description                 |
-| ----------------------------- | -------------------------------------- | --------------------------- |
-| `pong`                        | `{}`                                   | Response to ping            |
-| `game:state`                  | `GameState`                            | Game state update (60Hz)    |
-| `game:countdown`              | `{ count: number }`                    | Countdown before start      |
-| `game:start`                  | `{}`                                   | Game started                |
-| `game:end`                    | `{ winner, winnerId, score1, score2 }` | Game finished               |
-| `game:paused`                 | `{ reason: opponent_disconnected }`    | Game paused (opponent DC)   |
-| `game:resumed`                | `{}`                                   | Game resumed                |
-| `match:created`               | `{ matchId }`                          | Match created               |
-| `match:joined`                | `{ matchId, opponent, playerNumber }`  | Joined a match              |
-| `match:waiting`               | `{ matchId }`                          | Waiting for opponent        |
-| `match:opponent_joined`       | `{ opponent }`                         | Opponent joined             |
-| `match:opponent_left`         | `{}`                                   | Opponent left               |
-| `match:opponent_disconnected` | `{ reconnectTimeout }`                 | Opponent disconnected       |
-| `match:opponent_reconnected`  | `{}`                                   | Opponent reconnected        |
-| `match:cancelled`             | `{ matchId }`                          | Match was cancelled         |
-| `matches:updated`             | `{ matches: AvailableMatch[] }`        | Match list changed (global) |
-| `error`                       | `{ code, message }`                    | Error occurred              |
+| Event                         | Data                                   | Description                       |
+| ----------------------------- | -------------------------------------- | --------------------------------- |
+| `pong`                        | `{}`                                   | Response to ping                  |
+| `game:state`                  | `GameState`                            | Game state update (60Hz)          |
+| `game:countdown`              | `{ count: number }`                    | Countdown before start            |
+| `game:start`                  | `{}`                                   | Game started                      |
+| `game:end`                    | `{ winner, winnerId, score1, score2 }` | Game finished                     |
+| `game:paused`                 | `{ reason: opponent_disconnected }`    | Game paused (opponent DC)         |
+| `game:resumed`                | `{}`                                   | Game resumed                      |
+| `match:created`               | `{ matchId }`                          | Match created                     |
+| `match:joined`                | `{ matchId, opponent, playerNumber }`  | Joined a match                    |
+| `match:waiting`               | `{ matchId }`                          | Waiting for opponent              |
+| `match:opponent_joined`       | `{ opponent }`                         | Opponent joined                   |
+| `match:opponent_left`         | `{}`                                   | Opponent left                     |
+| `match:opponent_disconnected` | `{ reconnectTimeout }`                 | Opponent disconnected             |
+| `match:opponent_reconnected`  | `{}`                                   | Opponent reconnected              |
+| `match:cancelled`             | `{ matchId }`                          | Match was cancelled               |
+| `matches:updated`             | `{ matches: AvailableMatch[] }`        | Match list changed (global)       |
+| `session:replaced`            | `{}`                                   | Another tab took over (code 4001) |
+| `error`                       | `{ code, message }`                    | Error occurred                    |
 
 > **Note:** The `matches:updated` event is broadcast to ALL connected clients when any match is created, joined, or cancelled. This enables real-time match list updates without polling.
 

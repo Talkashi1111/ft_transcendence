@@ -42,6 +42,7 @@ export type ServerEventType =
   | 'match:opponent_disconnected'
   | 'match:opponent_reconnected'
   | 'matches:updated'
+  | 'session:replaced' // Close code 4001 - another tab took over
   | 'error'
   | 'pong';
 
@@ -73,6 +74,7 @@ export interface ServerEvents {
   'match:opponent_disconnected': { reconnectTimeout: number };
   'match:opponent_reconnected': Record<string, never>;
   'matches:updated': { matches: AvailableMatch[] };
+  'session:replaced': Record<string, never>;
   error: { code: string; message: string };
   pong: Record<string, never>;
 }
@@ -141,22 +143,19 @@ export class WebSocketManager {
 
   /**
    * Connect to the game WebSocket server
-   * @param matchId - Optional match ID to join immediately
    */
-  async connect(matchId?: string): Promise<void> {
+  async connect(): Promise<void> {
     if (this.ws?.readyState === WebSocket.OPEN) {
       console.log('[WS] Already connected');
       return;
     }
 
-    this.matchId = matchId ?? null;
     this.setState('connecting');
 
     return new Promise((resolve, reject) => {
-      // Build WebSocket URL
+      // Build WebSocket URL (no matchId - join via message after connect)
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const baseUrl = `${protocol}//${window.location.host}/api/game/ws`;
-      const url = matchId ? `${baseUrl}?matchId=${matchId}` : baseUrl;
+      const url = `${protocol}//${window.location.host}/api/game/ws`;
 
       try {
         this.ws = new WebSocket(url);
@@ -172,6 +171,21 @@ export class WebSocketManager {
         this.ws.onclose = (event) => {
           console.log('[WS] Disconnected:', event.code, event.reason);
           this.stopPing();
+
+          // Handle session replaced (another tab connected)
+          if (event.code === 4001) {
+            console.log('[WS] Session replaced by another tab');
+            this.setState('disconnected');
+            // Emit session:replaced event for UI to handle
+            const handlers = this.handlers['session:replaced'];
+            console.log('[WS] session:replaced handlers count:', handlers?.length ?? 0);
+            if (handlers && handlers.length > 0) {
+              handlers.forEach((handler) => handler({} as never));
+            } else {
+              console.warn('[WS] No session:replaced handlers registered!');
+            }
+            return; // Don't attempt reconnect
+          }
 
           if (this._state === 'connecting') {
             reject(new Error('Failed to connect'));
@@ -355,10 +369,16 @@ export class WebSocketManager {
 
     console.log(`[WS] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})`);
 
-    this.reconnectTimer = setTimeout(() => {
-      this.connect(this.matchId ?? undefined).catch(() => {
+    this.reconnectTimer = setTimeout(async () => {
+      try {
+        await this.connect();
+        // If we were in a match, request reconnection to it
+        if (this.matchId) {
+          this.reconnectToMatch();
+        }
+      } catch {
         // Connection failed, will retry via onclose handler
-      });
+      }
     }, delay);
   }
 
