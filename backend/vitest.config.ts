@@ -1,9 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
+// Run integration tests only when INTEGRATION=true
+const runIntegration = process.env.INTEGRATION === 'true';
+
 export default defineConfig({
   test: {
     globals: true,
     include: ['test/**/*.test.ts'],
+    exclude: runIntegration ? [] : ['test/**/*.integration.test.ts'],
     setupFiles: ['test/setup.ts'],
     // Run tests sequentially to avoid database conflicts
     pool: 'forks',

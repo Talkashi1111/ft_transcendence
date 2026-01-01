@@ -5,10 +5,12 @@ import {
   getUsersHandler,
   getMeHandler,
   logoutHandler,
+  updateAliasHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
   loginJsonSchema,
+  updateAliasJsonSchema,
   userResponseJsonSchema,
   userMeResponseJsonSchema,
   loginResponseJsonSchema,
@@ -80,6 +82,24 @@ async function userRoutes(server: FastifyInstance) {
       },
     },
     getMeHandler
+  );
+
+  // Update user alias
+  server.patch<{ Body: { alias: string } }>(
+    '/me/alias',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Update user alias. Cannot be changed while in an active match or tournament.',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        body: updateAliasJsonSchema,
+        response: {
+          200: userMeResponseJsonSchema,
+        },
+      },
+    },
+    updateAliasHandler
   );
 
   // Logout (clear authentication cookie)

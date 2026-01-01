@@ -11,6 +11,7 @@ interface ModalOptions {
   confirmClass?: string;
   cancelClass?: string;
   isDangerous?: boolean; // Use red/warning styling for destructive actions
+  showCancel?: boolean; // Whether to show cancel button (default: true)
 }
 
 let modalContainer: HTMLElement | null = null;
@@ -24,6 +25,7 @@ export function showConfirmModal(options: ModalOptions): Promise<boolean> {
     confirmClass = 'bg-blue-600 hover:bg-blue-700',
     cancelClass = 'bg-gray-500 hover:bg-gray-600',
     isDangerous = false,
+    showCancel = true,
   } = options;
 
   return new Promise((resolve) => {
@@ -40,6 +42,16 @@ export function showConfirmModal(options: ModalOptions): Promise<boolean> {
     // Determine button styles
     const confirmButtonClass = isDangerous ? 'bg-red-600 hover:bg-red-700' : confirmClass;
 
+    // Build cancel button HTML only if needed
+    const cancelButtonHtml = showCancel
+      ? `<button
+              id="modal-cancel"
+              class="px-5 py-2.5 ${cancelClass} text-white rounded-lg transition font-semibold"
+            >
+              ${escapeHtml(cancelText)}
+            </button>`
+      : '';
+
     modalContainer.innerHTML = `
       <div class="modal-content bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all scale-95 opacity-0">
         <div class="p-6">
@@ -47,12 +59,7 @@ export function showConfirmModal(options: ModalOptions): Promise<boolean> {
           <p class="text-gray-700 mb-6 whitespace-pre-line">${escapeHtml(message)}</p>
 
           <div class="flex gap-3 justify-end">
-            <button
-              id="modal-cancel"
-              class="px-5 py-2.5 ${cancelClass} text-white rounded-lg transition font-semibold"
-            >
-              ${escapeHtml(cancelText)}
-            </button>
+            ${cancelButtonHtml}
             <button
               id="modal-confirm"
               class="px-5 py-2.5 ${confirmButtonClass} text-white rounded-lg transition font-semibold"

@@ -22,6 +22,13 @@ export const loginSchema = z.object({
   password: z.string({ message: 'Password is required' }),
 });
 
+export const updateAliasSchema = z.object({
+  alias: z
+    .string({ message: 'Alias is required and must be a string' })
+    .min(3, 'Alias must be at least 3 characters')
+    .max(30, 'Alias must be at most 30 characters'),
+});
+
 // Response schemas
 export const userResponseSchema = z.object({
   id: z.string(),
@@ -50,11 +57,13 @@ export const usersResponseSchema = z.array(userResponseSchema);
 // TypeScript types
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type UpdateAliasInput = z.infer<typeof updateAliasSchema>;
 export type UserResponse = z.infer<typeof userResponseSchema>;
 
 // JSON Schema for Fastify (Swagger) - using Zod 4's native toJSONSchema with draft-7 for Fastify/Ajv compatibility
 export const createUserJsonSchema = z.toJSONSchema(createUserSchema, { target: 'draft-7' });
 export const loginJsonSchema = z.toJSONSchema(loginSchema, { target: 'draft-7' });
+export const updateAliasJsonSchema = z.toJSONSchema(updateAliasSchema, { target: 'draft-7' });
 export const userResponseJsonSchema = z.toJSONSchema(userResponseSchema, { target: 'draft-7' });
 export const userMeResponseJsonSchema = z.toJSONSchema(userMeResponseSchema, { target: 'draft-7' });
 export const loginResponseJsonSchema = z.toJSONSchema(loginResponseSchema, { target: 'draft-7' });
