@@ -1,14 +1,23 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import * as z from 'zod';
-import { createUser, findUserByEmail, findUsers, findUserById } from './user.service.js';
+import {
+  createUser,
+  findUserByEmail,
+  findUsers,
+  findUserById,
+  updateUserAlias,
+} from './user.service.js';
 import {
   createUserSchema,
   loginSchema,
+  updateAliasSchema,
   type CreateUserInput,
   type LoginInput,
+  type UpdateAliasInput,
 } from './user.schema.js';
 import { verifyPassword } from '../../utils/hash.js';
 import { generateTempToken, getTempTokenExpiry } from '../../utils/auth-helpers.js';
+import { matchManager } from '../game/match-manager.js';
 
 // Prisma error type for unique constraint violations
 interface PrismaClientKnownRequestError extends Error {
@@ -236,4 +245,68 @@ export async function logoutHandler(request: FastifyRequest, reply: FastifyReply
   });
 
   return reply.send({ success: true });
+}
+
+/**
+ * Update user's alias
+ *
+ * Restrictions:
+ * - Alias must be 3-30 characters
+ * - Alias must be unique
+ * - Cannot change alias while in an active match or tournament
+ */
+export async function updateAliasHandler(
+  request: FastifyRequest<{ Body: UpdateAliasInput }>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.user as { id: string; email: string };
+    const validatedData = updateAliasSchema.parse(request.body);
+
+    // Check if user is in an active match (cannot change alias during game)
+    if (matchManager.isPlayerInActiveMatch(id)) {
+      return reply.status(409).send({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'Cannot change alias while in an active match or tournament',
+      });
+    }
+
+    // Update the alias
+    const user = await updateUserAlias(id, validatedData.alias);
+
+    return reply.send({
+      id: user.id,
+      email: user.email,
+      alias: user.alias,
+      twoFactorEnabled: user.twoFactorEnabled,
+      createdAt: user.createdAt.toISOString(),
+    });
+  } catch (error) {
+    // Handle Zod validation errors
+    if (error instanceof z.ZodError) {
+      return reply.status(400).send({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: error.issues[0].message,
+      });
+    }
+
+    // Handle Prisma unique constraint errors (alias already taken)
+    const prismaError = error as PrismaClientKnownRequestError;
+    if (prismaError.code === 'P2002') {
+      return reply.status(409).send({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'This alias is already taken',
+      });
+    }
+
+    request.log.error(error);
+    return reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Something went wrong',
+    });
+  }
 }

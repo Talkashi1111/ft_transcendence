@@ -18,6 +18,7 @@
     "eslint": "^9.29.0",
     "globals": "^16.2.0",
     "jsdom": "^26.1.0",
+    "msw": "^2.12.7",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.3",

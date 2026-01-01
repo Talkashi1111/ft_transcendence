@@ -1,4 +1,4 @@
-import { getCurrentUser, setup2FA, enable2FA, disable2FA } from '../utils/auth';
+import { getCurrentUser, setup2FA, enable2FA, disable2FA, updateAlias } from '../utils/auth';
 
 export async function renderSettingsPage(
   app: HTMLElement,
@@ -25,9 +25,33 @@ export async function renderSettingsPage(
         <!-- User Info Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
-          <div class="space-y-2 text-gray-600">
-            <p><span class="font-medium">Email:</span> ${user.email}</p>
-            <p><span class="font-medium">Alias:</span> ${user.alias}</p>
+          <div class="space-y-4">
+            <div class="text-gray-600">
+              <span class="font-medium">Email:</span> ${user.email}
+            </div>
+
+            <!-- Alias Edit Section -->
+            <div>
+              <label for="alias-input" class="block text-sm font-medium text-gray-700 mb-1">Alias</label>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  id="alias-input"
+                  value="${user.alias}"
+                  minlength="3"
+                  maxlength="30"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <button
+                  id="update-alias-btn"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-400"
+                >
+                  Update
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">3-30 characters. Cannot be changed during a match.</p>
+              <div id="alias-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
+            </div>
           </div>
         </div>
 
@@ -116,7 +140,68 @@ export async function renderSettingsPage(
   `;
 
   setupNavigation();
+  setupAliasHandler();
   setup2FAHandlers();
+}
+
+function setupAliasHandler(): void {
+  const aliasInput = document.getElementById('alias-input') as HTMLInputElement;
+  const updateBtn = document.getElementById('update-alias-btn') as HTMLButtonElement;
+  const messageDiv = document.getElementById('alias-message');
+
+  const showMessage = (message: string, isError = false) => {
+    if (!messageDiv) return;
+    messageDiv.textContent = message;
+    messageDiv.classList.remove(
+      'hidden',
+      'bg-green-50',
+      'text-green-700',
+      'bg-red-50',
+      'text-red-700'
+    );
+    if (isError) {
+      messageDiv.classList.add('bg-red-50', 'text-red-700');
+    } else {
+      messageDiv.classList.add('bg-green-50', 'text-green-700');
+    }
+  };
+
+  const hideMessage = () => {
+    messageDiv?.classList.add('hidden');
+  };
+
+  if (updateBtn && aliasInput) {
+    updateBtn.addEventListener('click', async () => {
+      hideMessage();
+      const newAlias = aliasInput.value.trim();
+
+      // Client-side validation
+      if (newAlias.length < 3 || newAlias.length > 30) {
+        showMessage('Alias must be between 3 and 30 characters', true);
+        return;
+      }
+
+      updateBtn.disabled = true;
+      updateBtn.textContent = 'Updating...';
+
+      try {
+        await updateAlias(newAlias);
+        showMessage('Alias updated successfully!');
+        aliasInput.value = newAlias;
+
+        // Update navbar alias display
+        const navAlias = document.getElementById('nav-user-alias');
+        if (navAlias) {
+          navAlias.textContent = newAlias;
+        }
+      } catch (err) {
+        showMessage(err instanceof Error ? err.message : 'Failed to update alias', true);
+      } finally {
+        updateBtn.disabled = false;
+        updateBtn.textContent = 'Update';
+      }
+    });
+  }
 }
 
 function setup2FAHandlers(): void {

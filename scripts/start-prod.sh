@@ -1,6 +1,6 @@
 #!/bin/bash
 # Production startup script
-# Runs database migrations and starts the backend server
+# Runs database migrations, seeds demo users, and starts the backend server
 
 set -e
 
@@ -12,6 +12,12 @@ cd /app/backend
 npx prisma migrate deploy
 
 echo "✅ Migrations complete"
+
+# Seed demo users (skip if already exist)
+echo "🌱 Seeding demo users..."
+npx tsx prisma/seed.ts --demo
+
+echo "✅ Seeding complete"
 
 # Start the server
 echo "🎮 Starting server..."

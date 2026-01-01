@@ -62,3 +62,17 @@ export async function findUserById(id: string) {
     },
   });
 }
+
+export async function updateUserAlias(id: string, alias: string) {
+  return prisma.user.update({
+    where: { id },
+    data: { alias },
+    select: {
+      id: true,
+      email: true,
+      alias: true,
+      twoFactorEnabled: true,
+      createdAt: true,
+    },
+  });
+}

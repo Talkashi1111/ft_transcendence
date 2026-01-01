@@ -1,31 +1,19 @@
 // Test setup for vanilla TypeScript tests
-// No special setup needed for jsdom
+import { beforeAll, afterEach, afterAll } from 'vitest';
+import { server } from './mocks/server';
 
-// This file runs before all tests and sets up the testing environment
+// Establish API mocking before all tests
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'bypass' });
+});
 
-// Example: Global fetch mock setup (commented out as an example)
-// import { vi } from 'vitest'
-//
-// // Mock fetch globally for all tests (just an example)
-// global.fetch = vi.fn()
+// Reset any request handlers that we may add during the tests,
+// so they don't affect other tests
+afterEach(() => {
+  server.resetHandlers();
+});
 
-// Example: Suppress console errors during tests (commented out as an example)
-// const originalConsoleError = console.error
-// console.error = (...args) => {
-//   // Ignore specific error messages or just disable during tests
-//   if (args[0]?.includes('some known warning to ignore')) {
-//     return
-//   }
-//   originalConsoleError(...args)
-// }
-
-// Example: Add custom matchers (commented out as an example)
-// expect.extend({
-//   toBeWithinRange(received, floor, ceiling) {
-//     const pass = received >= floor && received <= ceiling
-//     return {
-//       pass,
-//       message: () => `expected ${received} to be within range ${floor} - ${ceiling}`,
-//     }
-//   },
-// })
+// Clean up after the tests are finished
+afterAll(() => {
+  server.close();
+});

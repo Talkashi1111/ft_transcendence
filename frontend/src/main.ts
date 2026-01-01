@@ -1,9 +1,16 @@
 import './index.css';
-import { renderPlayPage } from './pages/play';
+import {
+  renderPlayPage,
+  cleanupPlayPage,
+  hasActiveRemoteGame,
+  leaveRemoteGame,
+} from './pages/play';
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
 import { renderSettingsPage } from './pages/settings';
-import { isAuthenticated, logout } from './utils/auth';
+import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
+import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
+import { showConfirmModal } from './utils/modal';
 
 // Types
 interface Match {
@@ -36,7 +43,115 @@ function formatAddress(address: string): string {
 // Router
 let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' = 'home';
 
-function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings') {
+/**
+ * Connect global WebSocket when authenticated
+ * This shared connection is used for:
+ * - Match list updates (play page)
+ * - Game state (remote games)
+ * - Friends online status (future)
+ */
+// Flag to skip auto-reconnect after session was replaced
+let sessionWasReplaced = false;
+
+async function connectGlobalWebSocket(): Promise<void> {
+  // Skip if we were just replaced by another tab (until user explicitly reclaims)
+  if (sessionWasReplaced) {
+    return;
+  }
+
+  const wsManager = getWebSocketManager();
+
+  // Register handlers only once (when not connected)
+  if (!wsManager.isConnected) {
+    // Handle session replaced by another tab
+    wsManager.on('session:replaced', async () => {
+      // Set flag to prevent auto-reconnect from render()
+      sessionWasReplaced = true;
+
+      // Clean up frozen game if needed (before showing modal)
+      const wasInGame = currentPage === 'play' && hasActiveRemoteGame();
+      if (wasInGame) {
+        cleanupPlayPage();
+        currentPage = 'home';
+        window.history.pushState({ page: 'home' }, '', '/');
+        render();
+      }
+
+      // Show modal with only "Reclaim Session" button
+      const reclaim = await showConfirmModal({
+        title: 'Session Opened Elsewhere',
+        message: wasInGame
+          ? 'You opened this game in another tab.\n\nYour game continues there. Click below to take back control.'
+          : 'You opened this site in another tab.\n\nClick below to use this tab instead.',
+        confirmText: 'Reclaim Session',
+        showCancel: false,
+      });
+
+      if (reclaim) {
+        // User wants to reclaim - reconnect (this will kick the other tab)
+        sessionWasReplaced = false; // Allow reconnection
+        try {
+          await wsManager.connect();
+          // If was in a game, navigate to play page to rejoin
+          if (wasInGame) {
+            currentPage = 'play';
+            window.history.pushState({ page: 'play' }, '', '/play');
+            render(); // This will call renderPlayPage which detects active match
+          }
+        } catch {
+          console.error('[App] Failed to reclaim session');
+        }
+      }
+    });
+
+    // Handle auto-reconnect to active match (e.g., when opening new tab)
+    wsManager.on('match:joined', (data) => {
+      // If not on play page and we got match:joined, navigate there
+      if (currentPage !== 'play' && data.matchId) {
+        console.log('[App] Active match detected, navigating to play page');
+        currentPage = 'play';
+        window.history.pushState({ page: 'play' }, '', '/play');
+        render();
+      }
+    });
+
+    try {
+      await wsManager.connect();
+      console.log('[App] Global WebSocket connected');
+
+      // Check for active match after connecting (for non-play pages)
+      // Play page handles its own reconnect via remoteGame.connect()
+      if (currentPage !== 'play') {
+        wsManager.reconnectToMatch();
+      }
+    } catch (err) {
+      console.warn('[App] Failed to connect global WebSocket:', err);
+      // Non-fatal - features will fall back to REST or retry later
+    }
+  }
+}
+
+async function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings') {
+  // Check if leaving an active game - show confirmation
+  if (currentPage === 'play' && hasActiveRemoteGame()) {
+    const confirmed = await showConfirmModal({
+      title: 'Leave Game?',
+      message: 'You are in an active game. Leaving will forfeit the match. Are you sure?',
+      confirmText: 'Leave Game',
+      cancelText: 'Stay',
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return; // User cancelled, stay on play page
+    }
+
+    // User confirmed, leave the game
+    leaveRemoteGame();
+  } else if (currentPage === 'play') {
+    cleanupPlayPage();
+  }
+
   currentPage = page;
   // Update browser history
   window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
@@ -44,7 +159,28 @@ function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments' |
 }
 
 // Handle browser back/forward buttons
-window.addEventListener('popstate', (event) => {
+window.addEventListener('popstate', async (event) => {
+  // Check if leaving an active game - show confirmation
+  if (currentPage === 'play' && hasActiveRemoteGame()) {
+    const confirmed = await showConfirmModal({
+      title: 'Leave Game?',
+      message: 'You are in an active game. Leaving will forfeit the match. Are you sure?',
+      confirmText: 'Leave Game',
+      cancelText: 'Stay',
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      // User cancelled - push back to play page in history
+      window.history.pushState({ page: 'play' }, '', '/play');
+      return;
+    }
+
+    leaveRemoteGame();
+  } else if (currentPage === 'play') {
+    cleanupPlayPage();
+  }
+
   if (event.state && event.state.page) {
     currentPage = event.state.page;
   } else {
@@ -60,8 +196,9 @@ async function render() {
   if (!app) return;
 
   if (currentPage === 'login') {
-    renderLoginPage(app, renderNavBar, setupNavigation, () => {
-      // After successful login, go to home
+    renderLoginPage(app, renderNavBar, setupNavigation, async () => {
+      // After successful login, connect WebSocket and go to home
+      await connectGlobalWebSocket();
       navigate('home');
     });
   } else if (currentPage === 'register') {
@@ -70,13 +207,18 @@ async function render() {
       navigate('login');
     });
   } else if (currentPage === 'home') {
+    // Connect WebSocket if authenticated (for real-time features)
+    const authenticated = await isAuthenticated();
+    if (authenticated) {
+      await connectGlobalWebSocket();
+    }
     renderHome(app);
   } else if (currentPage === 'play') {
-    // Protect play page - redirect to login if not authenticated
+    // Play page is accessible to everyone - local games don't require login
+    // Remote games are protected within the play page UI
     const authenticated = await isAuthenticated();
-    if (!authenticated) {
-      navigate('login');
-      return;
+    if (authenticated) {
+      await connectGlobalWebSocket();
     }
     renderPlayPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   } else if (currentPage === 'tournaments') {
@@ -86,6 +228,7 @@ async function render() {
       navigate('login');
       return;
     }
+    await connectGlobalWebSocket();
     renderTournaments(app, authenticated);
   } else if (currentPage === 'settings') {
     // Protect settings page - redirect to login if not authenticated
@@ -94,6 +237,7 @@ async function render() {
       navigate('login');
       return;
     }
+    await connectGlobalWebSocket();
     renderSettingsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   }
 }
@@ -104,6 +248,14 @@ async function renderNavBar(
   authenticated?: boolean
 ): Promise<string> {
   const isAuth = authenticated ?? (await isAuthenticated());
+
+  // Get user info if authenticated
+  let userAlias = '';
+  if (isAuth) {
+    const user = await getCurrentUser();
+    userAlias = user?.alias || '';
+  }
+
   return `
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -117,19 +269,24 @@ async function renderNavBar(
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               Home
             </button>
+            <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Play
+            </button>
             ${
               isAuth
                 ? `
-              <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Play
-              </button>
               <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Tournaments
               </button>
               <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Settings
               </button>
-              <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
+              <div class="border-l border-gray-300 h-6 mx-2"></div>
+              <span class="flex items-center text-sm text-gray-600 px-2">
+                <span class="text-gray-400 mr-1">👤</span>
+                <span id="nav-user-alias" class="font-medium">${userAlias}</span>
+              </span>
+              <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
                 Logout
               </button>
             `
@@ -161,17 +318,12 @@ async function renderHome(app: HTMLElement) {
           <div class="bg-white rounded-lg shadow-lg p-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-6">Welcome</h2>
 
-            <div class="space-y-6">
-              <div class="p-4 bg-gray-50 rounded-lg">
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Technologies</h3>
-                <ul class="list-disc list-inside text-gray-600 space-y-1">
-                  <li>TypeScript (vanilla)</li>
-                  <li>Tailwind CSS</li>
-                  <li>Vite</li>
-                  <li>Fastify Backend</li>
-                  <li>Blockchain (Avalanche Fuji)</li>
-                </ul>
-              </div>
+            <div class="flex justify-center">
+              <img
+                src="https://i.pinimg.com/originals/6b/b3/d9/6bb3d9dcad1c5f787fedd6cc83d8bb6e.gif"
+                alt="Ping Pong Animation"
+                class="rounded-lg max-w-full h-auto"
+              />
             </div>
           </div>
         </div>
@@ -259,7 +411,29 @@ function setupNavigation() {
   registerBtn?.addEventListener('click', () => navigate('register'));
 
   logoutBtn?.addEventListener('click', async () => {
+    // Check if in an active game - show confirmation first
+    if (currentPage === 'play' && hasActiveRemoteGame()) {
+      const confirmed = await showConfirmModal({
+        title: 'Leave Game?',
+        message: 'You are in an active game. Logging out will forfeit the match. Are you sure?',
+        confirmText: 'Logout',
+        cancelText: 'Stay',
+        isDangerous: true,
+      });
+
+      if (!confirmed) {
+        return; // User cancelled, don't logout
+      }
+
+      // User confirmed, leave the game
+      leaveRemoteGame();
+    } else if (currentPage === 'play') {
+      cleanupPlayPage();
+    }
+
     await logout();
+    // Disconnect global WebSocket on logout
+    resetWebSocketManager();
     navigate('home');
   });
 }

@@ -22,10 +22,18 @@ export class PongGame {
   private accumulator: number = 0;
   private readonly fixedTimeStep: number = 1000 / GAME_CONFIG.fps; // ~16.67ms for 60fps
 
+  // Interpolation state for smooth rendering
+  private previousBallX: number = 0;
+  private previousBallY: number = 0;
+
   constructor(canvas: HTMLCanvasElement, player1Alias: string, player2Alias: string) {
     this.ctx = setupCanvas(canvas);
     this.inputHandler = new InputHandler();
     this.gameState = this.createInitialState(player1Alias, player2Alias);
+
+    // Initialize interpolation state
+    this.previousBallX = this.gameState.ball.x;
+    this.previousBallY = this.gameState.ball.y;
 
     this.setupInputHandlers();
   }
@@ -164,6 +172,10 @@ export class PongGame {
         resetBall(this.gameState.ball, 'left');
       }
 
+      // Reset interpolation state after ball reset to prevent weird interpolation
+      this.previousBallX = this.gameState.ball.x;
+      this.previousBallY = this.gameState.ball.y;
+
       // Check win condition
       if (this.gameState.player1.paddle.score >= GAME_CONFIG.maxScore) {
         this.endGame(this.gameState.player1.alias);
@@ -202,21 +214,51 @@ export class PongGame {
 
       // Run physics updates at fixed timestep for consistency
       while (this.accumulator >= this.fixedTimeStep) {
+        // Store previous ball position before physics update for interpolation
+        this.previousBallX = this.gameState.ball.x;
+        this.previousBallY = this.gameState.ball.y;
+
         this.update();
         this.accumulator -= this.fixedTimeStep;
       }
+
+      // Calculate interpolation factor (how far between physics steps we are)
+      const alpha = this.accumulator / this.fixedTimeStep;
+
+      // Interpolate ball position for smooth rendering
+      const interpolatedBallX = this.lerp(this.previousBallX, this.gameState.ball.x, alpha);
+      const interpolatedBallY = this.lerp(this.previousBallY, this.gameState.ball.y, alpha);
+
+      // Create interpolated state for rendering
+      const renderState: GameState = {
+        ...this.gameState,
+        ball: {
+          ...this.gameState.ball,
+          x: interpolatedBallX,
+          y: interpolatedBallY,
+        },
+      };
+
+      render(this.ctx, renderState);
     } else {
       // Reset accumulator when not playing to prevent catch-up when resuming
       this.accumulator = 0;
-    }
+      // Reset interpolation state
+      this.previousBallX = this.gameState.ball.x;
+      this.previousBallY = this.gameState.ball.y;
 
-    // Always render every frame for smooth visuals
-    render(this.ctx, this.gameState);
+      // Render without interpolation when not playing
+      render(this.ctx, this.gameState);
+    }
 
     if (this.gameState.status !== 'finished') {
       this.animationId = requestAnimationFrame(this.gameLoop);
     }
   };
+
+  private lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+  }
 
   setOnGameEnd(
     callback: (winner: string, player1Score: number, player2Score: number) => void

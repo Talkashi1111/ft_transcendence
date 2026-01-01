@@ -22,23 +22,16 @@ echo "🔍 Checking database status..."
 echo "   Database URL: $DATABASE_URL"
 echo "   Database path: $DB_PATH"
 
-if [ -f "$DB_PATH" ]; then
-  echo "✅ Database already exists at $DB_PATH"
-  echo "   Skipping migration and seed (use 'make migrate' or 'make seed' manually if needed)"
-else
-  echo "📦 Database not found. Initializing..."
+# Ensure data directory exists
+DB_DIR=$(dirname "$DB_PATH")
+mkdir -p "$DB_DIR"
 
-  # Ensure data directory exists
-  DB_DIR=$(dirname "$DB_PATH")
-  mkdir -p "$DB_DIR"
+# Always run migrations to apply any pending schema changes
+echo "🔄 Running migrations..."
+cd /app/backend && npx prisma migrate dev
 
-  # Run migrations (using migrate dev for development environment)
-  echo "🔄 Running migrations..."
-  cd /app/backend && npx prisma migrate dev
+# Always run seed (it's idempotent - skips existing users)
+echo "🌱 Seeding database..."
+cd /app/backend && npx prisma db seed
 
-  # Run seed
-  echo "🌱 Seeding database..."
-  cd /app/backend && npx prisma db seed
-
-  echo "✅ Database initialized successfully!"
-fi
+echo "✅ Database ready!"

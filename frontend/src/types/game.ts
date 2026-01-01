@@ -46,3 +46,36 @@ export interface GameConfig {
   maxScore: number;
   fps: number;
 }
+
+// Remote game types
+export interface RemotePlayer extends Player {
+  id: string;
+}
+
+export interface RemoteGameState extends Omit<GameState, 'player1' | 'player2'> {
+  player1: RemotePlayer;
+  player2: RemotePlayer;
+}
+
+// Match types for remote play
+export type MatchMode = '1v1' | 'tournament';
+export type MatchStatus = 'waiting' | 'countdown' | 'playing' | 'paused' | 'finished' | 'cancelled';
+
+export interface MatchPlayer {
+  id: string;
+  username: string;
+  connected: boolean;
+}
+
+export interface Match {
+  id: string;
+  mode: MatchMode;
+  status: MatchStatus;
+  player1: MatchPlayer;
+  player2: MatchPlayer | null;
+  score1: number;
+  score2: number;
+  winnerId: string | null;
+  createdAt: string;
+  startedAt: string | null;
+}

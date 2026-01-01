@@ -1,10 +1,15 @@
 import { defineConfig } from 'vitest/config';
 
+// Run integration tests only when INTEGRATION=true
+const runIntegration = process.env.INTEGRATION === 'true';
+
 export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
     globals: true,
+    include: ['test/**/*.test.ts'],
+    exclude: runIntegration ? [] : ['test/**/*.integration.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html', 'json', 'json-summary'],
@@ -29,7 +34,8 @@ export default defineConfig({
         '**/types/**', // Type-only files
         '**/game/renderer.ts', // Canvas-dependent (not testable in jsdom)
         '**/game/pong.ts', // Integration class (hard to unit test)
-        '**/pages/**', // UI pages (need integration tests)
+        '**/game/remote-pong.ts', // Remote game class (requires WebSocket + canvas)
+        '**/pages/**', // UI pages (integration tests focus on API calls, not coverage)
       ],
     },
   },

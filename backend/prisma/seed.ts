@@ -5,10 +5,14 @@
  *   npx prisma db seed              # Run seed (uses package.json config)
  *   npx tsx prisma/seed.ts          # Run directly
  *   npx tsx prisma/seed.ts --clean  # Clear DB first, then seed
+ *   npx tsx prisma/seed.ts --demo   # Force seed demo users (even in production)
  *
  * Environment:
- *   NODE_ENV=production  # Only seeds essential data (no demo users)
+ *   NODE_ENV=production  # Only seeds essential data (no demo users) unless --demo flag
  *   NODE_ENV=development # Seeds demo users for testing
+ *
+ * Production seeding (run inside container):
+ *   docker exec -it ft_transcendence-prod npx tsx prisma/seed.ts --demo
  */
 
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
@@ -21,6 +25,7 @@ const prisma = new PrismaClient({ adapter });
 
 const isProduction = process.env.NODE_ENV === 'production';
 const shouldClean = process.argv.includes('--clean');
+const forceDemo = process.argv.includes('--demo');
 
 // Demo users for development
 const demoUsers = [
@@ -78,15 +83,19 @@ async function main() {
     await cleanDatabase();
   }
 
-  if (isProduction) {
-    // Production: only seed essential data
+  if (isProduction && !forceDemo) {
+    // Production: only seed essential data (unless --demo flag is used)
     if (prodUsers.length > 0) {
       await seedUsers(prodUsers);
     } else {
       console.log('ℹ️  No production seed data configured');
+      console.log('   Use --demo flag to seed demo users in production');
     }
   } else {
-    // Development: seed demo users
+    // Development or --demo flag: seed demo users
+    if (isProduction && forceDemo) {
+      console.log('⚠️  Seeding demo users in PRODUCTION (--demo flag)');
+    }
     await seedUsers(demoUsers);
   }
 
