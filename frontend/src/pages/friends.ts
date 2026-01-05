@@ -54,6 +54,7 @@ let notifications: Notification[] = [];
 let searchQuery = '';
 let searchCursor: string | null = null;
 let hasMoreSearchResults = false;
+let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 const onlineFriendIds = new Set<string>();
 
 // Cleanup function for WebSocket handlers
@@ -223,7 +224,7 @@ async function acceptFriendRequest(friendshipId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.message || 'Failed to accept request');
+      toast.error(data.error || data.message || 'Failed to accept request');
       return false;
     }
   } catch {
@@ -247,7 +248,7 @@ async function declineFriendRequest(friendshipId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.message || 'Failed to decline request');
+      toast.error(data.error || data.message || 'Failed to decline request');
       return false;
     }
   } catch {
@@ -271,7 +272,7 @@ async function removeFriend(friendshipId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.message || 'Failed to remove friend');
+      toast.error(data.error || data.message || 'Failed to remove friend');
       return false;
     }
   } catch {
@@ -714,15 +715,17 @@ function setupEventHandlers(app: HTMLElement): void {
         searchQuery = target.value;
         searchCursor = null;
 
+        // Clear previous debounce timeout to prevent race conditions
+        if (searchDebounceTimeout) {
+          clearTimeout(searchDebounceTimeout);
+        }
+
         // Debounce search
-        const inputValue = target.value;
-        setTimeout(async () => {
-          if (target.value === inputValue) {
-            await searchUsers(searchQuery);
-            const resultsEl = document.getElementById('search-results');
-            if (resultsEl) {
-              resultsEl.innerHTML = renderSearchResults();
-            }
+        searchDebounceTimeout = setTimeout(async () => {
+          await searchUsers(searchQuery);
+          const resultsEl = document.getElementById('search-results');
+          if (resultsEl) {
+            resultsEl.innerHTML = renderSearchResults();
           }
         }, 300);
       }
@@ -916,7 +919,7 @@ export async function renderFriendsPage(app: HTMLElement): Promise<void> {
   `;
 
   setupEventHandlers(app);
-  setupNavigation();
+  setupNavigation(app);
 }
 
 /**
@@ -999,7 +1002,7 @@ async function renderNavBarForFriends(): Promise<string> {
 /**
  * Setup navigation handlers (imported pattern from main)
  */
-function setupNavigation(): void {
+function setupNavigation(app: HTMLElement): void {
   const homeBtn = document.getElementById('nav-home');
   const playBtn = document.getElementById('nav-play');
   const tournamentsBtn = document.getElementById('nav-tournaments');
@@ -1021,11 +1024,8 @@ function setupNavigation(): void {
   notificationsBtn?.addEventListener('click', () => {
     // Switch to notifications tab if already on friends page
     currentTab = 'notifications';
-    const app = document.getElementById('root');
-    if (app) {
-      updateTabUI(app);
-      refreshTabData().then(() => updateContent(app));
-    }
+    updateTabUI(app);
+    refreshTabData().then(() => updateContent(app));
   });
 
   logoutBtn?.addEventListener('click', async () => {

@@ -425,13 +425,17 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
 
       // Handle disconnection
       socket.on('close', () => {
-        handleDisconnect(authSocket);
+        handleDisconnect(authSocket).catch((err) => {
+          console.error(`[WS] Error during disconnect cleanup for ${authSocket.username}:`, err);
+        });
       });
 
       // Handle errors
       socket.on('error', (err: Error) => {
         console.error(`[WS] Socket error for ${auth.username}:`, err.message);
-        handleDisconnect(authSocket);
+        handleDisconnect(authSocket).catch((cleanupErr) => {
+          console.error(`[WS] Error during error cleanup for ${authSocket.username}:`, cleanupErr);
+        });
       });
 
       // Now do async work after handlers are attached

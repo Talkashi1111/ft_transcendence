@@ -81,6 +81,9 @@ export async function updateUserAlias(id: string, alias: string) {
  * Search users by alias (case-insensitive partial match)
  * Returns users excluding the current user
  * Paginated with cursor-based pagination
+ *
+ * Note: SQLite's LIKE is case-insensitive for ASCII characters by default,
+ * so no special handling is needed for case-insensitivity.
  */
 export async function searchUsers(
   query: string,

@@ -315,9 +315,10 @@ export class WebSocketManager {
       delete this.handlers[event];
     } else {
       // Remove specific handler
+      // Cast to EventHandler<unknown> to match how handlers are stored in on()
       const handlers = this.handlers[event];
       if (handlers) {
-        const index = handlers.indexOf(handler as EventHandler<ServerEvents[K]>);
+        const index = handlers.indexOf(handler as EventHandler<unknown>);
         if (index !== -1) {
           handlers.splice(index, 1);
         }

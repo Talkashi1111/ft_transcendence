@@ -47,6 +47,7 @@ let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'setti
 
 // Notification state (updated via WebSocket and REST)
 let unreadNotificationCount = 0;
+let notificationListenerRegistered = false;
 
 /**
  * Connect global WebSocket when authenticated
@@ -192,9 +193,13 @@ async function connectGlobalWebSocket(): Promise<void> {
       await fetchUnreadNotificationCount();
 
       // Listen for notification count refresh events (from friends page, etc.)
-      window.addEventListener('notification:countChanged', () => {
-        fetchUnreadNotificationCount();
-      });
+      // Only register once to prevent memory leaks from duplicate listeners
+      if (!notificationListenerRegistered) {
+        window.addEventListener('notification:countChanged', () => {
+          fetchUnreadNotificationCount();
+        });
+        notificationListenerRegistered = true;
+      }
 
       // Check for active match after connecting (for non-play pages)
       // Play page handles its own reconnect via remoteGame.connect()
