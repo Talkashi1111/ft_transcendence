@@ -15,11 +15,16 @@ const start = async () => {
     await server.listen({ port: +PORT, host: HOST });
     console.log(`✅ Server started on http://${HOST}:${PORT}`);
 
-    // Cleanup old notifications on startup
-    const cleanup = await cleanupOldNotifications();
-    if (cleanup.deletedCount > 0) {
-      console.log(`🧹 Cleaned up ${cleanup.deletedCount} old notifications`);
-    }
+    // Cleanup old notifications in background (non-blocking)
+    cleanupOldNotifications()
+      .then((result) => {
+        if (result.deletedCount > 0) {
+          console.log(`🧹 Cleaned up ${result.deletedCount} old notifications`);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to cleanup old notifications:', err);
+      });
 
     if (process.env.NODE_ENV === 'production') {
       const hostPort = process.env.HOST_PORT || '8080';

@@ -336,7 +336,7 @@ async function render() {
       return;
     }
     await connectGlobalWebSocket();
-    renderFriendsPage(app);
+    renderFriendsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   }
 }
 

@@ -802,7 +802,11 @@ function updateContent(app: HTMLElement): void {
 /**
  * Render the friends page
  */
-export async function renderFriendsPage(app: HTMLElement): Promise<void> {
+export async function renderFriendsPage(
+  app: HTMLElement,
+  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'settings' | 'friends') => Promise<string>,
+  setupNavigation: (app: HTMLElement) => void
+): Promise<void> {
   // Clean up previous handlers
   if (cleanupFn) {
     cleanupFn();
@@ -880,7 +884,7 @@ export async function renderFriendsPage(app: HTMLElement): Promise<void> {
   };
 
   // Render the page
-  const navBar = await renderNavBarForFriends();
+  const navBar = await renderNavBar('friends');
 
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
@@ -919,128 +923,16 @@ export async function renderFriendsPage(app: HTMLElement): Promise<void> {
   `;
 
   setupEventHandlers(app);
+
+  // Setup navigation handlers from main
   setupNavigation(app);
-}
 
-/**
- * Helper to render navbar - imports from main
- * We need to pass through the navbar rendering
- */
-async function renderNavBarForFriends(): Promise<string> {
-  // We need to import from main but that creates circular dependency
-  // Instead, we'll use a simpler inline approach
-  const wsManager = getWebSocketManager();
-  const isOnline = wsManager.isConnected;
-
-  // Fetch user info
-  const user = await getCurrentUser();
-  const userAlias = user?.alias || '';
-
-  // Fetch unread notification count
-  let unreadCount = 0;
-  try {
-    const response = await fetch('/api/notifications/unread-count', { credentials: 'include' });
-    if (response.ok) {
-      const data = await response.json();
-      unreadCount = data.count;
-    }
-  } catch {
-    /* ignore */
-  }
-
-  return `
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex">
-            <div class="flex-shrink-0 flex items-center">
-              <h1 class="text-2xl font-bold text-gray-900">ft_transcendence</h1>
-            </div>
-          </div>
-          <div class="flex items-center space-x-4">
-            <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-              Home
-            </button>
-            <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-              Play
-            </button>
-            <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-              Tournaments
-            </button>
-            <button id="nav-friends" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600">
-              Friends
-            </button>
-            <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-              Settings
-            </button>
-            <div class="border-l border-gray-300 h-6 mx-2"></div>
-            <!-- Notification Bell -->
-            <button id="nav-notifications" class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition" title="Notifications">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-              </svg>
-              <span id="notification-badge" class="${unreadCount > 0 ? '' : 'hidden'} absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
-                ${unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            </button>
-            <!-- User with Online Indicator -->
-            <span class="flex items-center text-sm text-gray-600 px-2">
-              <span id="online-indicator" class="w-2.5 h-2.5 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
-              <span class="text-gray-400 mr-1">👤</span>
-              <span id="nav-user-alias" class="font-medium">${userAlias}</span>
-            </span>
-            <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-  `;
-}
-
-/**
- * Setup navigation handlers (imported pattern from main)
- */
-function setupNavigation(app: HTMLElement): void {
-  const homeBtn = document.getElementById('nav-home');
-  const playBtn = document.getElementById('nav-play');
-  const tournamentsBtn = document.getElementById('nav-tournaments');
-  const friendsBtn = document.getElementById('nav-friends');
-  const settingsBtn = document.getElementById('nav-settings');
-  const logoutBtn = document.getElementById('nav-logout');
+  // Add friends-specific notification button handler (switch to notifications tab)
   const notificationsBtn = document.getElementById('nav-notifications');
-
-  const navigate = (page: string) => {
-    window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { page } }));
-  };
-
-  homeBtn?.addEventListener('click', () => navigate('home'));
-  playBtn?.addEventListener('click', () => navigate('play'));
-  tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
-  friendsBtn?.addEventListener('click', () => navigate('friends'));
-  settingsBtn?.addEventListener('click', () => navigate('settings'));
   notificationsBtn?.addEventListener('click', () => {
-    // Switch to notifications tab if already on friends page
     currentTab = 'notifications';
     updateTabUI(app);
     refreshTabData().then(() => updateContent(app));
-  });
-
-  logoutBtn?.addEventListener('click', async () => {
-    // Clean up before logout
-    if (cleanupFn) {
-      cleanupFn();
-      cleanupFn = null;
-    }
-
-    const { logout } = await import('../utils/auth');
-    const { resetWebSocketManager } = await import('../utils/websocket');
-
-    await logout();
-    resetWebSocketManager();
-    navigate('home');
   });
 }
 
