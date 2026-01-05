@@ -5,6 +5,7 @@ import type { WebSocket } from 'ws';
 import type { WSMessage, ClientEvents, PlayerInput } from './game.types.js';
 import { matchManager } from './match-manager.js';
 import { prisma } from '../../utils/prisma.js';
+import { FriendshipStatus } from '../../generated/prisma/client.js';
 
 interface AuthenticatedSocket extends WebSocket {
   userId: string;
@@ -14,6 +15,90 @@ interface AuthenticatedSocket extends WebSocket {
 
 // Track connected sockets by user ID
 const connectedSockets = new Map<string, AuthenticatedSocket>();
+
+/**
+ * Check if a user is currently online (connected via WebSocket)
+ */
+export function isUserOnline(userId: string): boolean {
+  return connectedSockets.has(userId);
+}
+
+/**
+ * Get list of online user IDs from a given list
+ */
+export function getOnlineUserIds(userIds: string[]): Set<string> {
+  const online = new Set<string>();
+  for (const id of userIds) {
+    if (connectedSockets.has(id)) {
+      online.add(id);
+    }
+  }
+  return online;
+}
+
+/**
+ * Send a message to a specific user if they're online
+ */
+export function sendToUser(userId: string, event: string, data: unknown): boolean {
+  const socket = connectedSockets.get(userId);
+  if (socket && socket.readyState === socket.OPEN) {
+    socket.send(JSON.stringify({ event, data }));
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Get a user's accepted friends
+ */
+async function getUserFriends(userId: string): Promise<{ id: string; alias: string }[]> {
+  // Get friendships where user is sender and status is ACCEPTED
+  const sentFriendships = await prisma.friendship.findMany({
+    where: { userId, status: FriendshipStatus.ACCEPTED },
+    include: { friend: { select: { id: true, alias: true } } },
+  });
+
+  // Get friendships where user is receiver and status is ACCEPTED
+  const receivedFriendships = await prisma.friendship.findMany({
+    where: { friendId: userId, status: FriendshipStatus.ACCEPTED },
+    include: { user: { select: { id: true, alias: true } } },
+  });
+
+  // Combine and return unique friends
+  const friends: { id: string; alias: string }[] = [];
+  for (const f of sentFriendships) {
+    friends.push({ id: f.friend.id, alias: f.friend.alias });
+  }
+  for (const f of receivedFriendships) {
+    friends.push({ id: f.user.id, alias: f.user.alias });
+  }
+
+  return friends;
+}
+
+/**
+ * Notify a user's online friends about their status change
+ */
+async function notifyFriendsOfStatusChange(
+  userId: string,
+  username: string,
+  status: 'online' | 'offline',
+  lastSeenAt?: Date
+): Promise<void> {
+  const friends = await getUserFriends(userId);
+
+  for (const friend of friends) {
+    const friendSocket = connectedSockets.get(friend.id);
+    if (friendSocket) {
+      const event = status === 'online' ? 'friend:online' : 'friend:offline';
+      const data =
+        status === 'online'
+          ? { friendId: userId, friendAlias: username }
+          : { friendId: userId, friendAlias: username, lastSeenAt: lastSeenAt?.toISOString() };
+      sendMessage(friendSocket, event, data);
+    }
+  }
+}
 
 /**
  * Broadcast a message to all connected clients
@@ -251,7 +336,7 @@ function handlePlayerInput(socket: AuthenticatedSocket, data: ClientEvents['play
 /**
  * Handle socket disconnection
  */
-function handleDisconnect(socket: AuthenticatedSocket): void {
+async function handleDisconnect(socket: AuthenticatedSocket): Promise<void> {
   console.log(`[WS] User ${socket.username} disconnected`);
 
   // Only process disconnect if THIS socket is still the current one
@@ -259,6 +344,16 @@ function handleDisconnect(socket: AuthenticatedSocket): void {
   if (connectedSockets.get(socket.userId) === socket) {
     connectedSockets.delete(socket.userId);
     matchManager.handleDisconnect(socket.userId);
+
+    // Update lastSeenAt in database
+    const now = new Date();
+    await prisma.user.update({
+      where: { id: socket.userId },
+      data: { lastSeenAt: now },
+    });
+
+    // Notify friends that user went offline
+    await notifyFriendsOfStatusChange(socket.userId, socket.username, 'offline', now);
   } else {
     console.log(`[WS] Ignoring disconnect for replaced socket (user ${socket.username})`);
   }
@@ -330,13 +425,17 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
 
       // Handle disconnection
       socket.on('close', () => {
-        handleDisconnect(authSocket);
+        handleDisconnect(authSocket).catch((err) => {
+          console.error(`[WS] Error during disconnect cleanup for ${authSocket.username}:`, err);
+        });
       });
 
       // Handle errors
       socket.on('error', (err: Error) => {
         console.error(`[WS] Socket error for ${auth.username}:`, err.message);
-        handleDisconnect(authSocket);
+        handleDisconnect(authSocket).catch((cleanupErr) => {
+          console.error(`[WS] Error during error cleanup for ${authSocket.username}:`, cleanupErr);
+        });
       });
 
       // Now do async work after handlers are attached
@@ -355,6 +454,11 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
       connectedSockets.set(auth.userId, authSocket);
 
       console.log(`[WS] User ${auth.username} connected`);
+
+      // Notify friends that user came online (async, don't block)
+      notifyFriendsOfStatusChange(auth.userId, auth.username, 'online').catch((err) => {
+        console.error(`[WS] Failed to notify friends of ${auth.username} online:`, err);
+      });
     }
   );
 

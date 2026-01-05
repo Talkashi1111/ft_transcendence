@@ -2,7 +2,7 @@ import { getCurrentUser, setup2FA, enable2FA, disable2FA, updateAlias } from '..
 
 export async function renderSettingsPage(
   app: HTMLElement,
-  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'settings') => Promise<string>,
+  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'settings' | 'friends') => Promise<string>,
   setupNavigation: () => void
 ): Promise<void> {
   const navBar = await renderNavBar('settings');

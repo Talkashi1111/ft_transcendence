@@ -48,7 +48,7 @@ export function cleanupPlayPage(): void {
 
 export async function renderPlayPage(
   app: HTMLElement,
-  renderNavBar: (page: 'home' | 'play' | 'tournaments') => Promise<string>,
+  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'friends') => Promise<string>,
   setupNavigation: () => void
 ): Promise<void> {
   const navBar = await renderNavBar('play');
