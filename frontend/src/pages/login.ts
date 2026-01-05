@@ -2,7 +2,7 @@ import { login, verify2FA } from '../utils/auth';
 
 export async function renderLoginPage(
   app: HTMLElement,
-  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'login') => Promise<string>,
+  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'login' | 'friends') => Promise<string>,
   setupNavigation: () => void,
   onLoginSuccess: () => void
 ): Promise<void> {

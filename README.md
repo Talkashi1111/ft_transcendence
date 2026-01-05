@@ -64,7 +64,9 @@ This project is about creating a website for the mighty Pong contest.
    ```
 
 ### If you are on a 42 school computer
+
 Uncomment this line in .devcontainer/devcontainer.json before opening the project in the devContainer.
+
 ```json
 "updateRemoteUserUID": false,
 ```
@@ -89,6 +91,7 @@ cd /app/backend && npx prisma studio --port 5555
 ```
 
 ---
+
 ## 📝 Evaluation (subject to modifications)
 
 The production artifact is designed for real-world usage and is optimized to be lightweight. However, the subject states: "During the evaluation, a brief modification of the project may occasionally be requested. This could involve a minor behavior change, a few lines of code to write or rewrite, or an easy-to-add feature." Since we must show the code to evaluators and potentially modify it, the production build is not suitable for evaluation. Instead, the development environment should be used, utilizing Caddy instead of Vite.
@@ -96,49 +99,59 @@ The production artifact is designed for real-world usage and is optimized to be 
 Note: On 42 school computers, students do not have permission to modify `/etc/hosts`.
 
 ### Deployment / Defense Setup
+
 #### Option A (Long Preparation)
+
 Set up a VM. Install VS Code, the Dev Containers extension, Docker, and Git. Recreate the intra SSH key for this VM.
 We have access to `/etc/hosts` and can simulate the domain name `mooo.com`.
 
 #### Option B
+
 Set `"updateRemoteUserUID": false,` in `.devcontainer/devcontainer.json`.
 Modifying files from the host machine will not be possible. Update the `.env` file manually, or adjust permissions only on the environment file (for example, run `sudo chmod 600 backend/.env` inside the container) to allow copy-pasting a local `.env` file without exposing the rest of the project.
 
 #### Multiple Devices
+
 1.  **Get your Server's IP**:
     Run `hostname -I` on your machine to get your local network IP (e.g., `10.11.12.13`).
 
 2.  **Update Caddy Configuration**:
     Modify `Caddyfile` to accept requests on that IP address.
     Change:
+
     ```caddy
     localhost, mooo.com {
     ```
+
     To:
+
     ```caddy
     localhost, mooo.com, <YOUR_IP_ADDRESS> {
     ```
-    *(Or just use `:443` to accept all traffic)*
+
+    _(Or just use `:443` to accept all traffic)_
 
 3.  **Update Backend Configuration**:
     Update the `OAUTH_CALLBACK_URI` in your production `.env` file (or `.env` if running in dev mode) to use the IP address instead of `mooo.com`.
+
     ```bash
     OAUTH_CALLBACK_URI=https://<YOUR_IP_ADDRESS>/api/oauth/google/callback
     ```
 
 4.  **Update Google Cloud Console**:
     Go to your Google Cloud Console credentials and add the IP-based URLs:
-    *   **Authorized JavaScript origins**: `https://<YOUR_IP_ADDRESS>`
-    *   **Authorized redirect URIs**: `https://<YOUR_IP_ADDRESS>/api/oauth/google/callback`
+    - **Authorized JavaScript origins**: `https://<YOUR_IP_ADDRESS>`
+    - **Authorized redirect URIs**: `https://<YOUR_IP_ADDRESS>/api/oauth/google/callback`
 
 5.  **Connect**:
     On the other computers, simply open the browser and go to `https://<YOUR_IP_ADDRESS>`. You will see a security warning (because of the self-signed certificate), which you can accept/bypass.
 
 **Alternative (Magic DNS):**
 If you want to avoid using raw IPs for OAuth (sometimes Google is picky), you can use a service like **nip.io**.
-*   If your IP is `10.11.12.13`, you can use the domain `10.11.12.13.nip.io`.
-*   This domain automatically resolves to your IP without needing to modify `/etc/hosts`.
-*   You would use `https://10.11.12.13.nip.io` in your browser, `Caddyfile`, and Google Console.
+
+- If your IP is `10.11.12.13`, you can use the domain `10.11.12.13.nip.io`.
+- This domain automatically resolves to your IP without needing to modify `/etc/hosts`.
+- You would use `https://10.11.12.13.nip.io` in your browser, `Caddyfile`, and Google Console.
 
 ---
 

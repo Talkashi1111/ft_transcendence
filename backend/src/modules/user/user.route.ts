@@ -6,6 +6,7 @@ import {
   getMeHandler,
   logoutHandler,
   updateAliasHandler,
+  searchUsersHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
@@ -120,6 +121,48 @@ async function userRoutes(server: FastifyInstance) {
       },
     },
     logoutHandler
+  );
+
+  // Search users by alias
+  server.get(
+    '/search',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Search for users by alias (requires at least 2 characters)',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        querystring: {
+          type: 'object',
+          properties: {
+            q: { type: 'string', description: 'Search query (min 2 chars)' },
+            cursor: { type: 'string', description: 'Cursor for pagination' },
+            limit: { type: 'string', description: 'Max results (1-50, default 20)' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              users: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    alias: { type: 'string' },
+                    isOnline: { type: 'boolean' },
+                    lastSeenAt: { type: ['string', 'null'] },
+                  },
+                },
+              },
+              nextCursor: { type: ['string', 'null'] },
+            },
+          },
+        },
+      },
+    },
+    searchUsersHandler
   );
 }
 

@@ -27,11 +27,20 @@ backend/
 │   ├── index.ts            # Entry point (starts server)
 │   ├── generated/prisma/   # Generated Prisma Client (gitignored)
 │   ├── modules/
-│   │   ├── user/           # User module (auth, registration)
+│   │   ├── user/           # User module (auth, registration, search)
 │   │   ├── 2fa/            # Two-Factor Authentication module
+│   │   ├── friends/        # Friends system module
+│   │   │   ├── friends.controller.ts  # Request handlers
+│   │   │   ├── friends.route.ts       # REST API endpoints
+│   │   │   ├── friends.schema.ts      # Validation schemas
+│   │   │   └── friends.service.ts     # Business logic
+│   │   ├── notifications/  # Notifications module
+│   │   │   ├── notifications.controller.ts
+│   │   │   ├── notifications.route.ts
+│   │   │   └── notifications.service.ts
 │   │   ├── game/           # Remote multiplayer game module
 │   │   │   ├── engine/     # Server-side game physics engine
-│   │   │   ├── game.gateway.ts   # WebSocket connection handler
+│   │   │   ├── game.gateway.ts   # WebSocket (game + friend status)
 │   │   │   ├── game.route.ts     # REST API endpoints
 │   │   │   ├── game.schema.ts    # Validation schemas
 │   │   │   ├── game.types.ts     # TypeScript types
@@ -147,6 +156,21 @@ npx prisma db seed -- --clean  # Clear all data, then seed
 | alice@example.com | alice | password123 |
 | bob@example.com | bob | password123 |
 | charlie@example.com | charlie | password123 |
+| eve@example.com | eve | password123 |
+| frank@example.com | frank | password123 |
+| grace@example.com | grace | password123 |
+| henry@example.com | henry | password123 |
+
+**Demo Friendships:**
+
+- `alice` ↔ `bob`, `alice` ↔ `charlie` (accepted)
+- `demo` ↔ `alice` (accepted)
+- `bob` ↔ `charlie` (accepted)
+- `eve` → `demo`, `frank` → `demo` (pending requests)
+
+**Demo Notifications:**
+
+- `demo` has 2 unread friend request notifications (from eve and frank)
 
 ### Test Database Isolation
 
@@ -221,13 +245,15 @@ pnpm run dev
 
 ### Users
 
-| Method | Endpoint            | Description              | Auth     |
-| ------ | ------------------- | ------------------------ | -------- |
-| POST   | `/api/users`        | Register new user        | No       |
-| POST   | `/api/users/login`  | Login (returns JWT)      | No       |
-| GET    | `/api/users`        | List all users           | Required |
-| GET    | `/api/users/me`     | Get current user profile | Required |
-| POST   | `/api/users/logout` | Logout (clear cookie)    | No       |
+| Method | Endpoint              | Description              | Auth     |
+| ------ | --------------------- | ------------------------ | -------- |
+| POST   | `/api/users`          | Register new user        | No       |
+| POST   | `/api/users/login`    | Login (returns JWT)      | No       |
+| GET    | `/api/users`          | List all users           | Required |
+| GET    | `/api/users/me`       | Get current user profile | Required |
+| GET    | `/api/users/search`   | Search users by alias    | Required |
+| PATCH  | `/api/users/me/alias` | Update user alias        | Required |
+| POST   | `/api/users/logout`   | Logout (clear cookie)    | No       |
 
 ### Two-Factor Authentication (2FA)
 
@@ -858,6 +884,235 @@ The WebSocket implementation ensures secure game isolation when multiple matches
                      match = matches.get(matchId)
                      match.engine.setPlayerInput(playerId, direction)
 ```
+
+### Friends
+
+| Method | Endpoint                   | Description                    | Auth     |
+| ------ | -------------------------- | ------------------------------ | -------- |
+| GET    | `/api/friends`             | Get friends list (with online) | Required |
+| GET    | `/api/friends/requests`    | Get pending requests           | Required |
+| POST   | `/api/friends/request`     | Send friend request            | Required |
+| POST   | `/api/friends/:id/accept`  | Accept friend request          | Required |
+| POST   | `/api/friends/:id/decline` | Decline friend request         | Required |
+| DELETE | `/api/friends/request/:id` | Cancel sent request            | Required |
+| DELETE | `/api/friends/:id`         | Remove friend (unfriend)       | Required |
+
+#### Friends List Response
+
+```json
+{
+  "friends": [
+    {
+      "id": "user-uuid",
+      "alias": "alice",
+      "isOnline": true,
+      "lastSeenAt": null
+    },
+    {
+      "id": "user-uuid-2",
+      "alias": "bob",
+      "isOnline": false,
+      "lastSeenAt": "2026-01-03T07:30:00.000Z"
+    }
+  ]
+}
+```
+
+Friends are sorted: online first, then alphabetically by alias.
+
+#### Friend Requests Response
+
+```json
+{
+  "received": [
+    { "id": "friendship-id", "userId": "sender-id", "alias": "eve", "createdAt": "..." }
+  ],
+  "sent": [{ "id": "friendship-id", "userId": "receiver-id", "alias": "frank", "createdAt": "..." }]
+}
+```
+
+#### WebSocket Events (Friends)
+
+The WebSocket connection (same as used for games) also handles real-time friend status updates and notifications:
+
+| Event              | Direction     | Data                                    | Description                       |
+| ------------------ | ------------- | --------------------------------------- | --------------------------------- |
+| `friend:online`    | Server→Client | `{ friendId, friendAlias }`             | Friend came online                |
+| `friend:offline`   | Server→Client | `{ friendId, friendAlias, lastSeenAt }` | Friend went offline               |
+| `friend:accepted`  | Server→Client | `{ friendId, friendAlias }`             | Your friend request was accepted  |
+| `notification:new` | Server→Client | `{ type, fromUserId, fromAlias }`       | New notification (friend request) |
+
+#### Friend Request Flow
+
+```
+User A (sender)              Server                    User B (receiver)
+     |                          |                            |
+     |-- POST /friends/request ->|                            |
+     |   { userId: B }           |                            |
+     |                          |                            |
+     |                          |-- Create Friendship ------->|
+     |                          |   (status: PENDING)         |
+     |                          |                            |
+     |                          |-- Create Notification ----->|
+     |                          |   (type: FRIEND_REQUEST)    |
+     |                          |                            |
+     |                          |-- WS: notification:new ---->|
+     |                          |   { type, fromUserId,       |
+     |                          |     fromAlias }             |
+     |                          |                            |
+     |<-- 201 { friendshipId } -|                            |
+     |                          |                            |
+     |                          |   [User B sees notification |
+     |                          |    badge update in real-time]|
+```
+
+#### Friend Request Accept Flow
+
+```
+User B (receiver)            Server                    User A (sender)
+     |                          |                            |
+     |-- POST /friends/:id/accept                            |
+     |                          |                            |
+     |                          |-- Update Friendship ------->|
+     |                          |   (status: ACCEPTED)        |
+     |                          |                            |
+     |                          |-- Create Notification ----->|
+     |                          |   (type: FRIEND_ACCEPTED)   |
+     |                          |                            |
+     |                          |-- WS: notification:new ---->|
+     |                          |   { type: FRIEND_ACCEPTED,  |
+     |                          |     fromUserId, fromAlias } |
+     |                          |                            |
+     |                          |-- WS: friend:accepted ----->|
+     |                          |   { friendId, friendAlias } |
+     |                          |                            |
+     |<-- 200 { message } ------|                            |
+     |                          |                            |
+     |                          |   [User A's search results  |
+     |                          |    update: Pending → Friends]|
+```
+
+#### Online Status Flow
+
+```
+User A connects                Server                    User B (friend)
+     |                          |                            |
+     |-- WS Connect ----------->|                            |
+     |   (JWT authenticated)    |                            |
+     |                          |                            |
+     |                          |-- Lookup A's friends ------>|
+     |                          |                            |
+     |                          |-- For each online friend: --|
+     |                          |-- WS: friend:online ------->|
+     |                          |   { friendId: A,            |
+     |                          |     friendAlias: "alice" }  |
+     |                          |                            |
+     |<-- 101 Switching --------|                            |
+     |                          |                            |
+     |                          |   [User B sees A's status   |
+     |                          |    change to green dot]     |
+```
+
+```
+User A disconnects             Server                    User B (friend)
+     |                          |                            |
+     X (connection closed)      |                            |
+     |                          |                            |
+     |                          |-- Update lastSeenAt ------->|
+     |                          |                            |
+     |                          |-- For each online friend: --|
+     |                          |-- WS: friend:offline ------>|
+     |                          |   { friendId: A,            |
+     |                          |     friendAlias: "alice",   |
+     |                          |     lastSeenAt: "..." }     |
+     |                          |                            |
+     |                          |   [User B sees A's status   |
+     |                          |    change to gray dot]      |
+```
+
+#### User Search with Friendship Status
+
+The `/api/users/search` endpoint returns friendship status for each result:
+
+```json
+{
+  "users": [
+    { "id": "...", "alias": "alice", "isOnline": true, "isFriend": true, "isPending": false },
+    { "id": "...", "alias": "bob", "isOnline": false, "isFriend": false, "isPending": true },
+    { "id": "...", "alias": "charlie", "isOnline": true, "isFriend": false, "isPending": false }
+  ],
+  "nextCursor": "..."
+}
+```
+
+This allows the frontend to show appropriate UI:
+
+- `isFriend: true` → Show "✓ Friends" badge
+- `isPending: true` → Show "Pending" badge
+- Both false → Show "Add Friend" button
+
+### User Search
+
+| Method | Endpoint                              | Description           | Auth     |
+| ------ | ------------------------------------- | --------------------- | -------- |
+| GET    | `/api/users/search?q=&cursor=&limit=` | Search users by alias | Required |
+
+**Query Parameters:**
+
+- `q` - Search query (minimum 2 characters required)
+- `cursor` - Cursor for pagination (user ID from previous response)
+- `limit` - Max results per page (1-50, default 20)
+
+**Response:**
+
+```json
+{
+  "users": [{ "id": "...", "alias": "alice", "isOnline": true, "lastSeenAt": null }],
+  "nextCursor": "user-id-or-null"
+}
+```
+
+### Notifications
+
+| Method | Endpoint                          | Description           | Auth     |
+| ------ | --------------------------------- | --------------------- | -------- |
+| GET    | `/api/notifications`              | Get notifications     | Required |
+| GET    | `/api/notifications/unread-count` | Get unread count      | Required |
+| POST   | `/api/notifications/read`         | Mark specific as read | Required |
+| POST   | `/api/notifications/read-all`     | Mark all as read      | Required |
+| DELETE | `/api/notifications/:id`          | Delete a notification | Required |
+
+**Query Parameters (GET /notifications):**
+
+- `unreadOnly` - `"true"` to only get unread notifications
+- `limit` - Max results (default 50)
+
+**Response:**
+
+```json
+{
+  "notifications": [
+    {
+      "id": "notification-uuid",
+      "type": "FRIEND_REQUEST",
+      "data": { "fromUserId": "...", "fromAlias": "eve" },
+      "read": false,
+      "createdAt": "2026-01-03T07:30:00.000Z"
+    }
+  ],
+  "unreadCount": 2
+}
+```
+
+**Notification Types:**
+
+- `FRIEND_REQUEST` - Someone sent you a friend request (data: `{ fromUserId, fromAlias }`)
+- `FRIEND_ACCEPTED` - Your friend request was accepted (data: `{ fromUserId, fromAlias }`)
+
+**Automatic Cleanup:**
+
+- Read notifications older than 7 days are auto-deleted when user marks notifications as read
+- On server startup, read notifications older than 30 days are cleaned up globally
 
 ### Blockchain (Tournament Scores)
 

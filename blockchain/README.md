@@ -210,8 +210,25 @@ PRIVATE_KEY=same_as_blockchain_private_key
 RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
 ```
 
-## References
+## References & Learning Resources
 
-- [Avalanche Fuji Testnet](https://docs.avax.network/build/dapp/testnet-workflow)
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [Viem Library](https://viem.sh/)
+### Official Documentation
+
+- **[Avalanche Documentation](https://docs.avax.network/)** - Official Avalanche network documentation
+- **[Solidity Documentation](https://docs.soliditylang.org/)** - Solidity language reference and tutorials
+- **[Hardhat Documentation](https://hardhat.org/docs)** - Development environment and testing framework
+- **[Viem Library](https://viem.sh/)** - TypeScript library for Ethereum interaction
+
+### Learning & Tutorials
+
+- **[Smart Contracts Introduction](https://ethereum.org/developers/docs/smart-contracts/)** - Comprehensive guide to understanding smart contracts, including:
+  - What are smart contracts and how they work
+  - Smart contract languages (Solidity)
+  - Smart contract anatomy and best practices
+  - Deploying and testing contracts
+  - Security considerations
+
+### Tools & Services
+
+- **[Avalanche Fuji Faucet](https://build.avax.network/console/primary-network/faucet)** - Get free test AVAX tokens
+- **[Snowtrace (Fuji)](https://testnet.snowtrace.io/)** - Avalanche testnet blockchain explorer

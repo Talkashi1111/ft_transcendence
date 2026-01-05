@@ -6,6 +6,7 @@ import {
   findUsers,
   findUserById,
   updateUserAlias,
+  searchUsers,
 } from './user.service.js';
 import {
   createUserSchema,
@@ -309,4 +310,69 @@ export async function updateAliasHandler(
       message: 'Something went wrong',
     });
   }
+}
+
+/**
+ * Search for users by alias
+ * Requires authentication
+ * Query must be at least 2 characters
+ */
+export async function searchUsersHandler(request: FastifyRequest, reply: FastifyReply) {
+  const query = (request.query as { q?: string; cursor?: string; limit?: string }).q || '';
+  const cursor = (request.query as { cursor?: string }).cursor;
+  const limitStr = (request.query as { limit?: string }).limit;
+  const limit = limitStr ? parseInt(limitStr, 10) : 20;
+
+  // Validate limit
+  const validLimit = Math.min(Math.max(1, limit), 50);
+
+  const { users, nextCursor } = await searchUsers(query, request.user.id, cursor, validLimit);
+
+  // Add online status to results
+  const { isUserOnline } = await import('../game/game.gateway.js');
+  const { prisma } = await import('../../utils/prisma.js');
+  const { FriendshipStatus } = await import('../../generated/prisma/client.js');
+
+  // Get all friendships between current user and search results
+  const userIds = users.map((u) => u.id);
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      OR: [
+        { userId: request.user.id, friendId: { in: userIds } },
+        { userId: { in: userIds }, friendId: request.user.id },
+      ],
+    },
+    select: {
+      userId: true,
+      friendId: true,
+      status: true,
+    },
+  });
+
+  // Build a map of user id -> friendship status
+  const friendshipMap = new Map<string, { isFriend: boolean; isPending: boolean }>();
+  for (const f of friendships) {
+    const otherId = f.userId === request.user.id ? f.friendId : f.userId;
+    friendshipMap.set(otherId, {
+      isFriend: f.status === FriendshipStatus.ACCEPTED,
+      isPending: f.status === FriendshipStatus.PENDING,
+    });
+  }
+
+  const usersWithStatus = users.map((user) => {
+    const status = friendshipMap.get(user.id);
+    return {
+      id: user.id,
+      alias: user.alias,
+      isOnline: isUserOnline(user.id),
+      lastSeenAt: user.lastSeenAt?.toISOString() ?? null,
+      isFriend: status?.isFriend ?? false,
+      isPending: status?.isPending ?? false,
+    };
+  });
+
+  return reply.send({
+    users: usersWithStatus,
+    nextCursor,
+  });
 }

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { buildApp, configureStaticServing } from './app.js';
+import { cleanupOldNotifications } from './modules/notifications/notifications.service.js';
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.NODE_HOST || '0.0.0.0';
@@ -13,6 +14,12 @@ const start = async () => {
 
     await server.listen({ port: +PORT, host: HOST });
     console.log(`✅ Server started on http://${HOST}:${PORT}`);
+
+    // Cleanup old notifications on startup
+    const cleanup = await cleanupOldNotifications();
+    if (cleanup.deletedCount > 0) {
+      console.log(`🧹 Cleaned up ${cleanup.deletedCount} old notifications`);
+    }
 
     if (process.env.NODE_ENV === 'production') {
       const hostPort = process.env.HOST_PORT || '8080';

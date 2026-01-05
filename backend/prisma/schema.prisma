@@ -21,6 +21,56 @@ model User {
   twoFactorSecret   String?           // TOTP secret (AES-256-GCM encrypted)
   twoFactorEnabled  Boolean @default(false)
 
+  // Online status
+  lastSeenAt DateTime? // Updated when user disconnects from WebSocket
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  sentFriendRequests     Friendship[]   @relation("SentRequests")
+  receivedFriendRequests Friendship[]   @relation("ReceivedRequests")
+  notifications          Notification[]
+}
+
+// Friend relationship between two users
+model Friendship {
+  id        String           @id @default(uuid())
+  userId    String           // Who sent the request
+  friendId  String           // Who received the request
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user   User @relation("SentRequests", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("ReceivedRequests", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId]) // Prevent duplicate requests
+  @@index([userId])
+  @@index([friendId])
+}
+
+// Persistent notifications for offline users
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           // Recipient
+  type      NotificationType
+  data      String           // JSON string with notification details
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+enum FriendshipStatus {
+  PENDING  // Request sent, awaiting response
+  ACCEPTED // Both users are friends
+  BLOCKED  // User blocked the other
+}
+
+enum NotificationType {
+  FRIEND_REQUEST  // Someone sent you a friend request
+  FRIEND_ACCEPTED // Your friend request was accepted
 }
