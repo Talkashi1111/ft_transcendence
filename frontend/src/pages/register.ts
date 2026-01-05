@@ -2,7 +2,9 @@ import { register } from '../utils/auth';
 
 export async function renderRegisterPage(
   app: HTMLElement,
-  renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'login' | 'register') => Promise<string>,
+  renderNavBar: (
+    page: 'home' | 'play' | 'tournaments' | 'login' | 'register' | 'friends'
+  ) => Promise<string>,
   setupNavigation: () => void,
   onRegisterSuccess: () => void
 ): Promise<void> {

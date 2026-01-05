@@ -16,7 +16,11 @@
  */
 
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '../src/generated/prisma/client.js';
+import {
+  PrismaClient,
+  FriendshipStatus,
+  NotificationType,
+} from '../src/generated/prisma/client.js';
 import { hashPassword } from '../src/utils/hash.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || 'file:/app/data/database.db';
@@ -33,6 +37,10 @@ const demoUsers = [
   { email: 'bob@example.com', alias: 'bob', password: 'password123' },
   { email: 'charlie@example.com', alias: 'charlie', password: 'password123' },
   { email: 'demo@example.com', alias: 'demo', password: 'demo1234' },
+  { email: 'eve@example.com', alias: 'eve', password: 'password123' },
+  { email: 'frank@example.com', alias: 'frank', password: 'password123' },
+  { email: 'grace@example.com', alias: 'grace', password: 'password123' },
+  { email: 'henry@example.com', alias: 'henry', password: 'password123' },
 ];
 
 // Essential users for production (e.g., admin account)
@@ -43,6 +51,9 @@ const prodUsers: typeof demoUsers = [
 
 async function cleanDatabase() {
   console.log('🧹 Cleaning database...');
+  // Delete in correct order due to foreign keys
+  await prisma.notification.deleteMany();
+  await prisma.friendship.deleteMany();
   await prisma.user.deleteMany();
   console.log('✅ Database cleaned');
 }
@@ -72,6 +83,129 @@ async function seedUsers(users: typeof demoUsers) {
 
     console.log(`  ✅ Created user: ${user.alias} (${user.email})`);
   }
+
+  return users.length;
+}
+
+async function seedFriendships() {
+  console.log('👥 Seeding friendships...');
+
+  // Get users by alias
+  const alice = await prisma.user.findUnique({ where: { alias: 'alice' } });
+  const bob = await prisma.user.findUnique({ where: { alias: 'bob' } });
+  const charlie = await prisma.user.findUnique({ where: { alias: 'charlie' } });
+  const demo = await prisma.user.findUnique({ where: { alias: 'demo' } });
+  const eve = await prisma.user.findUnique({ where: { alias: 'eve' } });
+  const frank = await prisma.user.findUnique({ where: { alias: 'frank' } });
+
+  if (!alice || !bob || !charlie || !demo || !eve || !frank) {
+    console.log('  ⏭️  Some users not found, skipping friendships');
+    return;
+  }
+
+  // Define friendships: [senderId, receiverId, status]
+  const friendships: [string, string, FriendshipStatus][] = [
+    // Alice is friends with Bob and Charlie
+    [alice.id, bob.id, FriendshipStatus.ACCEPTED],
+    [alice.id, charlie.id, FriendshipStatus.ACCEPTED],
+    // Demo has pending request from Eve
+    [eve.id, demo.id, FriendshipStatus.PENDING],
+    // Demo is friends with Alice
+    [demo.id, alice.id, FriendshipStatus.ACCEPTED],
+    // Frank sent request to Demo (pending)
+    [frank.id, demo.id, FriendshipStatus.PENDING],
+    // Bob is friends with Charlie
+    [bob.id, charlie.id, FriendshipStatus.ACCEPTED],
+  ];
+
+  for (const [userId, friendId, status] of friendships) {
+    // Check if friendship already exists
+    const existing = await prisma.friendship.findUnique({
+      where: { userId_friendId: { userId, friendId } },
+    });
+
+    if (existing) {
+      console.log(`  ⏭️  Friendship already exists, skipping`);
+      continue;
+    }
+
+    await prisma.friendship.create({
+      data: { userId, friendId, status },
+    });
+
+    const sender = await prisma.user.findUnique({ where: { id: userId } });
+    const receiver = await prisma.user.findUnique({ where: { id: friendId } });
+    console.log(`  ✅ ${sender?.alias} → ${receiver?.alias} (${status})`);
+  }
+}
+
+async function seedNotifications() {
+  console.log('🔔 Seeding notifications...');
+
+  const demo = await prisma.user.findUnique({ where: { alias: 'demo' } });
+  const eve = await prisma.user.findUnique({ where: { alias: 'eve' } });
+  const frank = await prisma.user.findUnique({ where: { alias: 'frank' } });
+
+  if (!demo || !eve || !frank) {
+    console.log('  ⏭️  Some users not found, skipping notifications');
+    return;
+  }
+
+  // Check if notifications already exist for demo user
+  const existingCount = await prisma.notification.count({
+    where: { userId: demo.id },
+  });
+
+  if (existingCount > 0) {
+    console.log(`  ⏭️  Demo user already has ${existingCount} notifications, skipping`);
+    return;
+  }
+
+  // Create notifications for demo user (pending friend requests)
+  const notifications = [
+    {
+      userId: demo.id,
+      type: NotificationType.FRIEND_REQUEST,
+      data: JSON.stringify({ fromUserId: eve.id, fromAlias: eve.alias }),
+      read: false,
+    },
+    {
+      userId: demo.id,
+      type: NotificationType.FRIEND_REQUEST,
+      data: JSON.stringify({ fromUserId: frank.id, fromAlias: frank.alias }),
+      read: false,
+    },
+  ];
+
+  for (const notification of notifications) {
+    await prisma.notification.create({ data: notification });
+    const data = JSON.parse(notification.data);
+    console.log(`  ✅ Notification for ${demo.alias}: ${notification.type} from ${data.fromAlias}`);
+  }
+}
+
+async function updateLastSeenTimes() {
+  console.log('⏰ Setting lastSeenAt for demo users...');
+
+  // Set varied lastSeenAt times for demo purposes
+  const now = new Date();
+  const lastSeenTimes: [string, Date | null][] = [
+    ['alice', null], // Never seen (will appear as "Never")
+    ['bob', new Date(now.getTime() - 5 * 60 * 1000)], // 5 minutes ago
+    ['charlie', new Date(now.getTime() - 2 * 60 * 60 * 1000)], // 2 hours ago
+    ['eve', new Date(now.getTime() - 24 * 60 * 60 * 1000)], // 1 day ago
+    ['frank', new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)], // 1 week ago
+    ['grace', new Date(now.getTime() - 30 * 60 * 1000)], // 30 minutes ago
+    ['henry', new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)], // 3 days ago
+  ];
+
+  for (const [alias, lastSeenAt] of lastSeenTimes) {
+    await prisma.user.update({
+      where: { alias },
+      data: { lastSeenAt },
+    });
+    console.log(`  ✅ ${alias}: ${lastSeenAt ? lastSeenAt.toISOString() : 'never'}`);
+  }
 }
 
 async function main() {
@@ -97,6 +231,9 @@ async function main() {
       console.log('⚠️  Seeding demo users in PRODUCTION (--demo flag)');
     }
     await seedUsers(demoUsers);
+    await seedFriendships();
+    await seedNotifications();
+    await updateLastSeenTimes();
   }
 
   console.log('🎉 Seed completed!');

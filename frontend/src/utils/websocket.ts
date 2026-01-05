@@ -43,6 +43,10 @@ export type ServerEventType =
   | 'match:opponent_reconnected'
   | 'matches:updated'
   | 'session:replaced' // Close code 4001 - another tab took over
+  | 'friend:online'
+  | 'friend:offline'
+  | 'friend:accepted'
+  | 'notification:new'
   | 'error'
   | 'pong';
 
@@ -75,6 +79,10 @@ export interface ServerEvents {
   'match:opponent_reconnected': Record<string, never>;
   'matches:updated': { matches: AvailableMatch[] };
   'session:replaced': Record<string, never>;
+  'friend:online': { friendId: string; friendAlias: string };
+  'friend:offline': { friendId: string; friendAlias: string };
+  'friend:accepted': { friendId: string; friendAlias: string };
+  'notification:new': { id: string; type: string; data: unknown; createdAt: string };
   error: { code: string; message: string };
   pong: Record<string, never>;
 }
@@ -299,10 +307,27 @@ export class WebSocketManager {
   }
 
   /**
-   * Remove all handlers for an event
+   * Remove a specific handler for an event, or all handlers if no handler specified
    */
-  off(event: ServerEventType): void {
-    delete this.handlers[event];
+  off<K extends ServerEventType>(event: K, handler?: EventHandler<ServerEvents[K]>): void {
+    if (!handler) {
+      // Remove all handlers for this event
+      delete this.handlers[event];
+    } else {
+      // Remove specific handler
+      // Cast to EventHandler<unknown> to match how handlers are stored in on()
+      const handlers = this.handlers[event];
+      if (handlers) {
+        const index = handlers.indexOf(handler as EventHandler<unknown>);
+        if (index !== -1) {
+          handlers.splice(index, 1);
+        }
+        // Clean up empty arrays
+        if (handlers.length === 0) {
+          delete this.handlers[event];
+        }
+      }
+    }
   }
 
   /**

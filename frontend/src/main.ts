@@ -8,6 +8,7 @@ import {
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
 import { renderSettingsPage } from './pages/settings';
+import { renderFriendsPage, cleanupFriendsPage } from './pages/friends';
 import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
 import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
 import { showConfirmModal } from './utils/modal';
@@ -41,17 +42,74 @@ function formatAddress(address: string): string {
 }
 
 // Router
-let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' = 'home';
+let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends' =
+  'home';
+
+// Notification state (updated via WebSocket and REST)
+let unreadNotificationCount = 0;
+let notificationListenerRegistered = false;
 
 /**
  * Connect global WebSocket when authenticated
  * This shared connection is used for:
  * - Match list updates (play page)
  * - Game state (remote games)
- * - Friends online status (future)
+ * - Friends online status
+ * - Real-time notifications
  */
 // Flag to skip auto-reconnect after session was replaced
 let sessionWasReplaced = false;
+
+/**
+ * Fetch unread notification count from server
+ */
+async function fetchUnreadNotificationCount(): Promise<void> {
+  try {
+    const response = await fetch('/api/notifications/unread-count', {
+      credentials: 'include',
+    });
+    if (response.ok) {
+      const data = await response.json();
+      unreadNotificationCount = data.count;
+      updateNotificationBadge();
+    }
+  } catch (err) {
+    console.warn('[App] Failed to fetch notification count:', err);
+  }
+}
+
+/**
+ * Update the notification badge in the navbar
+ */
+function updateNotificationBadge(): void {
+  const badge = document.getElementById('notification-badge');
+  if (badge) {
+    if (unreadNotificationCount > 0) {
+      badge.textContent = unreadNotificationCount > 99 ? '99+' : String(unreadNotificationCount);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+}
+
+/**
+ * Update the online status indicator in the navbar
+ */
+function updateOnlineIndicator(isOnline: boolean): void {
+  const indicator = document.getElementById('online-indicator');
+  if (indicator) {
+    if (isOnline) {
+      indicator.classList.remove('bg-gray-400');
+      indicator.classList.add('bg-green-500');
+      indicator.title = 'Online';
+    } else {
+      indicator.classList.remove('bg-green-500');
+      indicator.classList.add('bg-gray-400');
+      indicator.title = 'Offline';
+    }
+  }
+}
 
 async function connectGlobalWebSocket(): Promise<void> {
   // Skip if we were just replaced by another tab (until user explicitly reclaims)
@@ -63,6 +121,17 @@ async function connectGlobalWebSocket(): Promise<void> {
 
   // Register handlers only once (when not connected)
   if (!wsManager.isConnected) {
+    // Track connection state for online indicator
+    wsManager.setStateChangeHandler((state) => {
+      updateOnlineIndicator(state === 'connected');
+    });
+
+    // Handle new notifications via WebSocket
+    wsManager.on('notification:new', () => {
+      unreadNotificationCount++;
+      updateNotificationBadge();
+    });
+
     // Handle session replaced by another tab
     wsManager.on('session:replaced', async () => {
       // Set flag to prevent auto-reconnect from render()
@@ -118,6 +187,19 @@ async function connectGlobalWebSocket(): Promise<void> {
     try {
       await wsManager.connect();
       console.log('[App] Global WebSocket connected');
+      updateOnlineIndicator(true);
+
+      // Fetch initial notification count
+      await fetchUnreadNotificationCount();
+
+      // Listen for notification count refresh events (from friends page, etc.)
+      // Only register once to prevent memory leaks from duplicate listeners
+      if (!notificationListenerRegistered) {
+        window.addEventListener('notification:countChanged', () => {
+          fetchUnreadNotificationCount();
+        });
+        notificationListenerRegistered = true;
+      }
 
       // Check for active match after connecting (for non-play pages)
       // Play page handles its own reconnect via remoteGame.connect()
@@ -126,12 +208,15 @@ async function connectGlobalWebSocket(): Promise<void> {
       }
     } catch (err) {
       console.warn('[App] Failed to connect global WebSocket:', err);
+      updateOnlineIndicator(false);
       // Non-fatal - features will fall back to REST or retry later
     }
   }
 }
 
-async function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings') {
+async function navigate(
+  page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends'
+) {
   // Check if leaving an active game - show confirmation
   if (currentPage === 'play' && hasActiveRemoteGame()) {
     const confirmed = await showConfirmModal({
@@ -150,6 +235,8 @@ async function navigate(page: 'home' | 'login' | 'register' | 'play' | 'tourname
     leaveRemoteGame();
   } else if (currentPage === 'play') {
     cleanupPlayPage();
+  } else if (currentPage === 'friends') {
+    cleanupFriendsPage();
   }
 
   currentPage = page;
@@ -179,6 +266,8 @@ window.addEventListener('popstate', async (event) => {
     leaveRemoteGame();
   } else if (currentPage === 'play') {
     cleanupPlayPage();
+  } else if (currentPage === 'friends') {
+    cleanupFriendsPage();
   }
 
   if (event.state && event.state.page) {
@@ -239,15 +328,26 @@ async function render() {
     }
     await connectGlobalWebSocket();
     renderSettingsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
+  } else if (currentPage === 'friends') {
+    // Protect friends page - redirect to login if not authenticated
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      navigate('login');
+      return;
+    }
+    await connectGlobalWebSocket();
+    renderFriendsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   }
 }
 
 // Navigation bar component
 async function renderNavBar(
-  activePage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings',
+  activePage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends',
   authenticated?: boolean
 ): Promise<string> {
   const isAuth = authenticated ?? (await isAuthenticated());
+  const wsManager = getWebSocketManager();
+  const isOnline = wsManager.isConnected;
 
   // Get user info if authenticated
   let userAlias = '';
@@ -278,11 +378,25 @@ async function renderNavBar(
               <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Tournaments
               </button>
+              <button id="nav-friends" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+                Friends
+              </button>
               <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 Settings
               </button>
               <div class="border-l border-gray-300 h-6 mx-2"></div>
+              <!-- Notification Bell -->
+              <button id="nav-notifications" class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition" title="Notifications">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <span id="notification-badge" class="${unreadNotificationCount > 0 ? '' : 'hidden'} absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                  ${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </span>
+              </button>
+              <!-- User with Online Indicator -->
               <span class="flex items-center text-sm text-gray-600 px-2">
+                <span id="online-indicator" class="w-2.5 h-2.5 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
                 <span class="text-gray-400 mr-1">👤</span>
                 <span id="nav-user-alias" class="font-medium">${userAlias}</span>
               </span>
@@ -398,17 +512,23 @@ function setupNavigation() {
   const homeBtn = document.getElementById('nav-home');
   const playBtn = document.getElementById('nav-play');
   const tournamentsBtn = document.getElementById('nav-tournaments');
+  const friendsBtn = document.getElementById('nav-friends');
   const settingsBtn = document.getElementById('nav-settings');
   const loginBtn = document.getElementById('nav-login');
   const registerBtn = document.getElementById('nav-register');
   const logoutBtn = document.getElementById('nav-logout');
+  const notificationsBtn = document.getElementById('nav-notifications');
 
   homeBtn?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => navigate('play'));
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
+  friendsBtn?.addEventListener('click', () => navigate('friends'));
   settingsBtn?.addEventListener('click', () => navigate('settings'));
   loginBtn?.addEventListener('click', () => navigate('login'));
   registerBtn?.addEventListener('click', () => navigate('register'));
+
+  // Clicking notification bell navigates to friends page (notifications tab)
+  notificationsBtn?.addEventListener('click', () => navigate('friends'));
 
   logoutBtn?.addEventListener('click', async () => {
     // Check if in an active game - show confirmation first
