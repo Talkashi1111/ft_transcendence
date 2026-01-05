@@ -7,7 +7,7 @@ This project is about creating a website for the mighty Pong contest.
 ## ✨ Features
 
 - **Pong Game**: Classic Pong gameplay experience with local and remote multiplayer.
-  - Local 1v1 and Tournament modes (no login required)
+  - Local 1v1 & Tournament modes (no login required)
   - Remote 1v1 via WebSocket (login required)
   - Real-time match list updates via shared WebSocket connection
 - **Authentication**: Secure login with JWT and Google OAuth.
