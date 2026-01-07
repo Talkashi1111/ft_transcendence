@@ -22,6 +22,8 @@ import {
   NotificationType,
 } from '../src/generated/prisma/client.js';
 import { hashPassword } from '../src/utils/hash.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 const DATABASE_URL = process.env.DATABASE_URL || 'file:/app/data/database.db';
 const adapter = new PrismaBetterSqlite3({ url: DATABASE_URL });
@@ -56,6 +58,41 @@ async function cleanDatabase() {
   await prisma.friendship.deleteMany();
   await prisma.user.deleteMany();
   console.log('✅ Database cleaned');
+}
+
+async function cleanAvatars() {
+  console.log('🖼️  Cleaning avatars...');
+  const avatarDir = '/app/data/avatars';
+
+  try {
+    // Check if directory exists
+    await fs.access(avatarDir);
+
+    // Get all files in the directory
+    const files = await fs.readdir(avatarDir, { withFileTypes: true });
+
+    // Remove all subdirectories and files
+    for (const file of files) {
+      const filePath = path.join(avatarDir, file.name);
+      if (file.isDirectory()) {
+        // Recursively remove directory and its contents
+        await fs.rm(filePath, { recursive: true, force: true });
+      } else {
+        // Remove file
+        await fs.unlink(filePath);
+      }
+    }
+
+    console.log('✅ All avatars cleaned');
+  } catch (err) {
+    // Directory might not exist yet, which is fine
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      console.log('ℹ️  Avatar directory does not exist, skipping');
+    } else {
+      console.error('⚠️  Failed to clean avatars:', err);
+      throw err;
+    }
+  }
 }
 
 async function seedUsers(users: typeof demoUsers) {
@@ -215,6 +252,7 @@ async function main() {
 
   if (shouldClean) {
     await cleanDatabase();
+    await cleanAvatars();
   }
 
   if (isProduction && !forceDemo) {

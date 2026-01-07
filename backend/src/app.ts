@@ -8,8 +8,10 @@ import fastifyJwt from '@fastify/jwt';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
+import fastifyMultipart from '@fastify/multipart';
 import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
+import avatarRoutes from './modules/user/avatar.route.js';
 import blockchainRoutes from './modules/blockchain/blockchain.route.js';
 import oauthRoutes from './modules/oauth/oauth.route.js';
 import twoFactorRoutes from './modules/2fa/2fa.route.js';
@@ -100,6 +102,14 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register Cookie plugin
   await server.register(fastifyCookie);
 
+  // Register Multipart plugin for file uploads (avatars)
+  await server.register(fastifyMultipart, {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB max file size
+      files: 1, // Only 1 file per request
+    },
+  });
+
   // Register WebSocket plugin
   await server.register(fastifyWebsocket);
 
@@ -161,6 +171,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Register routes
   await server.register(userRoutes, { prefix: '/api/users' });
+  await server.register(avatarRoutes, { prefix: '/api/users' });
   await server.register(blockchainRoutes, { prefix: '/api' });
   await server.register(oauthRoutes, { prefix: '/api/oauth' });
   await server.register(twoFactorRoutes, { prefix: '/api/2fa' });

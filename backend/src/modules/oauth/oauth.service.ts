@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '../../utils/prisma.js';
+import { validateImageBuffer, saveAvatar, type AllowedMimeType } from '../../utils/avatar.js';
 
 interface GoogleProfile {
   sub: string; // Google's unique user ID
@@ -30,7 +31,49 @@ export async function fetchGoogleProfile(accessToken: string): Promise<GooglePro
     throw new Error('Failed to fetch Google profile');
   }
 
-  return response.json() as Promise<GoogleProfile>;
+  const profile = (await response.json()) as GoogleProfile;
+  return profile;
+}
+
+/**
+ * Download and save Google profile picture as user avatar (for new OAuth accounts only)
+ * Returns avatar data if successful, null if failed (non-blocking)
+ */
+async function downloadGoogleProfilePicture(
+  userId: string,
+  pictureUrl: string
+): Promise<{ relativePath: string; mimeType: AllowedMimeType } | null> {
+  try {
+    // Google profile pictures are typically served with size parameter
+    // Request a larger version (default is 96px, we want 256px)
+    const url = new URL(pictureUrl);
+    url.searchParams.set('sz', '256');
+
+    const response = await fetch(url.toString());
+
+    if (!response.ok) {
+      console.warn(`Failed to download Google profile picture: ${response.status}`);
+      return null;
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    // Validate image using magic bytes
+    const validation = await validateImageBuffer(buffer);
+
+    if (!validation.valid || !validation.mimeType) {
+      console.warn(`Invalid Google profile picture: ${validation.error}`);
+      return null;
+    }
+
+    // Save to filesystem
+    const { relativePath } = await saveAvatar(userId, buffer, validation.mimeType);
+
+    return { relativePath, mimeType: validation.mimeType };
+  } catch (error) {
+    console.warn('Failed to download Google profile picture:', error);
+    return null;
+  }
 }
 
 /**
@@ -105,7 +148,7 @@ export async function upsertOAuthUser(profile: GoogleProfile) {
   let attempts = 0;
   while (attempts < 5) {
     try {
-      return await prisma.user.create({
+      const newUser = await prisma.user.create({
         data: {
           email: profile.email,
           alias: finalAlias,
@@ -113,6 +156,25 @@ export async function upsertOAuthUser(profile: GoogleProfile) {
           password: null, // OAuth users don't have passwords
         },
       });
+
+      // Download and save Google profile picture as avatar (only for new accounts, non-blocking)
+      if (profile.picture) {
+        const avatarData = await downloadGoogleProfilePicture(newUser.id, profile.picture);
+
+        if (avatarData) {
+          // Update user with avatar info
+          return await prisma.user.update({
+            where: { id: newUser.id },
+            data: {
+              avatarPath: avatarData.relativePath,
+              avatarMimeType: avatarData.mimeType,
+              avatarUpdatedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      return newUser;
     } catch (error) {
       const prismaError = error as { code?: string; meta?: { target?: string[] } };
       if (prismaError.code === 'P2002') {
