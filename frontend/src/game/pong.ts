@@ -13,8 +13,8 @@ import {
 
 export class PongGame {
   private ctx: CanvasRenderingContext2D;
-  private gameState: GameState;
-  private inputHandler: InputHandler;
+  protected gameState: GameState;
+  protected inputHandler: InputHandler;
   private animationId: number | null = null;
   private countdownInterval: number | null = null;
   private onGameEnd?: (winner: string, player1Score: number, player2Score: number) => void;
@@ -123,7 +123,7 @@ export class PongGame {
     }
   }
 
-  private handleInput(): void {
+  protected handleInput(): void {
     // Player 1 controls (W/S)
     if (this.inputHandler.isPlayer1UpPressed()) {
       movePaddle(this.gameState.player1.paddle, 'up');

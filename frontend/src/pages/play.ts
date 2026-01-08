@@ -1,4 +1,5 @@
 import { PongGame } from '../game/pong';
+import { BotPongGame } from '../game/bot-pong';
 import { RemotePongGame } from '../game/remote-pong';
 import { TournamentManager } from '../game/tournament';
 import type { TournamentMatch } from '../types/tournament';
@@ -68,6 +69,9 @@ export async function renderPlayPage(
             <div class="flex gap-4">
               <button id="local-game-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
                 Local 1v1
+              </button>
+              <button id="bot-opponent-btn" class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold">
+                1vBot
               </button>
               <button id="tournament-btn" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
                 Local Tournament
@@ -144,6 +148,47 @@ export async function renderPlayPage(
                   Back
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Setup Screen VS Bot -->
+        <div id="bot-game-setup" class="hidden">
+          <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">Game Setup Versus Bot</h3>
+            <div class="space-y-4">
+
+              <div>
+                <div class="block text-sm font-medium text-gray-700 mb-2">
+                  Select Difficulty Level for Bot
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-5">
+                  <button id="botlvl-1-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">"Dumb"</button>
+                  <button id="botlvl-2-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Easy</button>
+                  <button id="botlvl-3-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Medium</button>
+                  <button id="botlvl-4-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Hard</button>
+                  <button id="botlvl-5-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Impossible</button>
+                </div>
+              </div>
+
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-900 mb-2">Controls:</h4>
+                <div class="text-sm text-blue-800 space-y-1">
+                  <p><strong>Up:</strong> W or ↑</p>
+                  <p><strong>Down:</strong> S or ↓</p>
+                  <p><strong>Pause:</strong> SPACE or ESC</p>
+                </div>
+              </div>
+
+              <div class="flex gap-4">
+                <button id="start-bot-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
+                  Start Game
+                </button>
+                <button id="back-to-mode-from-bot-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
+                  Back
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -362,6 +407,60 @@ function setupPlayPageEvents(): void {
   let remoteGame: RemotePongGame | null = null;
   let tournamentManager: TournamentManager | null = null;
   let matchListUnsubscribe: (() => void) | null = null;
+  
+  type  BotLevel = 'dumb' | 'easy' | 'medium' | 'hard' | 'impossible';
+  let   selectedBotLevel: BotLevel = 'medium';
+
+  // button map
+  const levelsButtons: Record<BotLevel, HTMLElement | null> = {
+    dumb: document.getElementById('botlvl-1-btn'),
+    easy: document.getElementById('botlvl-2-btn'),
+    medium: document.getElementById('botlvl-3-btn'),
+    hard: document.getElementById('botlvl-4-btn'),
+    impossible: document.getElementById('botlvl-5-btn'),
+  };
+
+  // Map pour convertir le texte en niveau numérique pour le constructeur du Bot
+  const difficultyLevels: Record<BotLevel, number> = {
+    dumb: 1,
+    easy: 2,
+    medium: 3,
+    hard: 4,
+    impossible: 5
+  };
+
+  function updateBotLevelSelection() {
+    // Iterate all levels buttons.
+    (Object.keys(levelsButtons) as BotLevel[]).forEach(level => {
+      const btn = levelsButtons[level];
+      if (!btn) return;
+
+      // Reset styles
+      btn.classList.remove('bg-blue-600', 'text-white', 'ring-2', 'ring-blue-400');
+      btn.classList.add('bg-gray-200', 'text-gray-800');
+
+      // Apply selection style to clicked button
+      if (level === selectedBotLevel) {
+        btn.classList.remove('bg-gray-200', 'text-gray-800');
+        btn.classList.add('bg-blue-600', 'text-white', 'ring-2', 'ring-blue-400');
+      }
+    });
+  }
+
+  //Event listeners for bot level buttons
+  (Object.keys(levelsButtons) as BotLevel[]).forEach(level => {
+    const btn = levelsButtons[level];
+    if (btn) {
+      btn.addEventListener('click', () => {
+        selectedBotLevel = level;
+        updateBotLevelSelection();
+      });
+    }
+  });
+
+  // init
+  updateBotLevelSelection();
+  //------
 
   // Set up page cleanup function for when user navigates away
   pageCleanup = () => {
@@ -392,6 +491,7 @@ function setupPlayPageEvents(): void {
 
   // Mode selection
   const localGameBtn = document.getElementById('local-game-btn');
+  const GameVersusBotBtn = document.getElementById('bot-opponent-btn');
   const tournamentBtn = document.getElementById('tournament-btn');
 
   // Remote game buttons
@@ -403,6 +503,7 @@ function setupPlayPageEvents(): void {
   // Screens
   const modeSelection = document.getElementById('mode-selection');
   const gameSetup = document.getElementById('game-setup');
+  const gameBotSetup = document.getElementById('bot-game-setup');
   const gameScreen = document.getElementById('game-screen');
   const resultScreen = document.getElementById('result-screen');
   const tournamentScreen = document.getElementById('tournament-screen');
@@ -429,6 +530,17 @@ function setupPlayPageEvents(): void {
   const player2AliasInput = document.getElementById('player2-alias') as HTMLInputElement;
   const startGameBtn = document.getElementById('start-game-btn');
   const backToModeBtn = document.getElementById('back-to-mode-btn');
+
+  // Setup bot game screen elements
+  const startBotGameBtn = document.getElementById('start-bot-game-btn');
+  const backToModeFromBotBtn = document.getElementById('back-to-mode-from-bot-btn');
+/*   const botLevelButtons = {
+    botLevel1: document.getElementById('botlvl-1-btn'),
+    botLevel2: document.getElementById('botlvl-2-btn'),
+    botLevel3: document.getElementById('botlvl-3-btn'),
+    botLevel4: document.getElementById('botlvl-4-btn'),
+    botLevel5: document.getElementById('botlvl-5-btn'),
+  }; */
 
   // Tournament elements
   const tournamentPlayerAliasInput = document.getElementById(
@@ -486,6 +598,7 @@ function setupPlayPageEvents(): void {
   function showScreen(screen: HTMLElement): void {
     modeSelection?.classList.add('hidden');
     gameSetup?.classList.add('hidden');
+    gameBotSetup?.classList.add('hidden');
     gameScreen?.classList.add('hidden');
     resultScreen?.classList.add('hidden');
     tournamentScreen?.classList.add('hidden');
@@ -1204,6 +1317,11 @@ function setupPlayPageEvents(): void {
     player1AliasInput.focus();
   });
 
+  // Event: Local GameVersusBot button
+  GameVersusBotBtn?.addEventListener('click', () => {
+    showScreen(gameBotSetup!);
+  });
+
   // Event: Tournament button
   tournamentBtn?.addEventListener('click', () => {
     // Create new tournament
@@ -1352,8 +1470,13 @@ function setupPlayPageEvents(): void {
     }
   });
 
-  // Event: Back to mode selection
+  // Event: Back to mode selection (from local game setup)
   backToModeBtn?.addEventListener('click', () => {
+    showScreen(modeSelection!);
+  });
+
+  // Event: Back to mode selection (from bot game setup)
+  backToModeFromBotBtn?.addEventListener('click', () => {
     showScreen(modeSelection!);
   });
 
@@ -1439,6 +1562,26 @@ function setupPlayPageEvents(): void {
       // Show result screen after a short delay to let players see final game state
       setTimeout(() => {
         showResultScreen(winner, player1, player2, score1, score2);
+      }, GAME_END_DELAY_MS);
+    });
+
+    showScreen(gameScreen!);
+    currentGame.start();
+  });
+
+  // Event: Start game vs Bot
+  startBotGameBtn?.addEventListener('click', () => {
+    if (currentGame) {
+      currentGame.destroy();
+    }
+
+    const level = difficultyLevels[selectedBotLevel];
+
+    currentGame = new BotPongGame(canvas, 'Player 1 (to change dynamicaly)', level);
+
+    currentGame.setOnGameEnd((winner, score1, score2) => {
+      setTimeout(() => {
+        showResultScreen(winner, 'Player 1 (to change)', `Bot (Lvl ${level})`, score1, score2);
       }, GAME_END_DELAY_MS);
     });
 
