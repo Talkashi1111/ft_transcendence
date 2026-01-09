@@ -9,12 +9,21 @@ This project is about creating a website for the mighty Pong contest.
 - **Pong Game**: Classic Pong gameplay experience with local and remote multiplayer.
   - Local 1v1 and Tournament modes (no login required)
   - Remote 1v1 via WebSocket (login required)
+  - Server-side pong with authoritative game state
   - Real-time match list updates via shared WebSocket connection
+  - Remote player matchmaking and synchronization
+- **REST API**: Comprehensive RESTful API for user management, authentication, and game data.
 - **Authentication**: Secure login with JWT and Google OAuth.
 - **Security**:
   - Two-Factor Authentication (2FA) support via TOTP (Google Authenticator).
   - HttpOnly cookies for session management.
 - **Blockchain**: Tournament scores recorded on Avalanche Fuji testnet.
+- **Social Features**: Friends system and real-time notifications.
+- **Development Environment**:
+  - DevContainer setup for consistent development environment across team members
+  - Automated dependency management and setup
+  - CI/CD pipeline using GitHub Actions for automated testing and deployment
+  - Comprehensive unit testing for frontend, backend, and blockchain components
 
 ## 🚀 Quick Start
 
