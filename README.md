@@ -282,8 +282,7 @@ ft_transcendence/
 ├── frontend/          # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
 ├── backend/           # Fastify + Prisma + SQLite + JWT auth
 ├── blockchain/        # Hardhat + Solidity + Avalanche
-├── caddy/             # Caddy reverse proxy configuration
-│   ├── Caddyfile      # Routing and TLS configuration
+├── Caddyfile          # Caddy reverse proxy, routing and TLS configuration
 ├── data/              # SQLite database (persistent volume)
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml

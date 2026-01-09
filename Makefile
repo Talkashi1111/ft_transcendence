@@ -177,11 +177,31 @@ prod-up:   ## start production stack (pulls from registry)
 
 .PHONY: prod-down
 prod-down: ## stop production stack
-	docker compose -f docker-compose.prod.yml down
+	docker compose -f docker-compose.prod.yml --env-file .env.prod down
+
+.PHONY: prod-clean
+prod-clean: ## stop prod and remove images (optional volumes via WITH_VOLUMES=1)
+	@echo "Stopping prod and cleaning images (WITH_VOLUMES=$(WITH_VOLUMES))"
+	@if [ "$(WITH_VOLUMES)" = "1" ]; then \
+		docker compose -f docker-compose.prod.yml --env-file .env.prod down --rmi all --remove-orphans --volumes; \
+	else \
+		docker compose -f docker-compose.prod.yml --env-file .env.prod down --rmi all --remove-orphans; \
+	fi
+	# Prune dangling images and networks to fully clean up (keeps non-dangling volumes unless WITH_VOLUMES=1)
+	docker image prune -f
+	docker network prune -f
+
+.PHONY: prod-prune
+prod-prune: ## prune unused Docker resources after prod-down (no volumes)
+	@echo "Pruning unused Docker resources (safe: no volumes)"
+	docker container prune -f
+	docker image prune -f
+	docker builder prune -f
+	docker network prune -f
 
 .PHONY: prod-logs
 prod-logs: ## view production logs
-	docker compose -f docker-compose.prod.yml logs -f
+	docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f
 
 .PHONY: prod-seed
 prod-seed: ## seed production database with demo users
