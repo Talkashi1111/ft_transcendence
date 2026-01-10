@@ -33,7 +33,9 @@ const ALLOWED_HOSTS = new Set([
   'localhost:80', // Test environment
   'localhost:3000',
   'localhost:5173',
+  'localhost:8443', // Prod with unprivileged ports
   'mooo.com',
+  'mooo.com:8443', // Prod with unprivileged ports
   ...(process.env.OAUTH_ALLOWED_HOSTS?.split(',').map((h) => h.trim()) || []),
 ]);
 
