@@ -49,7 +49,7 @@ export class BotPongGame extends PongGame {
       movePaddle(this.gameState.player1.paddle, 'down');
     }
 
-    // IA Control
+    // AI Control
     this.runBotStrategy();
   }
 
