@@ -1,4 +1,13 @@
-import { getCurrentUser, setup2FA, enable2FA, disable2FA, updateAlias } from '../utils/auth';
+import {
+  getCurrentUser,
+  setup2FA,
+  enable2FA,
+  disable2FA,
+  updateAlias,
+  uploadAvatar,
+  deleteAvatar,
+  getAvatarUrl,
+} from '../utils/auth';
 
 export async function renderSettingsPage(
   app: HTMLElement,
@@ -21,6 +30,40 @@ export async function renderSettingsPage(
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
+
+        <!-- Avatar Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">Profile Picture</h2>
+          <div class="flex items-center gap-6">
+            <div class="relative">
+              <img
+                id="avatar-preview"
+                src="${getAvatarUrl(user.id, Date.now())}"
+                alt="Your avatar"
+                class="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+              />
+              <div id="avatar-loading" class="hidden absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="flex-1">
+              <div class="flex flex-wrap gap-2">
+                <label class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium cursor-pointer">
+                  Upload New
+                  <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" />
+                </label>
+                <button id="delete-avatar-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                  Remove
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">JPG, PNG, WebP, or GIF. Max 5MB.</p>
+              <div id="avatar-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
+            </div>
+          </div>
+        </div>
 
         <!-- User Info Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -140,8 +183,127 @@ export async function renderSettingsPage(
   `;
 
   setupNavigation();
+  setupAvatarHandler(user.id);
   setupAliasHandler();
   setup2FAHandlers();
+}
+
+function setupAvatarHandler(userId: string): void {
+  const avatarInput = document.getElementById('avatar-input') as HTMLInputElement;
+  const avatarPreview = document.getElementById('avatar-preview') as HTMLImageElement;
+  const avatarLoading = document.getElementById('avatar-loading');
+  const deleteBtn = document.getElementById('delete-avatar-btn') as HTMLButtonElement;
+  const messageDiv = document.getElementById('avatar-message');
+
+  const showMessage = (message: string, isError = false) => {
+    if (!messageDiv) return;
+    messageDiv.textContent = message;
+    messageDiv.classList.remove(
+      'hidden',
+      'bg-green-50',
+      'text-green-700',
+      'bg-red-50',
+      'text-red-700'
+    );
+    if (isError) {
+      messageDiv.classList.add('bg-red-50', 'text-red-700');
+    } else {
+      messageDiv.classList.add('bg-green-50', 'text-green-700');
+    }
+  };
+
+  const hideMessage = () => {
+    messageDiv?.classList.add('hidden');
+  };
+
+  const setLoading = (loading: boolean) => {
+    if (avatarLoading) {
+      avatarLoading.classList.toggle('hidden', !loading);
+    }
+  };
+
+  // Handle file selection
+  if (avatarInput) {
+    avatarInput.addEventListener('change', async () => {
+      hideMessage();
+      const file = avatarInput.files?.[0];
+
+      if (!file) return;
+
+      // Client-side validation
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        showMessage('File is too large. Maximum size is 5MB.', true);
+        avatarInput.value = '';
+        return;
+      }
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        showMessage('Invalid file type. Please upload a JPG, PNG, WebP, or GIF image.', true);
+        avatarInput.value = '';
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const result = await uploadAvatar(file);
+        showMessage(result.message);
+
+        // Update preview with cache-busting
+        if (avatarPreview) {
+          avatarPreview.src = getAvatarUrl(userId, Date.now());
+        }
+
+        // Also update navbar avatar if it exists
+        const navAvatar = document.getElementById('nav-user-avatar') as HTMLImageElement;
+        if (navAvatar) {
+          navAvatar.src = getAvatarUrl(userId, Date.now());
+        }
+      } catch (err) {
+        showMessage(err instanceof Error ? err.message : 'Failed to upload avatar', true);
+      } finally {
+        setLoading(false);
+        avatarInput.value = ''; // Reset input
+      }
+    });
+  }
+
+  // Handle delete button
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      hideMessage();
+
+      if (!confirm('Are you sure you want to remove your profile picture?')) {
+        return;
+      }
+
+      setLoading(true);
+      deleteBtn.disabled = true;
+
+      try {
+        await deleteAvatar();
+        showMessage('Profile picture removed');
+
+        // Update preview with cache-busting (will show default avatar)
+        if (avatarPreview) {
+          avatarPreview.src = getAvatarUrl(userId, Date.now());
+        }
+
+        // Also update navbar avatar if it exists
+        const navAvatar = document.getElementById('nav-user-avatar') as HTMLImageElement;
+        if (navAvatar) {
+          navAvatar.src = getAvatarUrl(userId, Date.now());
+        }
+      } catch (err) {
+        showMessage(err instanceof Error ? err.message : 'Failed to remove avatar', true);
+      } finally {
+        setLoading(false);
+        deleteBtn.disabled = false;
+      }
+    });
+  }
 }
 
 function setupAliasHandler(): void {
