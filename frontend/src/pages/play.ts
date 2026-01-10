@@ -10,6 +10,7 @@ import { escapeHtml } from '../utils/sanitize';
 import { isAuthenticated } from '../utils/auth';
 import { getWebSocketManager } from '../utils/websocket';
 import type { AvailableMatch } from '../utils/websocket';
+import { BotLevel } from '../types/game';
 
 // Constants
 const GAME_END_DELAY_MS = 2000; // Delay before showing result screen after game ends
@@ -162,12 +163,11 @@ export async function renderPlayPage(
                 <div class="block text-sm font-medium text-gray-700 mb-2">
                   Select Difficulty Level for Bot
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-5">
-                  <button id="botlvl-1-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">"Dumb"</button>
-                  <button id="botlvl-2-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Easy</button>
-                  <button id="botlvl-3-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Medium</button>
-                  <button id="botlvl-4-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Hard</button>
-                  <button id="botlvl-5-btn" class="bg-gray-200 p-4 border border-gray-300 hover:bg-gray-400 transition">Impossible</button>
+                <div class="grid grid-cols-1 md:grid-cols-4">
+                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Paw Patrol</button>
+                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Track-y</button>
+                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am human</button>
+                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am God</button>
                 </div>
               </div>
 
@@ -403,64 +403,11 @@ export async function renderPlayPage(
 }
 
 function setupPlayPageEvents(): void {
+  let lastGameMode: 'local' | 'bot' = 'local';
   let currentGame: PongGame | null = null;
   let remoteGame: RemotePongGame | null = null;
   let tournamentManager: TournamentManager | null = null;
   let matchListUnsubscribe: (() => void) | null = null;
-  
-  type  BotLevel = 'dumb' | 'easy' | 'medium' | 'hard' | 'impossible';
-  let   selectedBotLevel: BotLevel = 'medium';
-
-  // button map
-  const levelsButtons: Record<BotLevel, HTMLElement | null> = {
-    dumb: document.getElementById('botlvl-1-btn'),
-    easy: document.getElementById('botlvl-2-btn'),
-    medium: document.getElementById('botlvl-3-btn'),
-    hard: document.getElementById('botlvl-4-btn'),
-    impossible: document.getElementById('botlvl-5-btn'),
-  };
-
-  // Map pour convertir le texte en niveau numérique pour le constructeur du Bot
-  const difficultyLevels: Record<BotLevel, number> = {
-    dumb: 1,
-    easy: 2,
-    medium: 3,
-    hard: 4,
-    impossible: 5
-  };
-
-  function updateBotLevelSelection() {
-    // Iterate all levels buttons.
-    (Object.keys(levelsButtons) as BotLevel[]).forEach(level => {
-      const btn = levelsButtons[level];
-      if (!btn) return;
-
-      // Reset styles
-      btn.classList.remove('bg-blue-600', 'text-white', 'ring-2', 'ring-blue-400');
-      btn.classList.add('bg-gray-200', 'text-gray-800');
-
-      // Apply selection style to clicked button
-      if (level === selectedBotLevel) {
-        btn.classList.remove('bg-gray-200', 'text-gray-800');
-        btn.classList.add('bg-blue-600', 'text-white', 'ring-2', 'ring-blue-400');
-      }
-    });
-  }
-
-  //Event listeners for bot level buttons
-  (Object.keys(levelsButtons) as BotLevel[]).forEach(level => {
-    const btn = levelsButtons[level];
-    if (btn) {
-      btn.addEventListener('click', () => {
-        selectedBotLevel = level;
-        updateBotLevelSelection();
-      });
-    }
-  });
-
-  // init
-  updateBotLevelSelection();
-  //------
 
   // Set up page cleanup function for when user navigates away
   pageCleanup = () => {
@@ -534,13 +481,6 @@ function setupPlayPageEvents(): void {
   // Setup bot game screen elements
   const startBotGameBtn = document.getElementById('start-bot-game-btn');
   const backToModeFromBotBtn = document.getElementById('back-to-mode-from-bot-btn');
-/*   const botLevelButtons = {
-    botLevel1: document.getElementById('botlvl-1-btn'),
-    botLevel2: document.getElementById('botlvl-2-btn'),
-    botLevel3: document.getElementById('botlvl-3-btn'),
-    botLevel4: document.getElementById('botlvl-4-btn'),
-    botLevel5: document.getElementById('botlvl-5-btn'),
-  }; */
 
   // Tournament elements
   const tournamentPlayerAliasInput = document.getElementById(
@@ -1517,6 +1457,7 @@ function setupPlayPageEvents(): void {
 
   // Event: Start game
   startGameBtn?.addEventListener('click', () => {
+    lastGameMode = 'local';
     let player1 = player1AliasInput.value.trim();
     let player2 = player2AliasInput.value.trim();
 
@@ -1569,25 +1510,74 @@ function setupPlayPageEvents(): void {
     currentGame.start();
   });
 
+  // ============================================
+  // Local Game Vs Bot
+  // ============================================
+  let selectedBotLevel: BotLevel = BotLevel.LEVEL_1; //default
+  const availableLevels = Object.values(BotLevel);
+  const getBotBtn = (level: number) => document.getElementById(`botlvl-${level}-btn`);
+
+  function updateBotLevelSelection() {
+    availableLevels.forEach(level => {
+      const btn = getBotBtn(level);
+      if (!btn) return;
+
+      if (level === selectedBotLevel) {
+        btn.classList.remove('bg-gray-200');
+        btn.classList.add('bg-gray-400');
+      } else {
+        btn.classList.remove('bg-gray-400');
+        btn.classList.add('bg-gray-200');
+      }
+    });
+  }
+
+  //Event listeners for bot level buttons
+  availableLevels.forEach(level => {
+    const btn = getBotBtn(level);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        selectedBotLevel = level;
+        updateBotLevelSelection();
+      });
+    }
+  });
+
+  updateBotLevelSelection(); // init
+
   // Event: Start game vs Bot
   startBotGameBtn?.addEventListener('click', () => {
+    lastGameMode = 'bot';
+    let player1 = player1AliasInput.value.trim();
+
+    hideInlineError(player1ErrorEl);
+
+    if (player1 !== '') {
+      const validation = validatePlayerAlias(player1);
+      if (!validation.valid) {
+        showInlineError(player1ErrorEl, validation.error || 'Invalid alias');
+        return;
+      }
+    } else {
+      player1 = 'Player 1';
+    }
+
     if (currentGame) {
       currentGame.destroy();
     }
 
-    const level = difficultyLevels[selectedBotLevel];
-
-    currentGame = new BotPongGame(canvas, 'Player 1 (to change dynamicaly)', level);
+    currentGame = new BotPongGame(canvas, player1, selectedBotLevel);
 
     currentGame.setOnGameEnd((winner, score1, score2) => {
       setTimeout(() => {
-        showResultScreen(winner, 'Player 1 (to change)', `Bot (Lvl ${level})`, score1, score2);
+        showResultScreen(winner, player1, `Bot (Lvl ${selectedBotLevel})`, score1, score2);
       }, GAME_END_DELAY_MS);
     });
 
     showScreen(gameScreen!);
     currentGame.start();
   });
+  // ====================
 
   // Event: End game early
   endGameBtn?.addEventListener('click', () => {
@@ -1608,8 +1598,12 @@ function setupPlayPageEvents(): void {
 
   // Event: Play again
   playAgainBtn?.addEventListener('click', () => {
-    showScreen(gameSetup!);
-    player1AliasInput.focus();
+    if (lastGameMode === 'bot') {
+      showScreen(gameBotSetup!);
+    } else {
+      showScreen(gameSetup!);
+      player1AliasInput.focus();
+    }
   });
 
   // Event: Back to menu from results

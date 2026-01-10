@@ -1,27 +1,26 @@
 
 TASKS OF NOW:
-PR review
-Plan Implementation I-am-human level;
-- 1 view/second
-- Predicts hit zone when ball moves toward bot
-- after returning the place, the paddle places itself a little bit in the center (optional)
+Write doc
+Check back button (after finished gamt too)
+Optimize bot-pong.ts ?
+Organize play.ts
 
 AI levels:
 1. Paw patrol | done
-2. Track-y | done
-3. I-am-human; anticipate bounces, "view" the gamestate once per second | to-do
-4. Hard; predicts ballhitpoint (?before the ball hits the player's paddle) | to-do
+2. Track-y | done | optional to-do; make the bot easier
+3. I-am-human; anticipate bounces, "view" the gamestate once per second | done
+4. Hard; predicts ballhitpoint (?before the ball hits the player's paddle) | done
 5. 2026; cheats, move left and right, multiple paddles, aggressive | optional
 
 Main Task(s):
-Introduce AI opponent; requirements (subjects);
-  - provides a challenging and engaging gameplay for users
-  - AI must replicate human behavior, which means that in your AI implementation, you must simulate keyboard input. The constraint here is that the AI can only refresh its view of the game once per second, requiring it to anticipate bounces and other actions.
-  - Implement AI logic and decision-making processes that enable the AI player to make intelligent and strategic moves
-  - Explore alternative algorithms and techniques to create an effective AI player without relying on A*
-  - Ensure that the AI adapts to different gameplay scenarios and user interactions
-Implement Tests for new feature
+Implement AI opponent
+  How does it work ? game loop, canvas, rendering, events (keys and others). OPTIMIZE bot-pong
+  Make copilot review (without PR if possible)
+  Write Documentation about AI (don't forget to note that the BotPongGame inherits from PongGame)
+  Implement Tests
 Check potential bug; let one opened chrome tab on website and rerun app
+Study remoteGame and check if it is optimized
+Implement Graphana/Prometheus
 Integrate gemini 3 in continue vscode extension
 
 ----------
@@ -29,6 +28,7 @@ Integrate gemini 3 in continue vscode extension
 Modifications:
 - play.ts; added a mode "1vBot" in Play page and its new view
 - pong.ts; Changed proprietes from private to protected to enable inheritence
+- physics.ts
 
 Additions:
 - frontend/src/game/bot-pong.ts; bot class inheriting from PongGame; simulates an opponent with different difficulties/ai log
@@ -36,15 +36,13 @@ Additions:
 ----------
 
 Remarks:
-- Students can validate Transcendence before finishing circle 5
-- Which stage to push for the evaluation ? Pending...
-- What is expected from reviewers for a PR (in the context of transcendence) ?
+- Which stage to push for the evaluation ? Decide when project is done
 - Current favicon is default vite
-- Before a game, the number of points required to win the match should be shown
+- Before a game, the number of points required to win the match should be shown.
+- 11 points to win a match is bit too much
 
-enquire to school:
- - If we can do transcendence v18. Is v18 evaluation available during the evaluation ?
 
+----------
 
 To Study after:
 https://medium.com/better-programming/be-the-master-of-the-event-loop-in-javascript-part-1-6804cdf6608f
