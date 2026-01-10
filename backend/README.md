@@ -214,15 +214,17 @@ cp .env.example .env
 
 Key variables:
 
-| Variable                    | Description               | Default                                           |
-| --------------------------- | ------------------------- | ------------------------------------------------- |
-| `DATABASE_URL`              | SQLite file path          | `file:/app/data/database.db`                      |
-| `JWT_SECRET`                | JWT signing secret        | Change in production!                             |
-| `TWO_FACTOR_ENCRYPTION_KEY` | 2FA secret encryption key | Generate with: `openssl rand -hex 32`             |
-| `PORT`                      | Server port               | `3000`                                            |
-| `GOOGLE_CLIENT_ID`          | Google OAuth client ID    | (required for OAuth)                              |
-| `GOOGLE_CLIENT_SECRET`      | Google OAuth secret       | (required for OAuth)                              |
-| `OAUTH_CALLBACK_URI`        | OAuth callback URL        | `http://localhost:5173/api/oauth/google/callback` |
+| Variable                    | Description               | Default                               |
+| --------------------------- | ------------------------- | ------------------------------------- |
+| `DATABASE_URL`              | SQLite file path          | `file:/app/data/database.db`          |
+| `JWT_SECRET`                | JWT signing secret        | Change in production!                 |
+| `TWO_FACTOR_ENCRYPTION_KEY` | 2FA secret encryption key | Generate with: `openssl rand -hex 32` |
+| `PORT`                      | Server port               | `3000`                                |
+| `GOOGLE_CLIENT_ID`          | Google OAuth client ID    | (required for OAuth)                  |
+| `GOOGLE_CLIENT_SECRET`      | Google OAuth secret       | (required for OAuth)                  |
+| `OAUTH_ALLOWED_HOSTS`       | Extra allowed OAuth hosts | (optional, comma-separated)           |
+
+> **Note:** `OAUTH_CALLBACK_URI` is no longer needed. The backend automatically builds callback URIs from the request host. Built-in allowed hosts: `localhost`, `localhost:5173`, `localhost:3000`, `mooo.com`. Use `OAUTH_ALLOWED_HOSTS` to add custom domains or IPs (e.g., `OAUTH_ALLOWED_HOSTS=mycompany.com,192.168.1.100`).
 
 > **Security Note:** The `TWO_FACTOR_ENCRYPTION_KEY` must be exactly 64 hexadecimal characters (32 bytes). This key encrypts TOTP secrets stored in the database using AES-256-GCM.
 
@@ -333,30 +335,42 @@ User                    Frontend                   Backend
 
 #### OAuth Flow
 
+The backend implements a custom OAuth 2.0 flow with **dynamic callback URI detection**. This allows the same code to work in dev (`http://localhost:5173`), prod local (`https://localhost`), and prod remote (`https://mooo.com`) without configuration changes.
+
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            Google OAuth 2.0 Flow                            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  1. User clicks "Continue with Google"                                      │
-│          │                                                                  │
-│          ▼                                                                  │
-│  2. GET /api/oauth/google                                                   │
-│          │ (sets state cookie, redirects to Google)                         │
-│          ▼                                                                  │
-│  3. Google Authorization Page                                               │
-│          │ (user grants permission)                                         │
-│          ▼                                                                  │
-│  4. GET /api/oauth/google/callback?code=xxx&state=xxx                       │
-│          │ (validates state, exchanges code for token)                      │
-│          ▼                                                                  │
-│  5. Fetch Google profile, upsert user in DB                                 │
-│          │ (links to existing account ONLY if email is verified by Google)  │
-│          ▼                                                                  │
-│  6. Set JWT cookie, redirect to home                                        │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────┐     1. Click "Login with Google"     ┌─────────────┐
+│   Browser   │ ──────────────────────────────────►  │   Backend   │
+│             │                                      │ /api/oauth/ │
+│             │     2. Redirect to Google            │   google    │
+│             │ ◄────────────────────────────────────│             │
+└─────────────┘                                      └─────────────┘
+      │
+      │ 3. User authenticates at Google
+      ▼
+┌─────────────┐     4. Redirect with code            ┌─────────────┐
+│   Google    │ ──────────────────────────────────►  │   Backend   │
+│   Auth      │                                      │ /callback   │
+└─────────────┘                                      └─────────────┘
+                                                           │
+                    5. Exchange code for token             │
+                    6. Fetch user profile                  │
+                    7. Create/update user in DB            │
+                    8. Set JWT cookie & redirect home      │
+                                                           ▼
+                                                     ┌─────────────┐
+                                                     │   Browser   │
+                                                     │  (logged in)│
+                                                     └─────────────┘
 ```
+
+**Security features:**
+
+| Feature                                     | Purpose                                               |
+| ------------------------------------------- | ----------------------------------------------------- |
+| **PKCE** (`code_verifier`/`code_challenge`) | Prevents authorization code interception attacks      |
+| **State parameter**                         | Prevents CSRF attacks                                 |
+| **httpOnly cookies**                        | Prevents XSS from stealing tokens                     |
+| **Dynamic callback URI**                    | Supports multiple environments without config changes |
 
 #### Google Cloud Console Setup
 
@@ -368,16 +382,19 @@ User                    Frontend                   Backend
 6. Configure:
    - **Name**: ft_transcendence (or your app name)
    - **Authorized JavaScript origins**: `http://localhost:5173`
-   - **Authorized redirect URIs**: `http://localhost:5173/api/oauth/google/callback`
+   - **Authorized redirect URIs** (add ALL environments):
+     - `http://localhost:5173/api/oauth/google/callback` (dev)
+     - `https://localhost/api/oauth/google/callback` (prod local)
+     - `https://mooo.com/api/oauth/google/callback` (prod remote)
 7. Copy **Client ID** and **Client Secret** to your `.env`:
 
 ```bash
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-OAUTH_CALLBACK_URI=http://localhost:5173/api/oauth/google/callback
+# Note: OAUTH_CALLBACK_URI is no longer needed - auto-detected from request host
 ```
 
-> **Production:** Update redirect URIs to your production domain
+> **Production:** The backend automatically uses the correct callback URI based on the request host.
 
 > **Note:** TOTP-based 2FA works completely offline with no Google API calls. Any TOTP-compatible app (Google Authenticator, Authy, Microsoft Authenticator) will work.
 

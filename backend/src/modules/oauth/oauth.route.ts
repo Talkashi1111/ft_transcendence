@@ -26,9 +26,29 @@ function getOAuthConfig() {
   return { clientId, clientSecret };
 }
 
+// Allowlist of valid hosts for OAuth callback (security: prevents host header spoofing)
+// Add additional hosts via OAUTH_ALLOWED_HOSTS env var (comma-separated)
+const ALLOWED_HOSTS = new Set([
+  'localhost',
+  'localhost:80', // Test environment
+  'localhost:3000',
+  'localhost:5173',
+  'mooo.com',
+  ...(process.env.OAUTH_ALLOWED_HOSTS?.split(',').map((h) => h.trim()) || []),
+]);
+
 // Build callback URI from request host (supports both localhost and mooo.com)
-function buildCallbackUri(request: FastifyRequest): string {
+function buildCallbackUri(request: FastifyRequest): string | null {
   let host = request.headers.host || 'localhost';
+
+  // Security: Validate host against allowlist to prevent host header spoofing
+  if (!ALLOWED_HOSTS.has(host)) {
+    request.log.warn(
+      { host, allowedHosts: [...ALLOWED_HOSTS] },
+      'OAuth rejected: host not in allowlist'
+    );
+    return null;
+  }
 
   // Vite dev proxy changes host from localhost:5173 to localhost:3000
   // Restore the original frontend port for OAuth callback
@@ -37,14 +57,17 @@ function buildCallbackUri(request: FastifyRequest): string {
   }
 
   // Determine protocol:
-  // - In production (behind Caddy): use x-forwarded-proto or default to https
-  // - In development: use http for localhost with port (e.g., localhost:5173)
-  const isDevMode = host.includes(':'); // Dev mode has port in host (localhost:5173)
+  // - Use x-forwarded-proto if set by reverse proxy (Caddy)
+  // - Otherwise: production defaults to https, development defaults to http
+  const isProduction = process.env.NODE_ENV === 'production';
   const forwardedProto = request.headers['x-forwarded-proto'];
-  const protocol = forwardedProto ? forwardedProto : isDevMode ? 'http' : 'https';
+  // Validate x-forwarded-proto to prevent header injection
+  const validProto =
+    forwardedProto === 'https' || forwardedProto === 'http' ? forwardedProto : null;
+  const protocol = validProto ?? (isProduction ? 'https' : 'http');
 
   const uri = `${protocol}://${host}/api/oauth/google/callback`;
-  request.log.info({ host, forwardedProto, isDevMode, protocol, uri }, 'OAuth callback URI');
+  request.log.info({ host, forwardedProto, isProduction, protocol, uri }, 'OAuth callback URI');
   return uri;
 }
 
@@ -72,6 +95,12 @@ async function oauthRoutes(server: FastifyInstance) {
   // Start OAuth flow - dynamically builds callback URI from request host
   server.get('/google', async (request: FastifyRequest, reply: FastifyReply) => {
     const callbackUri = buildCallbackUri(request);
+
+    // Security: Reject if host is not in allowlist
+    if (!callbackUri) {
+      return reply.redirect('/login?error=oauth_host_not_allowed');
+    }
+
     const { verifier, challenge } = generatePKCE();
     const state = generateState();
 
@@ -112,12 +141,12 @@ async function oauthRoutes(server: FastifyInstance) {
       // Verify state to prevent CSRF
       if (!state || !storedState || state !== storedState) {
         request.log.error('OAuth state mismatch');
-        return reply.redirect('/login?error=oauth_failed');
+        return reply.redirect('/login?error=oauth_state_mismatch');
       }
 
       if (!code || !verifier) {
         request.log.error('Missing code or verifier');
-        return reply.redirect('/login?error=oauth_failed');
+        return reply.redirect('/login?error=oauth_missing_code');
       }
 
       // Clear OAuth cookies
@@ -126,6 +155,11 @@ async function oauthRoutes(server: FastifyInstance) {
 
       // Build callback URI from current request (must match what was sent to Google)
       const callbackUri = buildCallbackUri(request);
+
+      // Security: Reject if host is not in allowlist
+      if (!callbackUri) {
+        return reply.redirect('/login?error=oauth_host_not_allowed');
+      }
 
       // Exchange authorization code for access token
       const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
@@ -144,10 +178,22 @@ async function oauthRoutes(server: FastifyInstance) {
       if (!tokenResponse.ok) {
         const error = await tokenResponse.text();
         request.log.error({ error }, 'Token exchange failed');
-        return reply.redirect('/login?error=oauth_failed');
+        return reply.redirect('/login?error=oauth_token_failed');
       }
 
-      const tokenData = (await tokenResponse.json()) as { access_token: string };
+      // Parse and validate token response
+      let tokenData: { access_token?: string };
+      try {
+        tokenData = await tokenResponse.json();
+      } catch {
+        request.log.error('Failed to parse token response as JSON');
+        return reply.redirect('/login?error=oauth_token_failed');
+      }
+
+      if (!tokenData.access_token) {
+        request.log.error({ tokenData }, 'Token response missing access_token');
+        return reply.redirect('/login?error=oauth_token_failed');
+      }
 
       // Fetch Google user profile
       const profile = await fetchGoogleProfile(tokenData.access_token);
@@ -194,7 +240,7 @@ async function oauthRoutes(server: FastifyInstance) {
       return reply.redirect('/');
     } catch (error) {
       request.log.error(error, 'OAuth callback failed');
-      return reply.redirect('/login?error=oauth_failed');
+      return reply.redirect('/login?error=oauth_callback_failed');
     }
   });
 }

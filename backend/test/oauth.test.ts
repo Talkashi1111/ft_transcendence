@@ -208,10 +208,7 @@ describe('OAuth Module', () => {
 
   describe('OAuth routes', () => {
     // Skip route tests if OAuth is not configured (e.g., in CI without secrets)
-    const oauthConfigured =
-      !!process.env.GOOGLE_CLIENT_ID &&
-      !!process.env.GOOGLE_CLIENT_SECRET &&
-      !!process.env.OAUTH_CALLBACK_URI;
+    const oauthConfigured = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
     it.skipIf(!oauthConfigured)('GET /api/oauth/google should redirect to Google', async () => {
       const response = await server.inject({

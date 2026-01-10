@@ -180,14 +180,9 @@ prod-down: ## stop production stack
 	docker compose -f docker-compose.prod.yml --env-file .env.prod down
 
 .PHONY: prod-clean
-prod-clean: ## stop prod and remove images (optional volumes via WITH_VOLUMES=1)
-	@echo "Stopping prod and cleaning images (WITH_VOLUMES=$(WITH_VOLUMES))"
-	@if [ "$(WITH_VOLUMES)" = "1" ]; then \
-		docker compose -f docker-compose.prod.yml --env-file .env.prod down --rmi all --remove-orphans --volumes; \
-	else \
-		docker compose -f docker-compose.prod.yml --env-file .env.prod down --rmi all --remove-orphans; \
-	fi
-	# Prune dangling images and networks to fully clean up (keeps non-dangling volumes unless WITH_VOLUMES=1)
+prod-clean: ## stop prod, remove images and volumes (full cleanup)
+	@echo "Stopping prod and removing images + volumes..."
+	docker compose -f docker-compose.prod.yml --env-file .env.prod down --rmi all --remove-orphans --volumes
 	docker image prune -f
 	docker network prune -f
 
