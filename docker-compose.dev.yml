@@ -21,6 +21,7 @@ services:
       - '3000:3000' # Backend API server
     command: sleep infinity
 
+
 volumes:
   sqlite-data:
   node_modules_cache:
