@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vites
 import { buildApp } from '../src/app.js';
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../src/utils/prisma.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 let server: FastifyInstance;
 
@@ -204,6 +206,114 @@ describe('OAuth Module', () => {
       // Clean up
       await prisma.user.deleteMany({ where: { email: profileWithoutName.email } });
     });
+
+    describe('Google profile picture download', () => {
+      const profileWithPicture = {
+        sub: 'google-with-picture-id',
+        email: 'withpicture@gmail.com',
+        name: 'Picture User',
+        picture: 'https://lh3.googleusercontent.com/a/test-picture',
+      };
+
+      beforeEach(async () => {
+        // Clean up test user
+        const user = await prisma.user.findUnique({
+          where: { email: profileWithPicture.email },
+        });
+        if (user) {
+          // Delete avatar files
+          const avatarDir = path.join('/app/data/avatars', user.id);
+          await fs.rm(avatarDir, { recursive: true, force: true }).catch(() => {});
+          await prisma.user.delete({ where: { id: user.id } });
+        }
+      });
+
+      afterAll(async () => {
+        // Clean up
+        const user = await prisma.user.findUnique({
+          where: { email: profileWithPicture.email },
+        });
+        if (user) {
+          const avatarDir = path.join('/app/data/avatars', user.id);
+          await fs.rm(avatarDir, { recursive: true, force: true }).catch(() => {});
+          await prisma.user.delete({ where: { id: user.id } });
+        }
+      });
+
+      it('should create user without avatar when picture download fails', async () => {
+        const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
+
+        // Mock fetch to fail
+        global.fetch = vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+        });
+
+        const user = await upsertOAuthUser(profileWithPicture);
+
+        // User should still be created, just without avatar
+        expect(user.id).toBeTruthy();
+        expect(user.email).toBe(profileWithPicture.email);
+        expect(user.avatarPath).toBeNull();
+      });
+
+      it('should not download picture when profile has no picture URL', async () => {
+        const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
+
+        const profileNoPicture = {
+          sub: 'google-no-picture-id',
+          email: 'nopicture@gmail.com',
+          name: 'No Picture User',
+          // No picture field
+        };
+
+        // Clean up
+        await prisma.user.deleteMany({ where: { email: profileNoPicture.email } });
+
+        global.fetch = vi.fn();
+
+        const user = await upsertOAuthUser(profileNoPicture);
+
+        expect(user.avatarPath).toBeNull();
+        // fetch should not have been called for picture download
+        // (it might be called 0 times or only for other purposes)
+
+        // Clean up
+        await prisma.user.deleteMany({ where: { email: profileNoPicture.email } });
+      });
+
+      it('should reject invalid image from Google (magic bytes check)', async () => {
+        const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
+
+        // Return fake "image" that's actually text
+        const fakeImage = Buffer.from('This is not a real image!');
+
+        global.fetch = vi.fn().mockResolvedValue({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(fakeImage.buffer),
+        });
+
+        const user = await upsertOAuthUser(profileWithPicture);
+
+        // User should be created but without avatar (invalid image rejected)
+        expect(user.id).toBeTruthy();
+        expect(user.avatarPath).toBeNull();
+      });
+
+      it('should handle network error during picture download', async () => {
+        const { upsertOAuthUser } = await import('../src/modules/oauth/oauth.service.js');
+
+        // Mock fetch to throw a network error
+        global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+        const user = await upsertOAuthUser(profileWithPicture);
+
+        // User should still be created, just without avatar
+        expect(user.id).toBeTruthy();
+        expect(user.email).toBe(profileWithPicture.email);
+        expect(user.avatarPath).toBeNull();
+      });
+    });
   });
 
   describe('OAuth routes', () => {
@@ -234,5 +344,199 @@ describe('OAuth Module', () => {
         expect(response.headers.location).toContain('/login');
       }
     );
+  });
+
+  describe('Google Profile Data Parsing', () => {
+    beforeEach(() => {
+      // Mock global fetch
+      global.fetch = vi.fn();
+    });
+
+    it('should parse valid Google profile with all fields', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const mockProfile = {
+        sub: 'google-user-123',
+        email: 'user@gmail.com',
+        email_verified: true,
+        name: 'John Doe',
+        given_name: 'John',
+        family_name: 'Doe',
+        picture: 'https://lh3.googleusercontent.com/a/default-user',
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result).toEqual(mockProfile);
+      expect(result.sub).toBe('google-user-123');
+      expect(result.email).toBe('user@gmail.com');
+      expect(result.email_verified).toBe(true);
+      expect(result.picture).toBe('https://lh3.googleusercontent.com/a/default-user');
+    });
+
+    it('should parse Google profile without optional fields', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const mockProfile = {
+        sub: 'google-user-456',
+        email: 'another@gmail.com',
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result.sub).toBe('google-user-456');
+      expect(result.email).toBe('another@gmail.com');
+      expect(result.email_verified).toBeUndefined();
+      expect(result.name).toBeUndefined();
+      expect(result.picture).toBeUndefined();
+    });
+
+    it('should handle unverified email from Google', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const mockProfile = {
+        sub: 'google-user-789',
+        email: 'unverified@gmail.com',
+        email_verified: false,
+        name: 'Test User',
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result.email_verified).toBe(false);
+    });
+
+    it('should send correct authorization header', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const mockProfile = {
+        sub: 'google-user-xyz',
+        email: 'test@gmail.com',
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      await fetchGoogleProfile('test-token-123');
+
+      expect(vi.mocked(global.fetch)).toHaveBeenCalledWith(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: {
+            Authorization: 'Bearer test-token-123',
+          },
+        }
+      );
+    });
+
+    it('should throw error when Google API returns error', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+      } as Response);
+
+      await expect(fetchGoogleProfile('invalid-token')).rejects.toThrow(
+        'Failed to fetch Google profile'
+      );
+    });
+
+    it('should handle profile with special characters in name', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const mockProfile = {
+        sub: 'google-user-special',
+        email: 'special@gmail.com',
+        name: 'José García-López',
+        picture: 'https://lh3.googleusercontent.com/a/special-user',
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result.name).toBe('José García-López');
+    });
+
+    it('should preserve picture URL exactly as provided by Google', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const pictureUrl = 'https://lh3.googleusercontent.com/a/AGNmyxZ1234567890abcdefghijk=s96-c';
+
+      const mockProfile = {
+        sub: 'google-user-pic',
+        email: 'pic@gmail.com',
+        picture: pictureUrl,
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result.picture).toBe(pictureUrl);
+    });
+
+    it('should handle empty string name', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const mockProfile = {
+        sub: 'google-user-empty',
+        email: 'empty@gmail.com',
+        name: '',
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result.name).toBe('');
+    });
+
+    it('should handle very long email addresses', async () => {
+      const { fetchGoogleProfile } = await import('../src/modules/oauth/oauth.service.js');
+
+      const longEmail = 'a'.repeat(60) + '@gmail.com';
+
+      const mockProfile = {
+        sub: 'google-user-long-email',
+        email: longEmail,
+      };
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockProfile,
+      } as Response);
+
+      const result = await fetchGoogleProfile('mock-access-token');
+
+      expect(result.email).toBe(longEmail);
+    });
   });
 });
