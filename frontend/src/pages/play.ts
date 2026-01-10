@@ -438,7 +438,7 @@ function setupPlayPageEvents(): void {
 
   // Mode selection
   const localGameBtn = document.getElementById('local-game-btn');
-  const GameVersusBotBtn = document.getElementById('bot-opponent-btn');
+  const botOpponentBtn = document.getElementById('bot-opponent-btn');
   const tournamentBtn = document.getElementById('tournament-btn');
 
   // Remote game buttons
