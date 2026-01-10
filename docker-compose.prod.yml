@@ -10,7 +10,7 @@ services:
       - '443:443' # HTTPS
       - '80:80' # HTTP (redirects to HTTPS)
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
@@ -40,9 +40,9 @@ services:
       # Required secrets - set these before running!
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
       # OAuth (optional - only if using Google login)
+      # Note: OAUTH_CALLBACK_URI is auto-detected from request host
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - OAUTH_CALLBACK_URI=${OAUTH_CALLBACK_URI:-https://mooo.com/api/oauth/google/callback}
       # Two-Factor Authentication (optional)
       - TWO_FACTOR_ENCRYPTION_KEY=${TWO_FACTOR_ENCRYPTION_KEY:-}
       # Blockchain (optional)
