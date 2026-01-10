@@ -7,10 +7,12 @@ services:
     container_name: ft_transcendence-caddy
     restart: unless-stopped
     ports:
-      - '443:443' # HTTPS
-      - '80:80' # HTTP (redirects to HTTPS)
+      # Use unprivileged ports (no root required)
+      # Access via https://localhost:8443 or https://mooo.com:8443
+      - '8443:443' # HTTPS
+      - '8080:80' # HTTP (redirects to HTTPS)
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
@@ -21,14 +23,14 @@ services:
   app:
     container_name: ft_transcendence-prod
     # Pre-built image from GitHub Actions CI
-    image: ghcr.io/talkashi1111/ft_transcendence:latest
+    # image: ghcr.io/talkashi1111/ft_transcendence:latest
     # Always pull latest image from registry (see: https://docs.docker.com/reference/compose-file/services/#pull_policy)
     pull_policy: always
     # To build locally instead: uncomment build section and set pull_policy to 'build'
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    #   target: production
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
     restart: unless-stopped
     volumes:
       - sqlite-data:/app/data
@@ -40,9 +42,9 @@ services:
       # Required secrets - set these before running!
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
       # OAuth (optional - only if using Google login)
+      # Note: OAUTH_CALLBACK_URI is auto-detected from request host
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - OAUTH_CALLBACK_URI=${OAUTH_CALLBACK_URI:-https://mooo.com/api/oauth/google/callback}
       # Two-Factor Authentication (optional)
       - TWO_FACTOR_ENCRYPTION_KEY=${TWO_FACTOR_ENCRYPTION_KEY:-}
       # Blockchain (optional)

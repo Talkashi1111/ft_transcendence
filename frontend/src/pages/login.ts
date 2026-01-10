@@ -205,6 +205,20 @@ function setupLoginForm(onLoginSuccess: () => void): void {
     window.history.replaceState({}, '', '/login');
   }
 
+  // Check for OAuth error in URL
+  const oauthError = urlParams.get('error');
+  if (oauthError) {
+    const errorMessages: Record<string, string> = {
+      oauth_host_not_allowed: 'OAuth failed: This host is not allowed. Contact administrator.',
+      oauth_state_mismatch: 'OAuth failed: Session expired or invalid. Please try again.',
+      oauth_missing_code: 'OAuth failed: Authorization was cancelled or denied.',
+      oauth_token_failed: 'OAuth failed: Could not complete authentication with Google.',
+      oauth_callback_failed: 'OAuth failed: An error occurred during login. Please try again.',
+    };
+    showError(errorMessages[oauthError] || 'OAuth login failed. Please try again.');
+    window.history.replaceState({}, '', '/login');
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError();

@@ -351,9 +351,16 @@ async function renderNavBar(
 
   // Get user info if authenticated
   let userAlias = '';
+  let avatarUrl = '';
+  let userId = '';
   if (isAuth) {
     const user = await getCurrentUser();
     userAlias = user?.alias || '';
+    userId = user?.id || '';
+    // Build avatar URL with cache-busting timestamp
+    if (userId) {
+      avatarUrl = `/api/users/${userId}/avatar?t=${Date.now()}`;
+    }
   }
 
   return `
@@ -394,10 +401,24 @@ async function renderNavBar(
                   ${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                 </span>
               </button>
-              <!-- User with Online Indicator -->
-              <span class="flex items-center text-sm text-gray-600 px-2">
-                <span id="online-indicator" class="w-2.5 h-2.5 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
-                <span class="text-gray-400 mr-1">👤</span>
+              <!-- User with Avatar and Online Indicator -->
+              <span class="flex items-center text-sm text-gray-600 px-2 gap-2">
+                <span id="online-indicator" class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
+                ${
+                  avatarUrl
+                    ? `
+                  <img
+                    id="nav-user-avatar"
+                    src="${avatarUrl}"
+                    alt="Profile"
+                    class="w-6 h-6 rounded-full object-cover border border-gray-300 hover:border-blue-500 transition cursor-pointer"
+                    title="View profile"
+                  />
+                `
+                    : `
+                  <span class="text-gray-400">👤</span>
+                `
+                }
                 <span id="nav-user-alias" class="font-medium">${userAlias}</span>
               </span>
               <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
@@ -518,6 +539,7 @@ function setupNavigation() {
   const registerBtn = document.getElementById('nav-register');
   const logoutBtn = document.getElementById('nav-logout');
   const notificationsBtn = document.getElementById('nav-notifications');
+  const avatarImg = document.getElementById('nav-user-avatar');
 
   homeBtn?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => navigate('play'));
@@ -529,6 +551,9 @@ function setupNavigation() {
 
   // Clicking notification bell navigates to friends page (notifications tab)
   notificationsBtn?.addEventListener('click', () => navigate('friends'));
+
+  // Clicking avatar image navigates to settings
+  avatarImg?.addEventListener('click', () => navigate('settings'));
 
   logoutBtn?.addEventListener('click', async () => {
     // Check if in an active game - show confirmation first

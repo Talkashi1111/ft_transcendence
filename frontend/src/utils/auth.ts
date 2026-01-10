@@ -292,3 +292,60 @@ export async function verify2FA(code: string): Promise<void> {
     throw new Error(errorData.error || errorData.message || 'Invalid verification code');
   }
 }
+
+// ============================================================================
+// Avatar Functions
+// ============================================================================
+
+interface UploadAvatarResponse {
+  success: boolean;
+  message: string;
+  avatarUrl: string;
+}
+
+/**
+ * Upload avatar image
+ * @param file - Image file to upload
+ */
+export async function uploadAvatar(file: File): Promise<UploadAvatarResponse> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const response = await fetch('/api/users/me/avatar', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to upload avatar');
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete current user's avatar (reverts to default)
+ */
+export async function deleteAvatar(): Promise<void> {
+  const response = await fetch('/api/users/me/avatar', {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to delete avatar');
+  }
+}
+
+/**
+ * Get avatar URL for a user
+ * @param userId - User ID
+ * @param timestamp - Optional timestamp for cache busting
+ */
+export function getAvatarUrl(userId: string, timestamp?: number): string {
+  const base = `/api/users/${userId}/avatar`;
+  return timestamp ? `${base}?t=${timestamp}` : base;
+}

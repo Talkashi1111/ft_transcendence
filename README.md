@@ -9,12 +9,21 @@ This project is about creating a website for the mighty Pong contest.
 - **Pong Game**: Classic Pong gameplay experience with local and remote multiplayer.
   - Local 1v1 and Tournament modes (no login required)
   - Remote 1v1 via WebSocket (login required)
+  - Server-side pong with authoritative game state
   - Real-time match list updates via shared WebSocket connection
+  - Remote player matchmaking and synchronization
+- **REST API**: Comprehensive RESTful API for user management, authentication, and game data.
 - **Authentication**: Secure login with JWT and Google OAuth.
 - **Security**:
   - Two-Factor Authentication (2FA) support via TOTP (Google Authenticator).
   - HttpOnly cookies for session management.
 - **Blockchain**: Tournament scores recorded on Avalanche Fuji testnet.
+- **Social Features**: Friends system and real-time notifications.
+- **Development Environment**:
+  - DevContainer setup for consistent development environment across team members
+  - Automated dependency management and setup
+  - CI/CD pipeline using GitHub Actions for automated testing and deployment
+  - Comprehensive unit testing for frontend, backend, and blockchain components
 
 ## 🚀 Quick Start
 
@@ -131,19 +140,14 @@ Modifying files from the host machine will not be possible. Update the `.env` fi
 
     _(Or just use `:443` to accept all traffic)_
 
-3.  **Update Backend Configuration**:
-    Update the `OAUTH_CALLBACK_URI` in your production `.env` file (or `.env` if running in dev mode) to use the IP address instead of `mooo.com`.
-
-    ```bash
-    OAUTH_CALLBACK_URI=https://<YOUR_IP_ADDRESS>/api/oauth/google/callback
-    ```
-
-4.  **Update Google Cloud Console**:
+3.  **Update Google Cloud Console**:
     Go to your Google Cloud Console credentials and add the IP-based URLs:
     - **Authorized JavaScript origins**: `https://<YOUR_IP_ADDRESS>`
     - **Authorized redirect URIs**: `https://<YOUR_IP_ADDRESS>/api/oauth/google/callback`
 
-5.  **Connect**:
+    > **Note:** The backend automatically builds the callback URI from the request host, so no `.env` changes are needed.
+
+4.  **Connect**:
     On the other computers, simply open the browser and go to `https://<YOUR_IP_ADDRESS>`. You will see a security warning (because of the self-signed certificate), which you can accept/bypass.
 
 **Alternative (Magic DNS):**
@@ -255,8 +259,11 @@ Access from other IPs is blocked for security.
 
 **OAuth not working with HTTPS:**
 
-- Update `OAUTH_CALLBACK_URI` in `backend/.env` to use `https://`
-- Update Google Cloud Console with HTTPS redirect URIs
+- The backend automatically detects the protocol from the request
+- Ensure all callback URIs are registered in Google Cloud Console:
+  - `http://localhost:5173/api/oauth/google/callback` (dev)
+  - `https://localhost/api/oauth/google/callback` (prod local)
+  - `https://mooo.com/api/oauth/google/callback` (prod remote)
 
 **Can't access from other devices:**
 
@@ -273,8 +280,7 @@ ft_transcendence/
 ├── frontend/          # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
 ├── backend/           # Fastify + Prisma + SQLite + JWT auth
 ├── blockchain/        # Hardhat + Solidity + Avalanche
-├── caddy/             # Caddy reverse proxy configuration
-│   ├── Caddyfile      # Routing and TLS configuration
+├── Caddyfile          # Caddy reverse proxy, routing and TLS configuration
 ├── data/              # SQLite database (persistent volume)
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
@@ -609,16 +615,15 @@ make migrate-reset
 # 1. Verify OAuth credentials in backend/.env
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
-OAUTH_CALLBACK_URI=http://localhost:5173/api/oauth/google/callback
 
-# 2. Check Google Cloud Console settings:
-#    - Authorized JavaScript origins: http://localhost:5173
-#    - Authorized redirect URIs: http://localhost:5173/api/oauth/google/callback
+# 2. The backend automatically builds callback URIs from the request host.
+#    Make sure ALL these URIs are registered in Google Cloud Console:
+#    - http://localhost:5173/api/oauth/google/callback  (dev)
+#    - https://localhost/api/oauth/google/callback      (prod local)
+#    - https://mooo.com/api/oauth/google/callback       (prod remote)
 
-# 3. For production, update:
-#    - oauth.route.ts line 123 redirect URL to your production domain
-#    - OAUTH_CALLBACK_URI in production .env
-#    - Google Cloud Console with production URIs
+# 3. If using a custom IP/domain, also add:
+#    - https://<YOUR_IP_OR_DOMAIN>/api/oauth/google/callback
 ```
 
 ### Port Already in Use

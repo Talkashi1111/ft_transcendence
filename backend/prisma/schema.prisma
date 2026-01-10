@@ -21,6 +21,11 @@ model User {
   twoFactorSecret   String?           // TOTP secret (AES-256-GCM encrypted)
   twoFactorEnabled  Boolean @default(false)
 
+  // Avatar
+  avatarPath      String?   // Relative path to avatar file (e.g., "avatars/userId/avatar-uuid.jpg")
+  avatarMimeType  String?   // MIME type (e.g., "image/jpeg")
+  avatarUpdatedAt DateTime? // For cache busting
+
   // Online status
   lastSeenAt DateTime? // Updated when user disconnects from WebSocket
 
