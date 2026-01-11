@@ -1,4 +1,5 @@
 import { login, verify2FA } from '../utils/auth';
+import { t } from '../i18n/i18n';
 
 export async function renderLoginPage(
   app: HTMLElement,
@@ -14,19 +15,19 @@ export async function renderLoginPage(
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-md mx-auto">
           <div class="bg-white rounded-lg shadow-lg p-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Login</h2>
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">${t('login.title')}</h2>
 
             <form id="login-form" class="space-y-4" role="form" aria-label="Login form">
               <!-- Email field -->
               <div>
                 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                  Email
+                ${t('login.email.label')}
                 </label>
                 <input
                   type="email"
                   id="email"
                   name="email"
-                  placeholder="your@email.com"
+                  placeholder="${t('login.email.placeholder')}"
                   required
                   aria-required="true"
                   aria-label="Email address"
@@ -38,13 +39,13 @@ export async function renderLoginPage(
               <!-- Password field -->
               <div>
                 <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-                  Password
+                ${t('login.password.label')}
                 </label>
                 <input
                   type="password"
                   id="password"
                   name="password"
-                  placeholder="Enter your password"
+                  placeholder="${t('login.password.placeholder')}"
                   required
                   aria-required="true"
                   aria-label="Password"
@@ -65,7 +66,7 @@ export async function renderLoginPage(
                 aria-label="Login to your account"
                 class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Login
+              ${t('login.button.login')}
               </button>
             </form>
 
@@ -111,7 +112,7 @@ export async function renderLoginPage(
             <!-- Divider -->
             <div class="mt-6 flex items-center">
               <div class="flex-grow border-t border-gray-300"></div>
-              <span class="px-3 text-sm text-gray-500">or</span>
+              <span class="px-3 text-sm text-gray-500">${t('login.divider.or')}</span>
               <div class="flex-grow border-t border-gray-300"></div>
             </div>
 
@@ -127,14 +128,14 @@ export async function renderLoginPage(
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Continue with Google
+              ${t('login.button.google')}
             </a>
 
             <!-- Link to registration -->
             <div class="mt-6 text-center text-sm text-gray-600">
-              Don't have an account?
+              ${t('login.text.no_account')}
               <button id="register-link" class="text-blue-600 hover:text-blue-700 font-semibold">
-                Register here
+                ${t('login.link.register')}
               </button>
             </div>
           </div>
