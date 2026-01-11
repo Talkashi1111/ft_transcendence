@@ -15,7 +15,7 @@ export interface TournamentScores$Type {
   readonly deployedLinkReferences: {};
   readonly immutableReferences: {};
   readonly inputSourceName: "project/contracts/TournamentScores.sol";
-  readonly buildInfoId: "solc-0_8_28-23748ccd506e151aa789c664b9fbd570f0caa603";
+  readonly buildInfoId: "solc-0_8_28-8e44a4fdc623271e4b1f59020f2bff996fea1586";
 };
 
 import "hardhat/types/artifacts";
