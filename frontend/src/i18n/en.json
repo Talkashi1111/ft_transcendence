@@ -1,0 +1,5 @@
+{
+  "nav.home": "Home",
+  "nav.play": "Play",
+  "auth.invalid_credentials": "Invalid email or password."
+}
