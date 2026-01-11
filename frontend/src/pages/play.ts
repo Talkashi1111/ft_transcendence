@@ -9,6 +9,7 @@ import { escapeHtml } from '../utils/sanitize';
 import { isAuthenticated } from '../utils/auth';
 import { getWebSocketManager } from '../utils/websocket';
 import type { AvailableMatch } from '../utils/websocket';
+import { t } from '../i18n/i18n';
 
 // Constants
 const GAME_END_DELAY_MS = 2000; // Delay before showing result screen after game ends
@@ -59,54 +60,54 @@ export async function renderPlayPage(
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Mode Selection -->
         <div id="mode-selection" class="mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 mb-4">Play Pong</h2>
-          <p class="text-gray-600 mb-6">Choose a game mode to start playing</p>
+          <h2 class="text-3xl font-bold text-gray-900 mb-4">${t('play.title')}</h2>
+          <p class="text-gray-600 mb-6">${t('play.text')}</p>
 
           <!-- Local Games (No Login Required) -->
           <div class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">Local Play</h3>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">${t('play.local.label')}</h3>
             <div class="flex gap-4">
               <button id="local-game-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-                Local 1v1
+                ${t('play.local.button1')}
               </button>
               <button id="tournament-btn" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
-                Local Tournament
+                ${t('play.local.button2')}
               </button>
             </div>
           </div>
 
           <!-- Remote Games (Login Required) -->
           <div>
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">Remote Play</h3>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">${t('play.remote.label')}</h3>
             <div class="flex gap-4">
               <button id="remote-quickmatch-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Quick Match
+                ${t('play.remote.button1')}
               </button>
               <button id="remote-create-btn" class="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Create Match
+                ${t('play.remote.button2')}
               </button>
               <button id="remote-join-btn" class="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Join Match
+                ${t('play.remote.button3')}
               </button>
             </div>
-            <p id="remote-login-hint" class="text-sm text-gray-500 mt-2 hidden">Please log in to play remote games</p>
+            <p id="remote-login-hint" class="text-sm text-gray-500 mt-2 hidden">${t('play.remote.text')}</p>
           </div>
         </div>
 
         <!-- Game Setup Screen -->
         <div id="game-setup" class="hidden">
           <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Game Setup</h3>
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">${t('play.game_setup.title')}</h3>
 
             <div class="space-y-4">
               <div>
                 <label for="player1-alias" class="block text-sm font-medium text-gray-700 mb-2">
-                  Player 1 Alias
+                  ${t('play.game_setup.player1.alias.label')}
                 </label>
                 <input
                   type="text"
                   id="player1-alias"
-                  placeholder="Enter name..."
+                  placeholder="${t('play.game_setup.player1.alias.placeholder')}"
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -115,12 +116,12 @@ export async function renderPlayPage(
 
               <div>
                 <label for="player2-alias" class="block text-sm font-medium text-gray-700 mb-2">
-                  Player 2 Alias
+                  ${t('play.game_setup.player2.alias.label')}
                 </label>
                 <input
                   type="text"
                   id="player2-alias"
-                  placeholder="Enter name..."
+                  placeholder=" ${t('play.game_setup.player2.alias.placeholder')}"
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -128,20 +129,20 @@ export async function renderPlayPage(
               </div>
 
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 class="font-semibold text-blue-900 mb-2">Controls:</h4>
+                <h4 class="font-semibold text-blue-900 mb-2">${t('play.game_setup.controls.label')}</h4>
                 <div class="text-sm text-blue-800 space-y-1">
-                  <p><strong>Player 1:</strong> W (Up) / S (Down)</p>
-                  <p><strong>Player 2:</strong> ↑ (Up) / ↓ (Down)</p>
-                  <p><strong>Pause:</strong> SPACE or ESC</p>
+                  <p><strong>${t('play.game_setup.controls.player1.key')}</strong> ${t('play.game_setup.controls.player1.value')}</p>
+                  <p><strong>${t('play.game_setup.controls.player2.key')}</strong> ${t('play.game_setup.controls.player2.value')}</p>
+                  <p><strong>${t('play.game_setup.controls.pause.key')}</strong> ${t('play.game_setup.controls.pause.value')}</p>
                 </div>
               </div>
 
               <div class="flex gap-4">
                 <button id="start-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
-                  Start Game
+                  ${t('play.game_setup.button.start')}
                 </button>
                 <button id="back-to-mode-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Back
+                  ${t('play.game_setup.button.back')}
                 </button>
               </div>
             </div>
@@ -157,7 +158,7 @@ export async function renderPlayPage(
 
             <div class="flex gap-4">
               <button id="end-game-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                End Game
+                ${t('play.endgame.button')}
               </button>
             </div>
           </div>
@@ -166,18 +167,18 @@ export async function renderPlayPage(
         <!-- Game Result Screen -->
         <div id="result-screen" class="hidden">
           <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
-            <h3 class="text-3xl font-bold text-gray-900 mb-4">Game Over!</h3>
+            <h3 class="text-3xl font-bold text-gray-900 mb-4">${t('play.gameover.title')}</h3>
 
             <div class="mb-6">
               <p class="text-5xl font-bold text-blue-600 mb-4" id="winner-name">Winner</p>
               <div class="flex justify-center gap-8 text-2xl">
                 <div>
-                  <p class="text-gray-600" id="result-player1">Player 1</p>
+                  <p class="text-gray-600" id="result-player1">${t('play.player1.label')}</p>
                   <p class="font-bold text-gray-900" id="result-score1">0</p>
                 </div>
                 <div class="text-gray-400">-</div>
                 <div>
-                  <p class="text-gray-600" id="result-player2">Player 2</p>
+                  <p class="text-gray-600" id="result-player2">${t('play.player2.label')}</p>
                   <p class="font-bold text-gray-900" id="result-score2">0</p>
                 </div>
               </div>
@@ -185,10 +186,10 @@ export async function renderPlayPage(
 
             <div class="flex gap-4 justify-center">
               <button id="play-again-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-                Play Again
+                ${t('play.gameover.playagain.button')}
               </button>
               <button id="back-to-menu-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                Back to Menu
+                ${t('play.gameover.backtomenu.button')}
               </button>
             </div>
           </div>
@@ -1178,8 +1179,8 @@ function setupPlayPageEvents(): void {
 
   function handleRemoteGameEnd(winner: string, score1: number, score2: number): void {
     // Get player aliases from the last game state
-    const player1 = remoteGame?.getCurrentState()?.player1.alias || 'Player 1';
-    const player2 = remoteGame?.getCurrentState()?.player2.alias || 'Player 2';
+    const player1 = remoteGame?.getCurrentState()?.player1.alias || t('play.player1.label');
+    const player2 = remoteGame?.getCurrentState()?.player2.alias || t('play.player1.label');
 
     cleanupRemoteGame();
 
@@ -1409,7 +1410,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player1 = 'Player 1'; // Default name
+      player1 = t('play.player1.label'); // Default name
     }
 
     // Validate player 2 alias
@@ -1420,7 +1421,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player2 = 'Player 2'; // Default name
+      player2 = t('play.player2.label'); // Default name
     }
 
     // Check for duplicate names
@@ -1517,7 +1518,7 @@ function setupPlayPageEvents(): void {
     score2: number,
     isRemoteGame: boolean = false
   ): void {
-    if (winnerNameEl) winnerNameEl.textContent = `${winner} WINS!`;
+    if (winnerNameEl) winnerNameEl.textContent = t('play.gameover.winner', { winner });
     if (resultPlayer1El) resultPlayer1El.textContent = player1;
     if (resultScore1El) resultScore1El.textContent = score1.toString();
     if (resultPlayer2El) resultPlayer2El.textContent = player2;

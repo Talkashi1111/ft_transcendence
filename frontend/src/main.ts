@@ -365,26 +365,45 @@ async function renderNavBar(
     }
   }
   const lang = getLang();
+  const isDev = import.meta.env.DEV;
 
   return `
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
-            <div class="flex-shrink-0 flex items-center">
+            <div class="flex-shrink-0 flex items-center gap-2">
               <h1 class="text-2xl font-bold text-gray-900">ft_transcendence</h1>
+              ${
+                isDev
+                  ? `
+  <a
+    href="https://talkashi1111.github.io/ft_transcendence/"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="
+      text-xs font-semibold
+      text-red-600
+      visited:text-red-600
+      active:text-red-600
+      focus:text-red-600
+      border border-red-600
+      rounded px-2 py-0.5
+      hover:bg-red-100
+      focus:outline-none
+      transition
+    "
+    title="Use Ctrl/Cmd + click to open documentation in a background tab"
+    aria-label="Open project documentation (Ctrl or Cmd + click for background tab)"
+  >
+    DEV
+  </a>
+`
+                  : ''
+              }
             </div>
           </div>
           <div class="flex items-center space-x-4">
-            <select
-              id="nav-lang"
-              class="px-2 py-1 border border-gray-300 rounded-md text-sm bg-white"
-              aria-label="Language"
-              >
-              <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
-              <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
-              <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
-            </select>
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               ${t('nav.home')}
             </button>
@@ -439,11 +458,21 @@ async function renderNavBar(
             `
                 : `
               <button id="nav-login" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'login' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Login
+                ${t('nav.login')}
               </button>
               <button id="nav-register" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Register
+                ${t('nav.register')}
               </button>
+              <select
+                id="nav-lang"
+                class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:text-gray-900 hover:bg-gray-100 appearance-none"
+                aria-label="Language"
+                >
+                <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
+                <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
+                <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
+                <option value="de" ${lang === 'de' ? 'selected' : ''}>DE</option>
+              </select>
             `
             }
           </div>
@@ -463,7 +492,7 @@ async function renderHome(app: HTMLElement) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-2xl mx-auto">
           <div class="bg-white rounded-lg shadow-lg p-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Welcome</h2>
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">${t('home.welcome')}</h2>
 
             <div class="flex justify-center">
               <img
@@ -555,7 +584,7 @@ function setupNavigation() {
   const langSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
 
   langSelect?.addEventListener('change', () => {
-    setLang(langSelect.value as 'en' | 'fr' | 'ja');
+    setLang(langSelect.value as 'en' | 'fr' | 'ja' | 'de');
   });
 
   homeBtn?.addEventListener('click', () => navigate('home'));
