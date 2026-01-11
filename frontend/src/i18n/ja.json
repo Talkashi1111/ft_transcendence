@@ -1,0 +1,5 @@
+{
+  "nav.home": "ホーム",
+  "nav.play": "プレー",
+  "auth.invalid_credentials": "メールアドレスまたはパスワードが正しくありません。"
+}

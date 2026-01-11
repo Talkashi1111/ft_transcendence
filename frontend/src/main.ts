@@ -1,4 +1,6 @@
 import './index.css';
+import { onLangChange, getLang, setLang } from './i18n/i18n';
+import { t } from './i18n/i18n';
 import {
   renderPlayPage,
   cleanupPlayPage,
@@ -362,6 +364,7 @@ async function renderNavBar(
       avatarUrl = `/api/users/${userId}/avatar?t=${Date.now()}`;
     }
   }
+  const lang = getLang();
 
   return `
     <nav class="bg-white shadow-sm">
@@ -373,11 +376,20 @@ async function renderNavBar(
             </div>
           </div>
           <div class="flex items-center space-x-4">
+            <select
+              id="nav-lang"
+              class="px-2 py-1 border border-gray-300 rounded-md text-sm bg-white"
+              aria-label="Language"
+              >
+              <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
+              <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
+              <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
+            </select>
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Home
+              ${t('nav.home')}
             </button>
             <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Play
+              ${t('nav.play')}
             </button>
             ${
               isAuth
@@ -540,6 +552,11 @@ function setupNavigation() {
   const logoutBtn = document.getElementById('nav-logout');
   const notificationsBtn = document.getElementById('nav-notifications');
   const avatarImg = document.getElementById('nav-user-avatar');
+  const langSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
+
+  langSelect?.addEventListener('change', () => {
+    setLang(langSelect.value as 'en' | 'fr' | 'ja');
+  });
 
   homeBtn?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => navigate('play'));
@@ -740,6 +757,8 @@ document.addEventListener('DOMContentLoaded', () => {
       navigate(page);
     }
   }) as EventListener);
+
+  onLangChange(render);
 
   render();
 });
