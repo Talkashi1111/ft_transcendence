@@ -438,6 +438,7 @@ function setupPlayPageEvents(): void {
 
   // Mode selection
   const localGameBtn = document.getElementById('local-game-btn');
+  const gameVersusBotBtn = document.getElementById('bot-opponent-btn');
   const tournamentBtn = document.getElementById('tournament-btn');
 
   // Remote game buttons
@@ -1257,7 +1258,7 @@ function setupPlayPageEvents(): void {
   });
 
   // Event: Local GameVersusBot button
-  GameVersusBotBtn?.addEventListener('click', () => {
+  gameVersusBotBtn?.addEventListener('click', () => {
     showScreen(gameBotSetup!);
   });
 
@@ -1547,19 +1548,7 @@ function setupPlayPageEvents(): void {
   // Event: Start game vs Bot
   startBotGameBtn?.addEventListener('click', () => {
     lastGameMode = 'bot';
-    let player1 = player1AliasInput.value.trim();
-
-    hideInlineError(player1ErrorEl);
-
-    if (player1 !== '') {
-      const validation = validatePlayerAlias(player1);
-      if (!validation.valid) {
-        showInlineError(player1ErrorEl, validation.error || 'Invalid alias');
-        return;
-      }
-    } else {
-      player1 = 'Player 1';
-    }
+    const player1 = "Player";
 
     if (currentGame) {
       currentGame.destroy();

@@ -30,7 +30,7 @@ describe('BotPongGame', () => {
   beforeEach(() => {
     canvas = mockCanvas();
     vi.useFakeTimers();
-    // FIX: Mock Math.random to return 0.5.
+    // NOTE: Mock Math.random to return 0.5.
     // In the formula (random - 0.5), this results in 0 error offset.
     // This ensures the bot aims exactly for the true targetY.
     randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
