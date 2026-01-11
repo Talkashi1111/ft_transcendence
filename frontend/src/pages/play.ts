@@ -1513,7 +1513,7 @@ function setupPlayPageEvents(): void {
   // ============================================
   // Local Game Vs Bot
   // ============================================
-  let selectedBotLevel: BotLevel = BotLevel.LEVEL_1; //default
+  let selectedBotLevel: BotLevel = BotLevel.LEVEL_1; // default
   const availableLevels = Object.values(BotLevel);
   const getBotBtn = (level: number) => document.getElementById(`botlvl-${level}-btn`);
 
