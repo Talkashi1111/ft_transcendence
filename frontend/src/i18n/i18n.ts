@@ -52,11 +52,3 @@ export function t(key: string, params?: TParams): string {
     return value === undefined || value === null ? `{${p1}}` : String(value);
   });
 }
-
-// // ---- JSON dictionaries + t() ----
-// const dicts: Record<Lang, Record<string, string>> = { en, fr, ja, de };
-
-// export function t(key: string): string {
-//   const lang = getLang();
-//   return dicts[lang]?.[key] ?? dicts.en[key] ?? key;
-// }

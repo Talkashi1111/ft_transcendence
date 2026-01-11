@@ -65,7 +65,7 @@
   "register.password.label": "Mot de passe",
   "register.password.placeholder": "Créer un mot de passe",
   "register.password.text": "Minimum 8 caractères",
-  "register.button.login": "Se connecter",
+  "register.button.register": "S'inscrire",
   "register.divider.or": "ou",
   "register.button.google": "S’inscrire avec Google",
   "register.text.account_holder": "Vous avez déjà un compte ?",
