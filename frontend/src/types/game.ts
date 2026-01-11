@@ -87,4 +87,4 @@ export const BotLevel = {
   LEVEL_4: 4,
 } as const;
 
-export type BotLevel = typeof BotLevel[keyof typeof BotLevel];
+export type BotLevel = (typeof BotLevel)[keyof typeof BotLevel];

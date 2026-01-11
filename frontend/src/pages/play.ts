@@ -1518,7 +1518,7 @@ function setupPlayPageEvents(): void {
   const getBotBtn = (level: number) => document.getElementById(`botlvl-${level}-btn`);
 
   function updateBotLevelSelection() {
-    availableLevels.forEach(level => {
+    availableLevels.forEach((level) => {
       const btn = getBotBtn(level);
       if (!btn) return;
 
@@ -1533,7 +1533,7 @@ function setupPlayPageEvents(): void {
   }
 
   // Event listeners for bot level buttons
-  availableLevels.forEach(level => {
+  availableLevels.forEach((level) => {
     const btn = getBotBtn(level);
     if (btn) {
       btn.addEventListener('click', () => {
@@ -1548,7 +1548,7 @@ function setupPlayPageEvents(): void {
   // Event: Start game vs Bot
   startBotGameBtn?.addEventListener('click', () => {
     lastGameMode = 'bot';
-    const player1 = "Player";
+    const player1 = 'Player';
 
     if (currentGame) {
       currentGame.destroy();

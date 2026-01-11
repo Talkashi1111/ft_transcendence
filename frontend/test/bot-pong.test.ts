@@ -4,7 +4,8 @@ import { BotPongGame } from '../src/game/bot-pong';
 import { BotLevel } from '../src/types/game';
 import { GAME_CONFIG } from '../src/game/config';
 
-const mockCanvas = () => { // creates a "fake" canvas that tricks your game into thinking it is running in a browser
+const mockCanvas = () => {
+  // creates a "fake" canvas that tricks your game into thinking it is running in a browser
   const canvas = document.createElement('canvas');
   canvas.getContext = vi.fn().mockReturnValue({
     fillStyle: '',
@@ -58,19 +59,19 @@ describe('BotPongGame', () => {
 
       // 2. Simulate P1 pressing "UP" (W key)
       const upSpy = vi.spyOn(inputHandler, 'isPlayer1UpPressed').mockReturnValue(true);
-      
+
       runBotFrame(game);
       expect(p1Paddle.y).toBeLessThan(initialY); // Y decreases when going Up
 
       // 3. Reset and simulate P1 pressing "DOWN" (S key)
       upSpy.mockReturnValue(false);
       const downSpy = vi.spyOn(inputHandler, 'isPlayer1DownPressed').mockReturnValue(true);
-      
+
       // Capture new position before moving down
       const currentY = p1Paddle.y;
       runBotFrame(game);
       expect(p1Paddle.y).toBeGreaterThan(currentY); // Y increases when going Down
-      
+
       // Cleanup
       downSpy.mockRestore();
     });
@@ -114,7 +115,7 @@ describe('BotPongGame', () => {
     it('should move up if ball is above paddle', () => {
       game = new BotPongGame(canvas, 'P1', BotLevel.LEVEL_2);
       const state = game.getGameState();
-      
+
       state.player2.paddle.y = 300;
       state.ball.y = 100;
 
@@ -124,13 +125,13 @@ describe('BotPongGame', () => {
     it('should move down if ball is below paddle', () => {
       game = new BotPongGame(canvas, 'P1', BotLevel.LEVEL_2);
       const state = game.getGameState();
-      
+
       // Setup: Paddle in middle (y=300, center=350), Ball below (y=500)
       state.player2.paddle.y = 300;
       state.ball.y = 500;
-      
+
       runBotFrame(game);
-      
+
       // Paddle should move DOWN (y increases)
       expect(state.player2.paddle.y).toBeGreaterThan(300);
     });
@@ -140,18 +141,18 @@ describe('BotPongGame', () => {
     it('should only update decision once per second', () => {
       // Ensure we start with a known time so the first frame triggers the update
       vi.setSystemTime(10000);
-      
+
       game = new BotPongGame(canvas, 'P1', BotLevel.LEVEL_3);
       const state = game.getGameState();
 
       state.ball.velocityX = 5; // Move towards bot
-      state.ball.y = 100;       // Target is TOP
+      state.ball.y = 100; // Target is TOP
       state.player2.paddle.y = 500; // Paddle is BOTTOM
 
       // Frame 1: Trigger update. Target becomes ~100.
       runBotFrame(game);
       const positionAfterFrame1 = state.player2.paddle.y;
-      
+
       // Verify it moved UP
       expect(positionAfterFrame1).toBeLessThan(500);
 
@@ -180,7 +181,7 @@ describe('BotPongGame', () => {
       // 2. Setup Scenario: Ball moving AWAY from bot (Left)
       // This causes predictBallY to return null, triggering the 'else' block
       state.ball.velocityX = -5;
-      
+
       // 3. Place paddle at the top (y=0) so we can clearly see it move down
       state.player2.paddle.y = 0;
 
@@ -239,7 +240,7 @@ describe('BotPongGame', () => {
 
       // 4. Verify the Behavior (Should match Level 1 - Patrol)
       const paddle = game.getGameState().player2.paddle;
-      
+
       // Force paddle to top edge -> Should move DOWN
       paddle.y = 0;
       runBotFrame(game);

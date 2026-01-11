@@ -311,6 +311,7 @@ describe('Play Page', () => {
       expect(localGameVersusBotBtn).toBeTruthy();
       expect(tournamentBtn).toBeTruthy();
       expect(localGameBtn?.textContent).toContain('Local 1v1');
+      expect(localGameVersusBotBtn?.textContent).toContain('1vBot');
       expect(tournamentBtn?.textContent).toContain('Local Tournament');
     });
 

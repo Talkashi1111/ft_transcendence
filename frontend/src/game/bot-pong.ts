@@ -31,7 +31,9 @@ export class BotPongGame extends PongGame {
         this.runBotStrategy = this.godLikeBot;
         break;
       default:
-        console.warn(`[BotPong] Unknown BotLevel "${selectedLevel}". Defaulting to Patrol strategy.`);
+        console.warn(
+          `[BotPong] Unknown BotLevel "${selectedLevel}". Defaulting to Patrol strategy.`
+        );
         this.runBotStrategy = this.patrolBot;
         break;
     }
@@ -119,7 +121,7 @@ export class BotPongGame extends PongGame {
     // --- PHASE 2 : Action ---
     if (this.targetY !== null) {
       const paddleCenter = paddle.y + paddle.height / 2;
-      
+
       if (Math.abs(paddleCenter - this.targetY) > 10) {
         movePaddle(paddle, paddleCenter < this.targetY ? 'down' : 'up');
       }
@@ -137,7 +139,7 @@ export class BotPongGame extends PongGame {
       this.cachedImpactY = null;
       const center = GAME_CONFIG.canvasHeight / 2;
       const paddleCenter = paddle.y + paddle.height / 2;
-      
+
       if (Math.abs(paddleCenter - center) > 5) {
         movePaddle(paddle, paddleCenter < center ? 'down' : 'up');
       }
@@ -148,27 +150,30 @@ export class BotPongGame extends PongGame {
     if (this.cachedImpactY === null) {
       this.cachedImpactY = predictBallY(ball, paddle.x);
     }
-    
+
     const impactY = this.cachedImpactY;
-    
+
     // Fallback if prediction failed (should not happen if velocity > 0)
     if (impactY === null) return;
-    
+
     // Offensive Logic: Aim away from opponent
     const player1Center = player1Paddle.y + player1Paddle.height / 2;
     const screenCenter = GAME_CONFIG.canvasHeight / 2;
     // If opponent is below center, we aim top. If above center, we aim bottom.
-    const targetY = (player1Center > screenCenter) ? GAME_CONFIG.ballRadius : GAME_CONFIG.canvasHeight - GAME_CONFIG.ballRadius;
+    const targetY =
+      player1Center > screenCenter
+        ? GAME_CONFIG.ballRadius
+        : GAME_CONFIG.canvasHeight - GAME_CONFIG.ballRadius;
 
     const distanceX = Math.abs(paddle.x - (player1Paddle.x + player1Paddle.width));
     const deltaY = targetY - impactY; // Difference between target and ball's future impact on bot paddle
-    
+
     // Max slope is about 1.0 (45 degrees defined in physics.ts). If we ask for too much, we saturate at the maximum possible (-1 or 1)
     let requiredSlope = deltaY / distanceX;
     requiredSlope = Math.max(-1, Math.min(1, requiredSlope));
 
-    const desiredHitPos = (requiredSlope / 2) + 0.5;
-    const targetPaddleY = impactY - (paddle.height * desiredHitPos);
+    const desiredHitPos = requiredSlope / 2 + 0.5;
+    const targetPaddleY = impactY - paddle.height * desiredHitPos;
 
     if (Math.abs(paddle.y - targetPaddleY) > 5) {
       movePaddle(paddle, paddle.y < targetPaddleY ? 'down' : 'up');
