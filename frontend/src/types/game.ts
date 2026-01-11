@@ -79,3 +79,12 @@ export interface Match {
   createdAt: string;
   startedAt: string | null;
 }
+
+export const BotLevel = {
+  LEVEL_1: 1,
+  LEVEL_2: 2,
+  LEVEL_3: 3,
+  LEVEL_4: 4,
+} as const;
+
+export type BotLevel = (typeof BotLevel)[keyof typeof BotLevel];

@@ -103,3 +103,86 @@ export function movePaddle(paddle: Paddle, direction: 'up' | 'down'): void {
     paddle.y = Math.min(GAME_CONFIG.canvasHeight - paddle.height, paddle.y + paddle.speed);
   }
 }
+
+/**
+ * Predicts where the ball will be vertically (y) when it reaches a specific horizontal coordinate (targetX).
+ * Simulates wall bounces instantly.
+ */
+export function predictBallY(ball: Ball, targetX: number): number | null {
+  // 1. Safety checks. If ball is not moving horizontally, it will never reach targetX
+  if (Math.abs(ball.velocityX) < 0.01) {
+    return null;
+  }
+
+  // Check direction: if ball is moving AWAY from target, return null. If target is to the right (> ball.x) but ball moves left (< 0) -> Impossible
+  if (targetX > ball.x && ball.velocityX < 0) return null;
+  if (targetX < ball.x && ball.velocityX > 0) return null;
+
+  // 2. Simulation variables (copied to not mutate the real ball)
+  let currentX = ball.x;
+  let currentY = ball.y;
+  let velocityY = ball.velocityY;
+  const velocityX = ball.velocityX;
+
+  const radius = ball.radius;
+  const canvasHeight = GAME_CONFIG.canvasHeight;
+
+  // 3. Iterative calculation (Raycasting with bounces)
+  // We advance step by step: from current pos -> next wall hit -> next wall hit -> target
+
+  // Safety break to prevent infinite loops (max 10 bounces is plenty for Pong)
+  let iterations = 0;
+  const maxIterations = 20;
+
+  while ((velocityX > 0 && currentX < targetX) || (velocityX < 0 && currentX > targetX)) {
+    if (iterations++ > maxIterations) break;
+
+    const distRemainingX = targetX - currentX;
+
+    // If moving purely horizontal (vy=0), we go straight to target
+    if (Math.abs(velocityY) < 0.01) {
+      return currentY;
+    }
+
+    // Determine distance to the next HORIZONTAL wall (i.e. top or bottom) based on current vertical direction
+    let distToWallY: number;
+    if (velocityY > 0) {
+      // Moving down: target is bottom wall (height - radius)
+      distToWallY = canvasHeight - radius - currentY;
+    } else {
+      distToWallY = currentY - radius;
+    }
+
+    // Calculate time to hit that wall
+    // time = distance / speed
+    const timeToWall = distToWallY / Math.abs(velocityY);
+
+    // Calculate how much X distance we travel during that time
+    const distToWallX = Math.abs(velocityX * timeToWall);
+
+    // CHECK: Will we hit the wall before reaching the target X?
+    if (distToWallX < Math.abs(distRemainingX)) {
+      // YES: We hit the wall first
+      // Advance simulation to the collision point
+      currentX += velocityX > 0 ? distToWallX : -distToWallX;
+
+      // Y is now exactly at the wall limit
+      currentY = velocityY > 0 ? canvasHeight - radius : radius;
+
+      // Bounce! (Flip vertical velocity)
+      velocityY = -velocityY;
+    } else {
+      // We reach the target X before hitting the wall
+      // Calculate time to reach target
+      const timeToTarget = Math.abs(distRemainingX / velocityX);
+
+      // Advance Y to the final position
+      currentY += velocityY * timeToTarget;
+
+      // We arrived
+      return currentY;
+    }
+  }
+
+  return currentY;
+}

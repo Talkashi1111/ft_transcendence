@@ -7,7 +7,7 @@ export const GAME_CONFIG: GameConfig = {
   paddleHeight: 100,
   paddleSpeed: 6,
   ballRadius: 8,
-  ballInitialSpeed: 5,
+  ballInitialSpeed: 5, // Unit: pixels per frame
   ballMaxSpeed: 12,
   maxScore: 11,
   fps: 60,
