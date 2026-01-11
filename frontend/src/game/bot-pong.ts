@@ -31,6 +31,7 @@ export class BotPongGame extends PongGame {
         this.runBotStrategy = this.godLikeBot;
         break;
       default:
+        console.warn(`[BotPong] Unknown BotLevel "${selectedLevel}". Defaulting to Patrol strategy.`);
         this.runBotStrategy = this.patrolBot;
         break;
     }

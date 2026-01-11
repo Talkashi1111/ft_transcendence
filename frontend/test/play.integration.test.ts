@@ -304,9 +304,11 @@ describe('Play Page', () => {
   describe('Mode Selection Screen', () => {
     it('should show local game buttons', () => {
       const localGameBtn = container.querySelector('#local-game-btn');
+      const localGameVersusBotBtn = container.querySelector('#bot-opponent-btn');
       const tournamentBtn = container.querySelector('#tournament-btn');
 
       expect(localGameBtn).toBeTruthy();
+      expect(localGameVersusBotBtn).toBeTruthy();
       expect(tournamentBtn).toBeTruthy();
       expect(localGameBtn?.textContent).toContain('Local 1v1');
       expect(tournamentBtn?.textContent).toContain('Local Tournament');

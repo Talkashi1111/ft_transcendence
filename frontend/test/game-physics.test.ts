@@ -467,5 +467,18 @@ describe('Physics Module', () => {
       // Use closeTo because of floating point math
       expect(result).toBeCloseTo(484, 0); 
     });
+    it('should return current Y immediately if ball is already at target X', () => {
+      const ball = createBall({ 
+        x: 400, 
+        y: 300, 
+        velocityX: 5 
+      });
+      
+      // Target is exactly where the ball is
+      const result = predictBallY(ball, 400);
+      
+      // Should return current Y (300) without entering the loop
+      expect(result).toBe(300);
+    });
   });
 });
