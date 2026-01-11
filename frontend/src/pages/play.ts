@@ -121,7 +121,7 @@ export async function renderPlayPage(
                 <input
                   type="text"
                   id="player2-alias"
-                  placeholder=" ${t('play.game_setup.player2.alias.placeholder')}"
+                  placeholder="${t('play.game_setup.player2.alias.placeholder')}"
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -1180,7 +1180,7 @@ function setupPlayPageEvents(): void {
   function handleRemoteGameEnd(winner: string, score1: number, score2: number): void {
     // Get player aliases from the last game state
     const player1 = remoteGame?.getCurrentState()?.player1.alias || t('play.player1.label');
-    const player2 = remoteGame?.getCurrentState()?.player2.alias || t('play.player1.label');
+    const player2 = remoteGame?.getCurrentState()?.player2.alias || t('play.player2.label');
 
     cleanupRemoteGame();
 

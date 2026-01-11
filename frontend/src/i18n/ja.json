@@ -65,7 +65,7 @@
   "register.password.label": "パスワード",
   "register.password.placeholder": "パスワードを作成",
   "register.password.text": "8文字以上",
-  "register.button.login": "ログイン",
+  "register.button.register": "登録",
   "register.divider.or": "または",
   "register.button.google": "Googleで登録",
   "register.text.account_holder": "すでにアカウントをお持ちですか？",

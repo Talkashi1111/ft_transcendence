@@ -95,7 +95,7 @@ export async function renderRegisterPage(
                 aria-label="Create your account"
                 class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                ${t('register.button.login')}
+                ${t('register.button.register')}
               </button>
             </form>
 

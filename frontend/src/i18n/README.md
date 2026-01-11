@@ -21,7 +21,7 @@
 - Provide a language switcher or selector that allows users to easily change the website’s language based on their preferences.
 
   ```text
-  NOTE - Currently, extremenly basic selector. If time permits it, will work on a more modern/fancier one.
+  NOTE - Currently, extremely basic selector. If time permits it, will work on a more modern/fancier one.
   ```
 
 - Translate essential website content, such as navigation menus, headings, and key information, into the supported languages.
