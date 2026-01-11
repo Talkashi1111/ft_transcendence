@@ -8,6 +8,7 @@ import {
   deleteAvatar,
   getAvatarUrl,
 } from '../utils/auth';
+import { t } from '../i18n/i18n';
 
 export async function renderSettingsPage(
   app: HTMLElement,
@@ -29,11 +30,11 @@ export async function renderSettingsPage(
       ${navBar}
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">${t('settings.title')}</h1>
 
         <!-- Avatar Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Profile Picture</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.profile.picture')}</h2>
           <div class="flex items-center gap-6">
             <div class="relative">
               <img
@@ -52,14 +53,14 @@ export async function renderSettingsPage(
             <div class="flex-1">
               <div class="flex flex-wrap gap-2">
                 <label class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium cursor-pointer">
-                  Upload New
+                  ${t('settings.profile.picture.upload.button')}
                   <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" />
                 </label>
                 <button id="delete-avatar-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
-                  Remove
+                  ${t('settings.profile.picture.remove.button')}
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mt-2">JPG, PNG, WebP, or GIF. Max 5MB.</p>
+              <p class="text-xs text-gray-500 mt-2">${t('settings.profile.picture.text')}</p>
               <div id="avatar-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
@@ -67,15 +68,15 @@ export async function renderSettingsPage(
 
         <!-- User Info Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.account.info')}</h2>
           <div class="space-y-4">
             <div class="text-gray-600">
-              <span class="font-medium">Email:</span> ${user.email}
+              <span class="font-medium">${t('settings.account.info.email')}</span> ${user.email}
             </div>
 
             <!-- Alias Edit Section -->
             <div>
-              <label for="alias-input" class="block text-sm font-medium text-gray-700 mb-1">Alias</label>
+              <label for="alias-input" class="block text-sm font-medium text-gray-700 mb-1">${t('settings.account.info.email.alias.label')}</label>
               <div class="flex gap-2">
                 <input
                   type="text"
@@ -89,10 +90,10 @@ export async function renderSettingsPage(
                   id="update-alias-btn"
                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-400"
                 >
-                  Update
+                  ${t('settings.account.info.email.alias.update.button')}
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mt-1">3-30 characters. Cannot be changed during a match.</p>
+              <p class="text-xs text-gray-500 mt-1">${t('settings.account.info.email.alias.text')}</p>
               <div id="alias-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
@@ -100,18 +101,22 @@ export async function renderSettingsPage(
 
         <!-- 2FA Section -->
         <div class="bg-white rounded-lg shadow-lg p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Two-Factor Authentication (2FA)</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.2FA')}</h2>
 
           <div id="2fa-status" class="mb-4">
             ${
               user.twoFactorEnabled
-                ? '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">✓ Enabled</span>'
-                : '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">Disabled</span>'
+                ? `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    ✓ ${t('settings.2FA.enabled')}
+                   </span>`
+                : `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                      ${t('settings.2FA.disabled')}
+                  </span>`
             }
           </div>
 
           <p class="text-gray-600 text-sm mb-4">
-            Add an extra layer of security to your account by requiring a verification code from your authenticator app.
+            ${t('settings.2FA.text')}
           </p>
 
           <!-- 2FA Actions -->
@@ -119,33 +124,33 @@ export async function renderSettingsPage(
             ${
               user.twoFactorEnabled
                 ? `<button id="disable-2fa-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
-                  Disable 2FA
+                  ${t('settings.2FA.disable2FA')}
                 </button>`
                 : `<button id="setup-2fa-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
-                  Enable 2FA
+                  ${t('settings.2FA.enable2FA')}
                 </button>`
             }
           </div>
 
           <!-- 2FA Setup Container (hidden initially) -->
           <div id="2fa-setup-container" class="hidden mt-6 p-4 border border-gray-200 rounded-lg">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Setup Two-Factor Authentication</h3>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">${t('settings.2FA.setup')}</h3>
 
             <div class="space-y-4">
               <div>
-                <p class="text-sm text-gray-600 mb-2">1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.scan')}</p>
                 <div id="qr-code-container" class="flex justify-center bg-white p-4 rounded border">
                   <div class="animate-pulse bg-gray-200 w-48 h-48"></div>
                 </div>
               </div>
 
               <div>
-                <p class="text-sm text-gray-600 mb-2">Or enter this secret manually:</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.manual')}</p>
                 <code id="secret-code" class="block bg-gray-100 p-2 rounded text-sm font-mono break-all"></code>
               </div>
 
               <div>
-                <p class="text-sm text-gray-600 mb-2">2. Enter the 6-digit code from your authenticator app:</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.code')}:</p>
                 <div class="flex gap-2">
                   <input
                     type="text"
@@ -157,13 +162,13 @@ export async function renderSettingsPage(
                     class="w-32 px-4 py-2 border border-gray-300 rounded-lg text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                   <button id="verify-code-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:bg-gray-400">
-                    Verify & Enable
+                    ${t('settings.2FA.setup.verify.button')}
                   </button>
                 </div>
               </div>
 
               <button id="cancel-setup-btn" class="text-gray-500 hover:text-gray-700 text-sm">
-                Cancel
+                ${t('settings.2FA.setup.cancel')}
               </button>
             </div>
           </div>
@@ -175,7 +180,7 @@ export async function renderSettingsPage(
         <!-- Back to Home -->
         <div class="mt-6">
           <button id="back-home-btn" class="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to Home
+            ← ${t('settings.link.backtohome')}
           </button>
         </div>
       </div>
@@ -403,7 +408,7 @@ function setup2FAHandlers(): void {
   if (setupBtn) {
     setupBtn.addEventListener('click', async () => {
       hideMessage();
-      setupBtn.textContent = 'Loading...';
+      setupBtn.textContent = t('settings.2FA.loading.button');
       (setupBtn as HTMLButtonElement).disabled = true;
 
       try {

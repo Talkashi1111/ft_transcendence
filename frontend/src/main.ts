@@ -414,13 +414,13 @@ async function renderNavBar(
               isAuth
                 ? `
               <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Tournaments
+                ${t('nav.tournaments')}
               </button>
               <button id="nav-friends" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Friends
+                ${t('nav.friends')}
               </button>
               <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Settings
+                ${t('nav.settings')}
               </button>
               <div class="border-l border-gray-300 h-6 mx-2"></div>
               <!-- Notification Bell -->
@@ -453,7 +453,7 @@ async function renderNavBar(
                 <span id="nav-user-alias" class="font-medium">${userAlias}</span>
               </span>
               <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
-                Logout
+                ${t('nav.logout')}
               </button>
             `
                 : `
@@ -521,26 +521,26 @@ async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">Tournament Matches</h2>
-          <p class="text-gray-600">View matches from the blockchain</p>
+          <h2 class="text-3xl font-bold text-gray-900 mb-2">${t('tournaments.title')}</h2>
+          <p class="text-gray-600">${t('tournaments.text')}</p>
         </div>
 
         <div class="bg-white rounded-lg shadow p-6 mb-6">
           <label for="tournament-id" class="block text-sm font-medium text-gray-700 mb-2">
-            Enter Tournament ID:
+            ${t('tournaments.input.label')}
           </label>
           <div class="flex gap-2">
             <input
               type="number"
               id="tournament-id"
-              placeholder="e.g., 1"
+              placeholder="${t('tournaments.input.placeholder')}"
               class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 border"
             />
             <button
               id="load-tournament"
               class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             >
-              Load Matches
+              ${t('tournaments.load.button')}
             </button>
           </div>
         </div>
@@ -556,7 +556,7 @@ async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
 
         <div id="matches-container" class="space-y-4">
           <div class="text-center py-12 text-gray-500">
-            Enter a tournament ID to view matches
+            ${t('tournaments.bottom.text')}
           </div>
         </div>
       </div>
