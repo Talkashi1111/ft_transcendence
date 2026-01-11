@@ -275,7 +275,7 @@ export async function renderPlayPage(
 
             <div class="flex gap-4">
               <button id="leave-remote-game-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                Leave Game
+                ${t('play.remote.leavegame.button')}
               </button>
             </div>
           </div>
@@ -1282,10 +1282,10 @@ function setupPlayPageEvents(): void {
   // Event: Leave remote game
   leaveRemoteGameBtn?.addEventListener('click', async () => {
     const confirmed = await showConfirmModal({
-      title: 'Leave Game',
-      message: 'Are you sure you want to leave the game?',
-      confirmText: 'Leave',
-      cancelText: 'Stay',
+      title: t('play.remote.leavegame.popup.title'),
+      message: t('play.remote.leavegame.popup.message'),
+      confirmText: t('play.remote.leavegame.popup.leave.button'),
+      cancelText: t('play.remote.leavegame.popup.stay.button'),
       isDangerous: true,
     });
 
