@@ -1532,7 +1532,7 @@ function setupPlayPageEvents(): void {
     });
   }
 
-  //Event listeners for bot level buttons
+  // Event listeners for bot level buttons
   availableLevels.forEach(level => {
     const btn = getBotBtn(level);
     if (btn) {
