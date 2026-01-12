@@ -5,6 +5,7 @@
 | [Module requirements](#module-requirements)   |
 | [Current logic](#current-logic)               |
 | [Workflow](#workflow)                         |
+| [Known issues](#known-issues)                 |
 | [Files with UI text](#files-with-ui-text)     |
 | [Files with UI errors](#files-with-ui-errors) |
 
@@ -116,6 +117,10 @@ E. Fallback to English
   <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 3 - DB preferences and routes</li>
   <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 4 - CI tests</li>
 </ul>
+
+## Known issues
+
+Rendering is only per page basis currently. (TO FIX)
 
 ## Files with UI text
 
