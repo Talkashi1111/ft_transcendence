@@ -8,6 +8,7 @@ import {
   deleteAvatar,
   getAvatarUrl,
 } from '../utils/auth';
+import { escapeHtml } from '../utils/sanitize';
 
 export async function renderSettingsPage(
   app: HTMLElement,
@@ -70,7 +71,7 @@ export async function renderSettingsPage(
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
           <div class="space-y-4">
             <div class="text-gray-600">
-              <span class="font-medium">Email:</span> ${user.email}
+              <span class="font-medium">Email:</span> ${escapeHtml(user.email)}
             </div>
 
             <!-- Alias Edit Section -->
@@ -80,7 +81,7 @@ export async function renderSettingsPage(
                 <input
                   type="text"
                   id="alias-input"
-                  value="${user.alias}"
+                  value="${escapeHtml(user.alias)}"
                   minlength="3"
                   maxlength="30"
                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -283,8 +284,8 @@ function setupAvatarHandler(userId: string): void {
       deleteBtn.disabled = true;
 
       try {
-        await deleteAvatar();
-        showMessage('Profile picture removed');
+        const result = await deleteAvatar();
+        showMessage(result.message);
 
         // Update preview with cache-busting (will show default avatar)
         if (avatarPreview) {
@@ -340,6 +341,14 @@ function setupAliasHandler(): void {
       // Client-side validation
       if (newAlias.length < 3 || newAlias.length > 30) {
         showMessage('Alias must be between 3 and 30 characters', true);
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_.-]+$/.test(newAlias)) {
+        showMessage(
+          'Alias can only contain letters, numbers, underscores, dots, and hyphens',
+          true
+        );
         return;
       }
 

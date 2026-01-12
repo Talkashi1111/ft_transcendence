@@ -15,7 +15,7 @@ describe('Game Module', () => {
     // Create a test user and get auth token
     const testUser = {
       email: 'gametest@example.com',
-      password: 'password123',
+      password: 'Password123!',
       alias: 'GameTester',
     };
 

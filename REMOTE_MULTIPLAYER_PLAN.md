@@ -642,7 +642,7 @@ For "partial usage via CLI", support basic game interaction using cookie-based a
 # Login first and save cookie
 curl -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "alice@example.com", "password": "password123"}'
+  -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Create a match
 curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match' \

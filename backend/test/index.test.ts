@@ -31,7 +31,7 @@ describe('API Server', () => {
     const testUser = {
       email: 'test@example.com',
       alias: 'testuser',
-      password: 'password123',
+      password: 'Password123!',
     };
 
     it('should register a new user', async () => {
@@ -80,7 +80,7 @@ describe('API Server', () => {
         payload: {
           email: 'not-an-email',
           alias: 'testuser2',
-          password: 'password123',
+          password: 'Password123!',
         },
       });
 
@@ -108,7 +108,7 @@ describe('API Server', () => {
         payload: {
           email: 'test3@example.com',
           alias: 'ab', // Less than 3 characters
-          password: 'password123',
+          password: 'Password123!',
         },
       });
 
@@ -133,7 +133,7 @@ describe('API Server', () => {
     const testUser = {
       email: 'logintest@example.com',
       alias: 'loginuser',
-      password: 'password123',
+      password: 'Password123!',
     };
 
     beforeAll(async () => {
@@ -182,7 +182,7 @@ describe('API Server', () => {
         url: '/api/users/login',
         payload: {
           email: 'nonexistent@example.com',
-          password: 'password123',
+          password: 'Password123!',
         },
       });
 
@@ -232,7 +232,7 @@ describe('API Server', () => {
       const testUser = {
         email: 'logout@example.com',
         alias: 'logoutuser',
-        password: 'password123',
+        password: 'Password123!',
       };
 
       // Register user
@@ -297,7 +297,7 @@ describe('API Server', () => {
       const testUser = {
         email: 'protected@example.com',
         alias: 'protecteduser',
-        password: 'password123',
+        password: 'Password123!',
       };
 
       // Register user

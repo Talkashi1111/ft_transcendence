@@ -285,24 +285,32 @@ async function avatarRoutes(server: FastifyInstance) {
           select: { avatarPath: true },
         });
 
-        if (user?.avatarPath) {
-          // Delete file from disk
-          await deleteAvatarFile(user.avatarPath);
-
-          // Update database
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              avatarPath: null,
-              avatarMimeType: null,
-              avatarUpdatedAt: null,
-            },
+        if (!user?.avatarPath) {
+          // User already has default avatar
+          return reply.send({
+            success: true,
+            message: 'You already have the default avatar',
+            hadAvatar: false,
           });
         }
 
+        // Delete file from disk
+        await deleteAvatarFile(user.avatarPath);
+
+        // Update database
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            avatarPath: null,
+            avatarMimeType: null,
+            avatarUpdatedAt: null,
+          },
+        });
+
         return reply.send({
           success: true,
-          message: 'Avatar deleted successfully',
+          message: 'Profile picture removed',
+          hadAvatar: true,
         });
       } catch (err) {
         request.log.error(err);

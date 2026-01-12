@@ -67,10 +67,10 @@ export async function register(alias: string, email: string, password: string): 
       if (response.status === 409 || response.status === 400) {
         // Server message specifies the exact issue (duplicate field or validation error)
         throw new RegisterError(
-          errorData.error || errorData.message || 'Please check your input and try again'
+          errorData.message || errorData.error || 'Please check your input and try again'
         );
       } else {
-        throw new RegisterError(errorData.error || errorData.message || 'Registration failed');
+        throw new RegisterError(errorData.message || errorData.error || 'Registration failed');
       }
     } catch (parseError) {
       // If it's our custom RegisterError, rethrow it
@@ -110,11 +110,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
       // Handle different error cases based on status code
       if (response.status === 401) {
         // Use server message (handles OAuth-only users), fallback to generic message
-        throw new LoginError(errorData.error || errorData.message || 'Invalid email or password');
+        throw new LoginError(errorData.message || errorData.error || 'Invalid email or password');
       } else if (response.status === 400) {
         throw new LoginError('Please check your email and password format');
       } else {
-        throw new LoginError(errorData.error || errorData.message || 'Login failed');
+        throw new LoginError(errorData.message || errorData.error || 'Login failed');
       }
     } catch (parseError) {
       // If it's our custom LoginError, rethrow it
@@ -192,7 +192,7 @@ export async function updateAlias(alias: string): Promise<AuthUser> {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error || errorData.message || 'Failed to update alias');
+    throw new Error(errorData.message || errorData.error || 'Failed to update alias');
   }
 
   return response.json();
@@ -236,7 +236,7 @@ export async function setup2FA(): Promise<Setup2FAResponse> {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error || errorData.message || 'Failed to setup 2FA');
+    throw new Error(errorData.message || errorData.error || 'Failed to setup 2FA');
   }
 
   return response.json();
@@ -255,7 +255,7 @@ export async function enable2FA(code: string): Promise<void> {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error || errorData.message || 'Failed to enable 2FA');
+    throw new Error(errorData.message || errorData.error || 'Failed to enable 2FA');
   }
 }
 
@@ -270,7 +270,7 @@ export async function disable2FA(): Promise<void> {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error || errorData.message || 'Failed to disable 2FA');
+    throw new Error(errorData.message || errorData.error || 'Failed to disable 2FA');
   }
 }
 
@@ -289,7 +289,7 @@ export async function verify2FA(code: string): Promise<void> {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error || errorData.message || 'Invalid verification code');
+    throw new Error(errorData.message || errorData.error || 'Invalid verification code');
   }
 }
 
@@ -325,10 +325,16 @@ export async function uploadAvatar(file: File): Promise<UploadAvatarResponse> {
   return response.json();
 }
 
+interface DeleteAvatarResponse {
+  success: boolean;
+  message: string;
+  hadAvatar: boolean;
+}
+
 /**
  * Delete current user's avatar (reverts to default)
  */
-export async function deleteAvatar(): Promise<void> {
+export async function deleteAvatar(): Promise<DeleteAvatarResponse> {
   const response = await fetch('/api/users/me/avatar', {
     method: 'DELETE',
     credentials: 'include',
@@ -338,6 +344,8 @@ export async function deleteAvatar(): Promise<void> {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to delete avatar');
   }
+
+  return response.json();
 }
 
 /**

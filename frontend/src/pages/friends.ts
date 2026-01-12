@@ -775,6 +775,12 @@ function updateContent(app: HTMLElement): void {
     contentEl.innerHTML = renderTabContent();
   }
 
+  // Update friends count
+  const friendsCount = app.querySelector('#friends-count');
+  if (friendsCount) {
+    friendsCount.textContent = `(${friends.length})`;
+  }
+
   // Update request count badge
   const requestBadge = app.querySelector('#request-count');
   if (requestBadge) {
@@ -870,10 +876,25 @@ export async function renderFriendsPage(
     updateContent(app);
   };
 
+  const handleFriendRemoved = async (data: { friendId: string }) => {
+    // Someone removed us as a friend - update the friends list
+    const friendIndex = friends.findIndex((f) => f.id === data.friendId);
+    if (friendIndex !== -1) {
+      friends.splice(friendIndex, 1);
+    }
+    // Update search results to show "Add Friend" instead of "Friends"
+    const userInSearch = searchResults.find((u) => u.id === data.friendId);
+    if (userInSearch) {
+      userInSearch.isFriend = false;
+    }
+    updateContent(app);
+  };
+
   wsManager.on('friend:online', handleFriendOnline);
   wsManager.on('friend:offline', handleFriendOffline);
   wsManager.on('notification:new', handleNewNotification);
   wsManager.on('friend:accepted', handleFriendAccepted);
+  wsManager.on('friend:removed', handleFriendRemoved);
 
   // Cleanup function
   cleanupFn = () => {
@@ -881,6 +902,7 @@ export async function renderFriendsPage(
     wsManager.off('friend:offline', handleFriendOffline);
     wsManager.off('notification:new', handleNewNotification);
     wsManager.off('friend:accepted', handleFriendAccepted);
+    wsManager.off('friend:removed', handleFriendRemoved);
   };
 
   // Render the page
@@ -898,7 +920,7 @@ export async function renderFriendsPage(
           <nav class="-mb-px flex space-x-8">
             <button data-tab="friends" class="${getTabClasses('friends')}">
               Friends
-              <span class="ml-1 text-gray-400">(${friends.length})</span>
+              <span id="friends-count" class="ml-1 text-gray-400">(${friends.length})</span>
             </button>
             <button data-tab="requests" class="${getTabClasses('requests')} relative">
               Requests

@@ -36,7 +36,7 @@ export async function renderRegisterPage(
                   minlength="3"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
-                <p class="text-xs text-gray-500 mt-1">Minimum 3 characters</p>
+                <p class="text-xs text-gray-500 mt-1">3-30 characters. Letters, numbers, underscores, dots, and hyphens only.</p>
               </div>
 
               <!-- Email field -->
@@ -74,7 +74,7 @@ export async function renderRegisterPage(
                   minlength="8"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
-                <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+                <p class="text-xs text-gray-500 mt-1">Min 8 characters with uppercase, lowercase, number, and special character</p>
               </div>
 
               <!-- Error message -->
@@ -182,13 +182,38 @@ function setupRegisterForm(onRegisterSuccess: () => void): void {
       return;
     }
 
-    if (alias.length < 3) {
-      showError('Alias must be at least 3 characters');
+    if (alias.length < 3 || alias.length > 30) {
+      showError('Alias must be between 3 and 30 characters');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_.-]+$/.test(alias)) {
+      showError('Alias can only contain letters, numbers, underscores, dots, and hyphens');
       return;
     }
 
     if (password.length < 8) {
       showError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      showError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      showError('Password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      showError('Password must contain at least one number');
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      showError('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
       return;
     }
 
