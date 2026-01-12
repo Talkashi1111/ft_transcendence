@@ -183,7 +183,7 @@ describe('Register Page', () => {
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -208,7 +208,7 @@ describe('Register Page', () => {
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
       aliasInput.value = 'testuser';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -260,7 +260,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'ab'; // Only 2 characters
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -269,7 +269,7 @@ describe('Register Page', () => {
 
       const errorMessage = container.querySelector('#error-message');
       expect(errorMessage?.classList.contains('hidden')).toBe(false);
-      expect(errorMessage?.textContent).toContain('Alias must be at least 3 characters');
+      expect(errorMessage?.textContent).toContain('Alias must be between 3 and 30 characters');
     });
 
     it('should show error when password is less than 8 characters', async () => {
@@ -316,14 +316,14 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(auth.register).toHaveBeenCalledWith('testuser', 'test@example.com', 'password123');
+      expect(auth.register).toHaveBeenCalledWith('testuser', 'test@example.com', 'Password123!');
     });
 
     it('should disable button and show loading state during registration', async () => {
@@ -347,7 +347,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -377,7 +377,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -404,7 +404,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -433,7 +433,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -468,7 +468,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'existing@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -499,7 +499,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'existinguser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -528,7 +528,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'invalid-email';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -557,7 +557,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -587,7 +587,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -615,7 +615,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       // First submission - should show error
       let submitEvent = new Event('submit', { bubbles: true, cancelable: true });
@@ -662,7 +662,7 @@ describe('Register Page', () => {
 
       aliasInput.value = 'testuser';
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);

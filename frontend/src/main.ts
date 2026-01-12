@@ -12,6 +12,7 @@ import { renderFriendsPage, cleanupFriendsPage } from './pages/friends';
 import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
 import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
 import { showConfirmModal } from './utils/modal';
+import { escapeHtml } from './utils/sanitize';
 
 // Types
 interface Match {
@@ -79,34 +80,46 @@ async function fetchUnreadNotificationCount(): Promise<void> {
 }
 
 /**
- * Update the notification badge in the navbar
+ * Update the notification badge in the navbar (desktop and mobile)
  */
 function updateNotificationBadge(): void {
-  const badge = document.getElementById('notification-badge');
-  if (badge) {
-    if (unreadNotificationCount > 0) {
-      badge.textContent = unreadNotificationCount > 99 ? '99+' : String(unreadNotificationCount);
-      badge.classList.remove('hidden');
-    } else {
-      badge.classList.add('hidden');
+  const badges = [
+    document.getElementById('notification-badge'),
+    document.getElementById('notification-badge-mobile'),
+  ];
+
+  for (const badge of badges) {
+    if (badge) {
+      if (unreadNotificationCount > 0) {
+        badge.textContent = unreadNotificationCount > 99 ? '99+' : String(unreadNotificationCount);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
     }
   }
 }
 
 /**
- * Update the online status indicator in the navbar
+ * Update the online status indicator in the navbar (desktop and mobile)
  */
 function updateOnlineIndicator(isOnline: boolean): void {
-  const indicator = document.getElementById('online-indicator');
-  if (indicator) {
-    if (isOnline) {
-      indicator.classList.remove('bg-gray-400');
-      indicator.classList.add('bg-green-500');
-      indicator.title = 'Online';
-    } else {
-      indicator.classList.remove('bg-green-500');
-      indicator.classList.add('bg-gray-400');
-      indicator.title = 'Offline';
+  const indicators = [
+    document.getElementById('online-indicator'),
+    document.getElementById('online-indicator-mobile'),
+  ];
+
+  for (const indicator of indicators) {
+    if (indicator) {
+      if (isOnline) {
+        indicator.classList.remove('bg-gray-400');
+        indicator.classList.add('bg-green-500');
+        indicator.title = 'Online';
+      } else {
+        indicator.classList.remove('bg-green-500');
+        indicator.classList.add('bg-gray-400');
+        indicator.title = 'Offline';
+      }
     }
   }
 }
@@ -369,10 +382,37 @@ async function renderNavBar(
         <div class="flex justify-between h-16">
           <div class="flex">
             <div class="flex-shrink-0 flex items-center">
-              <h1 class="text-2xl font-bold text-gray-900">ft_transcendence</h1>
+              <h1 class="text-xl sm:text-2xl font-bold text-gray-900">ft_transcendence</h1>
             </div>
           </div>
-          <div class="flex items-center space-x-4">
+          <!-- Mobile menu button -->
+          <div class="flex items-center lg:hidden">
+            ${
+              isAuth
+                ? `
+              <!-- Mobile: Online indicator -->
+              <span id="online-indicator-mobile" class="w-2.5 h-2.5 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
+              <!-- Mobile: Notification Bell -->
+              <button id="nav-notifications-mobile" class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition mr-1" title="Notifications">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <span id="notification-badge-mobile" class="${unreadNotificationCount > 0 ? '' : 'hidden'} absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                  ${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </span>
+              </button>
+            `
+                : ''
+            }
+            <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path id="menu-icon-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                <path id="menu-icon-close" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <!-- Desktop menu -->
+          <div class="hidden lg:flex items-center space-x-4">
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               Home
             </button>
@@ -419,7 +459,7 @@ async function renderNavBar(
                   <span class="text-gray-400">👤</span>
                 `
                 }
-                <span id="nav-user-alias" class="font-medium">${userAlias}</span>
+                <span id="nav-user-alias" class="font-medium">${escapeHtml(userAlias)}</span>
               </span>
               <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
                 Logout
@@ -435,6 +475,61 @@ async function renderNavBar(
             `
             }
           </div>
+        </div>
+      </div>
+      <!-- Mobile menu (hidden by default) -->
+      <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-200">
+        <div class="px-4 py-3 space-y-2">
+          <button id="nav-home-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+            Home
+          </button>
+          <button id="nav-play-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+            Play
+          </button>
+          ${
+            isAuth
+              ? `
+            <button id="nav-tournaments-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Tournaments
+            </button>
+            <button id="nav-friends-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Friends
+            </button>
+            <button id="nav-settings-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Settings
+            </button>
+            <div class="border-t border-gray-200 my-2"></div>
+            <!-- User info in mobile menu -->
+            <div class="flex items-center px-3 py-2 gap-2">
+              ${
+                avatarUrl
+                  ? `
+                <img
+                  id="nav-user-avatar-mobile"
+                  src="${avatarUrl}"
+                  alt="Profile"
+                  class="w-8 h-8 rounded-full object-cover border border-gray-300"
+                />
+              `
+                  : `
+                <span class="text-gray-400 text-xl">👤</span>
+              `
+              }
+              <span id="nav-user-alias-mobile" class="font-medium text-gray-700">${escapeHtml(userAlias)}</span>
+            </div>
+            <button id="nav-logout-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
+              Logout
+            </button>
+          `
+              : `
+            <button id="nav-login-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'login' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Login
+            </button>
+            <button id="nav-register-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              Register
+            </button>
+          `
+          }
         </div>
       </div>
     </nav>
@@ -455,7 +550,7 @@ async function renderHome(app: HTMLElement) {
 
             <div class="flex justify-center">
               <img
-                src="https://i.pinimg.com/originals/6b/b3/d9/6bb3d9dcad1c5f787fedd6cc83d8bb6e.gif"
+                src="/pong.gif"
                 alt="Ping Pong Animation"
                 class="rounded-lg max-w-full h-auto"
               />
@@ -530,6 +625,7 @@ async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
 
 // Setup navigation
 function setupNavigation() {
+  // Desktop navigation buttons
   const homeBtn = document.getElementById('nav-home');
   const playBtn = document.getElementById('nav-play');
   const tournamentsBtn = document.getElementById('nav-tournaments');
@@ -541,6 +637,41 @@ function setupNavigation() {
   const notificationsBtn = document.getElementById('nav-notifications');
   const avatarImg = document.getElementById('nav-user-avatar');
 
+  // Mobile navigation buttons
+  const homeBtnMobile = document.getElementById('nav-home-mobile');
+  const playBtnMobile = document.getElementById('nav-play-mobile');
+  const tournamentsBtnMobile = document.getElementById('nav-tournaments-mobile');
+  const friendsBtnMobile = document.getElementById('nav-friends-mobile');
+  const settingsBtnMobile = document.getElementById('nav-settings-mobile');
+  const loginBtnMobile = document.getElementById('nav-login-mobile');
+  const registerBtnMobile = document.getElementById('nav-register-mobile');
+  const logoutBtnMobile = document.getElementById('nav-logout-mobile');
+  const notificationsBtnMobile = document.getElementById('nav-notifications-mobile');
+
+  // Mobile menu toggle
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const menuIconOpen = document.getElementById('menu-icon-open');
+  const menuIconClose = document.getElementById('menu-icon-close');
+
+  const closeMobileMenu = () => {
+    mobileMenu?.classList.add('hidden');
+    menuIconOpen?.classList.remove('hidden');
+    menuIconClose?.classList.add('hidden');
+  };
+
+  mobileMenuBtn?.addEventListener('click', () => {
+    const isHidden = mobileMenu?.classList.toggle('hidden');
+    if (isHidden) {
+      menuIconOpen?.classList.remove('hidden');
+      menuIconClose?.classList.add('hidden');
+    } else {
+      menuIconOpen?.classList.add('hidden');
+      menuIconClose?.classList.remove('hidden');
+    }
+  });
+
+  // Desktop navigation
   homeBtn?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => navigate('play'));
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
@@ -549,13 +680,49 @@ function setupNavigation() {
   loginBtn?.addEventListener('click', () => navigate('login'));
   registerBtn?.addEventListener('click', () => navigate('register'));
 
+  // Mobile navigation (closes menu after navigation)
+  homeBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('home');
+  });
+  playBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('play');
+  });
+  tournamentsBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('tournaments');
+  });
+  friendsBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('friends');
+  });
+  settingsBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('settings');
+  });
+  loginBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('login');
+  });
+  registerBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('register');
+  });
+
   // Clicking notification bell navigates to friends page (notifications tab)
   notificationsBtn?.addEventListener('click', () => navigate('friends'));
+  notificationsBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('friends');
+  });
 
   // Clicking avatar image navigates to settings
   avatarImg?.addEventListener('click', () => navigate('settings'));
 
-  logoutBtn?.addEventListener('click', async () => {
+  // Logout handler for both desktop and mobile
+  const handleLogout = async () => {
+    closeMobileMenu();
     // Check if in an active game - show confirmation first
     if (currentPage === 'play' && hasActiveRemoteGame()) {
       const confirmed = await showConfirmModal({
@@ -580,7 +747,10 @@ function setupNavigation() {
     // Disconnect global WebSocket on logout
     resetWebSocketManager();
     navigate('home');
-  });
+  };
+
+  logoutBtn?.addEventListener('click', handleLogout);
+  logoutBtnMobile?.addEventListener('click', handleLogout);
 }
 
 // Setup tournament loader
@@ -641,7 +811,7 @@ function setupTournamentLoader() {
 
           <div class="grid grid-cols-3 gap-4 items-center">
             <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">${match.player1Alias}</div>
+              <div class="text-lg font-bold text-gray-900">${escapeHtml(match.player1Alias)}</div>
               <div class="text-sm text-gray-500">ID: ${match.player1Id}</div>
               <div class="text-3xl font-bold text-blue-600 mt-2">${match.score1}</div>
             </div>
@@ -651,7 +821,7 @@ function setupTournamentLoader() {
             </div>
 
             <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">${match.player2Alias}</div>
+              <div class="text-lg font-bold text-gray-900">${escapeHtml(match.player2Alias)}</div>
               <div class="text-sm text-gray-500">ID: ${match.player2Id}</div>
               <div class="text-3xl font-bold text-blue-600 mt-2">${match.score2}</div>
             </div>

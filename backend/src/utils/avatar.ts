@@ -15,8 +15,14 @@ export const AVATAR_CONFIG = {
   maxFileSize: 5 * 1024 * 1024, // 5MB
   allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const,
   uploadDir: '/app/data/avatars',
-  defaultAvatarPath: '/app/backend/src/assets/default-avatar.svg',
 };
+
+// Default avatar SVG embedded as string (avoids file path issues in production)
+const DEFAULT_AVATAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <circle cx="64" cy="64" r="64" fill="#E5E7EB"/>
+  <circle cx="64" cy="48" r="20" fill="#9CA3AF"/>
+  <ellipse cx="64" cy="100" rx="32" ry="24" fill="#9CA3AF"/>
+</svg>`;
 
 export type AllowedMimeType = (typeof AVATAR_CONFIG.allowedMimeTypes)[number];
 
@@ -188,8 +194,8 @@ export async function readAvatarFile(relativePath: string): Promise<Buffer | nul
 /**
  * Read the default avatar SVG
  */
-export async function readDefaultAvatar(): Promise<Buffer> {
-  return await fs.readFile(AVATAR_CONFIG.defaultAvatarPath);
+export function readDefaultAvatar(): Buffer {
+  return Buffer.from(DEFAULT_AVATAR_SVG, 'utf-8');
 }
 
 /**

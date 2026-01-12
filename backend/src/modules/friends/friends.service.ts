@@ -276,6 +276,11 @@ export async function removeFriend(friendshipUserId: string, currentUserId: stri
   await prisma.friendship.delete({
     where: { id: friendship.id },
   });
+
+  // Notify the other user in real-time via WebSocket so they can update their UI
+  sendToUser(friendshipUserId, 'friend:removed', {
+    friendId: currentUserId,
+  });
 }
 
 /**

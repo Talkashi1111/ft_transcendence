@@ -64,13 +64,13 @@ git checkout -b feature/add-user-endpoint
 vim backend/src/index.ts
 
 # Before committing, run all checks:
-make all     # Runs format + lint + test-all + build
+make all     # Runs format + lint + test + build
 
 # Or run checks individually if needed:
 make format    # Format code with Prettier
 make lint      # Check for linting errors
-make test      # Run fast unit tests only
-make test-all  # Run ALL tests (including integration)
+make test-fast # Run fast unit tests only
+make test      # Run ALL tests (including integration)
 make build     # Verify builds succeed
 
 # All checks pass? Ready to commit!
@@ -107,17 +107,17 @@ Push to GitHub → CI runs on PR → Lint + Test + Build
 
 ## Make Commands (Inside DevContainer)
 
-| Command         | Description                                   | When to Use        |
-| --------------- | --------------------------------------------- | ------------------ |
-| `make all`      | Run format + lint + test-all + build          | Before committing  |
-| `make format`   | Format all files with Prettier                | Before committing  |
-| `make lint`     | Run ESLint on all packages                    | Before committing  |
-| `make test`     | Run fast unit tests (excludes integration)    | Quick feedback     |
-| `make test-all` | Run ALL tests including WebSocket integration | Before committing  |
-| `make build`    | Build TypeScript + Vite                       | Before committing  |
-| `make dev`      | Run dev servers (frontend + backend)          | During development |
-| `make frontend` | Run only frontend dev server                  | Frontend work      |
-| `make backend`  | Run only backend dev server                   | Backend work       |
+| Command          | Description                                   | When to Use        |
+| ---------------- | --------------------------------------------- | ------------------ |
+| `make all`       | Run format + lint + test + build              | Before committing  |
+| `make format`    | Format all files with Prettier                | Before committing  |
+| `make lint`      | Run ESLint on all packages                    | Before committing  |
+| `make test-fast` | Run fast unit tests (excludes integration)    | Quick feedback     |
+| `make test`      | Run ALL tests including WebSocket integration | Before committing  |
+| `make build`     | Build TypeScript + Vite                       | Before committing  |
+| `make dev`       | Run dev servers (frontend + backend)          | During development |
+| `make frontend`  | Run only frontend dev server                  | Frontend work      |
+| `make backend`   | Run only backend dev server                   | Backend work       |
 
 ## Pre-Commit Checklist
 
