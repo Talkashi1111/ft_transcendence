@@ -1,0 +1,32 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    paths:
+      - /var/lib/docker/containers/*/*-json.log
+    parsers:
+      - container:
+          stream: all
+          format: docker
+
+processors:
+  - dissect:
+      tokenizer: "/var/lib/docker/containers/%{[container][id]}/%{_rest}"
+      field: "log.file.path"
+      target_prefix: ""
+
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+      match_fields: ["container.id"]
+      match_source: false
+      match_short_id: false
+
+  - add_fields:
+      target: ''
+      fields:
+        env: 'prod-like'
+        project: 'ft_transcendence'
+
+output.logstash:
+  hosts: ['logstash:5044']
+
+logging.level: info
