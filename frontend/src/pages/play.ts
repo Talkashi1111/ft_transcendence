@@ -73,7 +73,7 @@ export async function renderPlayPage(
                 ${t('play.local.local1v1.button')}
               </button>
               <button id="bot-opponent-btn" class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold">
-                1vBot
+                ${t('play.local.1vbot.button')}
               </button>
               <button id="tournament-btn" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
                 ${t('play.local.tournament.button')}
@@ -157,18 +157,18 @@ export async function renderPlayPage(
         <!-- Game Setup Screen VS Bot -->
         <div id="bot-game-setup" class="hidden">
           <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Game Setup Versus Bot</h3>
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">${t('play.local.1vbot.title')}</h3>
             <div class="space-y-4">
 
               <div>
                 <div class="block text-sm font-medium text-gray-700 mb-2">
-                  Select Difficulty Level for Bot
+                  ${t('play.local.1vbot.text')}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4">
-                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Paw Patrol</button>
-                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Track-y</button>
-                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am human</button>
-                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am God</button>
+                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.paw')}</button>
+                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.tracky')}</button>
+                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.human')}</button>
+                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.god')}</button>
                 </div>
               </div>
 
@@ -183,10 +183,10 @@ export async function renderPlayPage(
 
               <div class="flex gap-4">
                 <button id="start-bot-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
-                  Start Game
+                  ${t('play.local.1vbot.start.button')}
                 </button>
                 <button id="back-to-mode-from-bot-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Back
+                  ${t('play.local.1vbot.back.button')}
                 </button>
               </div>
 
