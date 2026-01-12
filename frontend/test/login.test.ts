@@ -113,7 +113,7 @@ describe('Login Page', () => {
       const form = container.querySelector('#login-form') as HTMLFormElement;
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -168,14 +168,14 @@ describe('Login Page', () => {
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(auth.login).toHaveBeenCalledWith('test@example.com', 'password123');
+      expect(auth.login).toHaveBeenCalledWith('test@example.com', 'Password123!');
     });
 
     it('should disable button and show loading state during login', async () => {
@@ -192,7 +192,7 @@ describe('Login Page', () => {
       const loginBtn = container.querySelector('#login-btn') as HTMLButtonElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -215,7 +215,7 @@ describe('Login Page', () => {
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -233,7 +233,7 @@ describe('Login Page', () => {
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -279,7 +279,7 @@ describe('Login Page', () => {
       const loginBtn = container.querySelector('#login-btn') as HTMLButtonElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);
@@ -333,7 +333,7 @@ describe('Login Page', () => {
       const passwordInput = container.querySelector('#password') as HTMLInputElement;
 
       emailInput.value = 'test@example.com';
-      passwordInput.value = 'password123';
+      passwordInput.value = 'Password123!';
 
       const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
       form.dispatchEvent(submitEvent);

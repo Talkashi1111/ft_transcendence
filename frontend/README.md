@@ -37,3 +37,31 @@ export default tseslint.config([
   },
 ]);
 ```
+
+## Authentication
+
+### Expected 401 Errors in Dev Tools
+
+When you're **logged out**, you'll see a 401 Unauthorized error in the browser's Network tab:
+
+```
+GET /api/users/me [HTTP/1.1 401 Unauthorized]
+```
+
+**This is expected behavior, not a bug.** Here's why:
+
+1. On page load, the app calls `isAuthenticated()` to check login status
+2. This makes a request to `/api/users/me`
+3. The server correctly returns **401 Unauthorized** when there's no valid auth cookie
+4. The browser dev tools displays non-2xx responses in red
+
+The code handles this gracefully:
+
+```typescript
+// In getCurrentUser()
+if (!response.ok) {
+  return null; // Returns null, doesn't throw an error
+}
+```
+
+A 401 response is the proper RESTful way for the server to indicate "you're not authenticated." This is standard practice and can be safely ignored in dev tools when you're not logged in.

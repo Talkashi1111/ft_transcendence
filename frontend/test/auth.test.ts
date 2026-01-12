@@ -32,13 +32,13 @@ describe('Auth Utility', () => {
         json: async () => ({ success: true }),
       });
 
-      const success = await login('test@test.com', 'password123');
+      const success = await login('test@test.com', 'Password123!');
 
       expect(success).toEqual({ success: true });
       expect(fetch).toHaveBeenCalledWith('/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'test@test.com', password: 'password123' }),
+        body: JSON.stringify({ email: 'test@test.com', password: 'Password123!' }),
         credentials: 'include',
       });
     });
@@ -149,7 +149,7 @@ describe('Auth Utility', () => {
         }),
       });
 
-      await expect(register('newuser', 'newuser@test.com', 'password123')).resolves.not.toThrow();
+      await expect(register('newuser', 'newuser@test.com', 'Password123!')).resolves.not.toThrow();
 
       expect(fetch).toHaveBeenCalledWith('/api/users', {
         method: 'POST',
@@ -157,7 +157,7 @@ describe('Auth Utility', () => {
         body: JSON.stringify({
           alias: 'newuser',
           email: 'newuser@test.com',
-          password: 'password123',
+          password: 'Password123!',
         }),
         credentials: 'include',
       });
@@ -170,7 +170,7 @@ describe('Auth Utility', () => {
         json: async () => ({ message: 'User with this email already exists' }),
       });
 
-      await expect(register('user', 'existing@test.com', 'password123')).rejects.toThrow(
+      await expect(register('user', 'existing@test.com', 'Password123!')).rejects.toThrow(
         'User with this email already exists'
       );
     });
@@ -182,7 +182,7 @@ describe('Auth Utility', () => {
         json: async () => ({ message: 'User with this alias already exists' }),
       });
 
-      await expect(register('existinguser', 'new@test.com', 'password123')).rejects.toThrow(
+      await expect(register('existinguser', 'new@test.com', 'Password123!')).rejects.toThrow(
         'User with this alias already exists'
       );
     });
@@ -194,7 +194,7 @@ describe('Auth Utility', () => {
         json: async () => ({ message: 'Please enter a valid email address' }),
       });
 
-      await expect(register('user', 'invalid-email', 'password123')).rejects.toThrow(
+      await expect(register('user', 'invalid-email', 'Password123!')).rejects.toThrow(
         'Please enter a valid email address'
       );
     });
@@ -220,7 +220,7 @@ describe('Auth Utility', () => {
         },
       });
 
-      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+      await expect(register('user', 'test@test.com', 'Password123!')).rejects.toThrow(
         'Network error'
       );
     });
@@ -232,7 +232,7 @@ describe('Auth Utility', () => {
         json: async () => ({ message: 'Internal server error' }),
       });
 
-      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+      await expect(register('user', 'test@test.com', 'Password123!')).rejects.toThrow(
         'Internal server error'
       );
     });
@@ -244,7 +244,7 @@ describe('Auth Utility', () => {
         json: async () => ({}),
       });
 
-      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+      await expect(register('user', 'test@test.com', 'Password123!')).rejects.toThrow(
         'Registration failed'
       );
     });
@@ -258,7 +258,7 @@ describe('Auth Utility', () => {
         },
       });
 
-      await expect(register('user', 'test@test.com', 'password123')).rejects.toThrow(
+      await expect(register('user', 'test@test.com', 'Password123!')).rejects.toThrow(
         'Network error'
       );
     });

@@ -183,13 +183,38 @@ function setupRegisterForm(onRegisterSuccess: () => void): void {
       return;
     }
 
-    if (alias.length < 3) {
-      showError('Alias must be at least 3 characters');
+    if (alias.length < 3 || alias.length > 30) {
+      showError('Alias must be between 3 and 30 characters');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_.-]+$/.test(alias)) {
+      showError('Alias can only contain letters, numbers, underscores, dots, and hyphens');
       return;
     }
 
     if (password.length < 8) {
       showError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      showError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      showError('Password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      showError('Password must contain at least one number');
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      showError('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
       return;
     }
 
