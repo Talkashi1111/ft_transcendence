@@ -14,10 +14,22 @@ export class InputHandler {
     this.keydownHandler = (e: KeyboardEvent) => {
       this.keysPressed.add(e.key.toLowerCase());
 
+      // Prevent default browser behavior for game control keys
+      // (e.g., arrow keys scrolling the page, space scrolling down)
+      const gameKeys = [
+        KEYS.player1Up,
+        KEYS.player1Down,
+        KEYS.player2Up,
+        KEYS.player2Down,
+        KEYS.pause,
+      ];
+      if (gameKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+
       // Trigger single-press actions
       const listener = this.listeners.get(e.key);
       if (listener) {
-        e.preventDefault();
         listener();
       }
     };

@@ -151,15 +151,15 @@ npx prisma db seed -- --clean  # Clear all data, then seed
 
 **Demo Users Created:**
 | Email | Alias | Password |
-| ------------------ | ------- | ---------- |
-| demo@example.com | demo | demo1234 |
-| alice@example.com | alice | password123 |
-| bob@example.com | bob | password123 |
-| charlie@example.com | charlie | password123 |
-| eve@example.com | eve | password123 |
-| frank@example.com | frank | password123 |
-| grace@example.com | grace | password123 |
-| henry@example.com | henry | password123 |
+| ------------------ | ------- | ------------- |
+| demo@example.com | demo | Demo1234! |
+| alice@example.com | alice | Password123! |
+| bob@example.com | bob | Password123! |
+| charlie@example.com | charlie | Password123! |
+| eve@example.com | eve | Password123! |
+| frank@example.com | frank | Password123! |
+| grace@example.com | grace | Password123! |
+| henry@example.com | henry | Password123! |
 
 **Demo Friendships:**
 
@@ -257,6 +257,16 @@ pnpm run dev
 | PATCH  | `/api/users/me/alias` | Update user alias        | Required |
 | POST   | `/api/users/logout`   | Logout (clear cookie)    | No       |
 
+#### Password Policy
+
+Passwords must meet the following requirements:
+
+- Minimum 8 characters
+- At least one uppercase letter (A-Z)
+- At least one lowercase letter (a-z)
+- At least one number (0-9)
+- At least one special character (!@#$%^&\*(),.?":{}|<>)
+
 ### Two-Factor Authentication (2FA)
 
 | Method | Endpoint           | Description                      | Auth     |
@@ -335,7 +345,7 @@ User                    Frontend                   Backend
 
 #### OAuth Flow
 
-The backend implements a custom OAuth 2.0 flow with **dynamic callback URI detection**. This allows the same code to work in dev (`http://localhost:5173`), prod local (`https://localhost`), and prod remote (`https://mooo.com`) without configuration changes.
+The backend implements a custom OAuth 2.0 flow with **dynamic callback URI detection**. This allows the same code to work in dev (`http://localhost:5173`), prod local (`https://localhost:8443`), and prod remote (`https://mooo.com:8443`) without configuration changes.
 
 ```
 ┌─────────────┐     1. Click "Login with Google"     ┌─────────────┐
@@ -384,8 +394,8 @@ The backend implements a custom OAuth 2.0 flow with **dynamic callback URI detec
    - **Authorized JavaScript origins**: `http://localhost:5173`
    - **Authorized redirect URIs** (add ALL environments):
      - `http://localhost:5173/api/oauth/google/callback` (dev)
-     - `https://localhost/api/oauth/google/callback` (prod local)
-     - `https://mooo.com/api/oauth/google/callback` (prod remote)
+     - `https://localhost:8443/api/oauth/google/callback` (prod local)
+     - `https://mooo.com:8443/api/oauth/google/callback` (prod remote)
 7. Copy **Client ID** and **Client Secret** to your `.env`:
 
 ```bash
@@ -957,6 +967,7 @@ The WebSocket connection (same as used for games) also handles real-time friend 
 | `friend:online`    | Server→Client | `{ friendId, friendAlias }`             | Friend came online                |
 | `friend:offline`   | Server→Client | `{ friendId, friendAlias, lastSeenAt }` | Friend went offline               |
 | `friend:accepted`  | Server→Client | `{ friendId, friendAlias }`             | Your friend request was accepted  |
+| `friend:removed`   | Server→Client | `{ friendId }`                          | Friend was removed (unfriended)   |
 | `notification:new` | Server→Client | `{ type, fromUserId, fromAlias }`       | New notification (friend request) |
 
 #### Friend Request Flow
@@ -1151,7 +1162,7 @@ This section shows how to test API endpoints using command-line tools.
 # Login and save cookie to file
 curl -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "alice@example.com", "password": "password123"}'
+  -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Use saved cookie for authenticated requests
 curl -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
@@ -1163,7 +1174,7 @@ curl -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
 # Login and capture Set-Cookie header
 curl -i -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "alice@example.com", "password": "password123"}'
+  -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Manually copy the token from Set-Cookie header and use it:
 curl -H 'Cookie: token=YOUR_JWT_TOKEN_HERE' 'http://localhost:3000/api/users/me'
@@ -1174,7 +1185,7 @@ curl -H 'Cookie: token=YOUR_JWT_TOKEN_HERE' 'http://localhost:3000/api/users/me'
 ```bash
 TOKEN=$(curl -s -c - -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "alice@example.com", "password": "password123"}' | grep token | awk '{print $7}')
+  -d '{"email": "alice@example.com", "password": "Password123!"}' | grep token | awk '{print $7}')
 
 curl -H "Cookie: token=$TOKEN" 'http://localhost:3000/api/users/me'
 ```
@@ -1185,12 +1196,12 @@ curl -H "Cookie: token=$TOKEN" 'http://localhost:3000/api/users/me'
 # Register a new user
 curl -X POST 'http://localhost:3000/api/users' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "test@example.com", "password": "test1234", "alias": "testuser"}'
+  -d '{"email": "test@example.com", "password": "Test1234!", "alias": "testuser"}'
 
 # Login
 curl -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "alice@example.com", "password": "password123"}'
+  -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Get current user profile
 curl -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
@@ -1248,7 +1259,7 @@ curl -b /tmp/cookies.txt -X DELETE 'http://localhost:3000/api/game/match/current
 # Terminal 1: Login as alice, create match
 curl -c /tmp/alice.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "alice@example.com", "password": "password123"}'
+  -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 curl -b /tmp/alice.txt -X POST 'http://localhost:3000/api/game/match' \
   -H 'Content-Type: application/json' \
@@ -1258,7 +1269,7 @@ curl -b /tmp/alice.txt -X POST 'http://localhost:3000/api/game/match' \
 # Terminal 2: Login as bob, join the match
 curl -c /tmp/bob.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
-  -d '{"email": "bob@example.com", "password": "password123"}'
+  -d '{"email": "bob@example.com", "password": "Password123!"}'
 
 curl -b /tmp/bob.txt -X POST 'http://localhost:3000/api/game/match/<match-id>/join'
 ```

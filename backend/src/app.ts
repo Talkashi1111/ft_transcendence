@@ -148,13 +148,16 @@ export async function buildApp(): Promise<FastifyInstance> {
       const firstError = error.validation[0];
       let message = firstError.message || 'Validation error';
 
-      // Make email validation errors more user-friendly
-      if (
-        firstError.instancePath === '/email' ||
-        (firstError.params && 'pattern' in firstError.params)
-      ) {
-        if (message.includes('pattern')) {
+      // Make validation errors more user-friendly
+      if (firstError.params && 'pattern' in firstError.params) {
+        if (firstError.instancePath === '/email') {
           message = 'Please enter a valid email address';
+        } else if (firstError.instancePath === '/alias') {
+          message = 'Alias can only contain letters, numbers, underscores, dots, and hyphens';
+        } else if (firstError.instancePath === '/password') {
+          // Provide helpful password requirement message
+          message =
+            'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
         }
       }
 

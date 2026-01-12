@@ -6,7 +6,11 @@ const userCore = {
   alias: z
     .string({ message: 'Alias is required and must be a string' })
     .min(3, 'Alias must be at least 3 characters')
-    .max(30, 'Alias must be at most 30 characters'),
+    .max(30, 'Alias must be at most 30 characters')
+    .regex(
+      /^[a-zA-Z0-9_.-]+$/,
+      'Alias can only contain letters, numbers, underscores, dots, and hyphens'
+    ),
 };
 
 // Request schemas
@@ -14,7 +18,11 @@ export const createUserSchema = z.object({
   ...userCore,
   password: z
     .string({ message: 'Password is required and must be a string' })
-    .min(8, 'Password must be at least 8 characters'),
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character'),
 });
 
 export const loginSchema = z.object({
@@ -26,7 +34,11 @@ export const updateAliasSchema = z.object({
   alias: z
     .string({ message: 'Alias is required and must be a string' })
     .min(3, 'Alias must be at least 3 characters')
-    .max(30, 'Alias must be at most 30 characters'),
+    .max(30, 'Alias must be at most 30 characters')
+    .regex(
+      /^[a-zA-Z0-9_.-]+$/,
+      'Alias can only contain letters, numbers, underscores, dots, and hyphens'
+    ),
 });
 
 // Response schemas
