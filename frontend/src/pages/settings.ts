@@ -150,7 +150,7 @@ export async function renderSettingsPage(
               </div>
 
               <div>
-                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.code')}:</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.code')}</p>
                 <div class="flex gap-2">
                   <input
                     type="text"

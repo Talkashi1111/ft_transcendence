@@ -463,19 +463,18 @@ async function renderNavBar(
               <button id="nav-register" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 ${t('nav.register')}
               </button>
-             
             `
             }
-                 <select
-                id="nav-lang"
-                class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:text-gray-900 hover:bg-gray-100 appearance-none"
-                aria-label="Language"
-                >
-                <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
-                <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
-                <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
-                <option value="de" ${lang === 'de' ? 'selected' : ''}>DE</option>
-              </select>
+            <select
+              id="nav-lang"
+              class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:text-gray-900 hover:bg-gray-100 appearance-none"
+              aria-label="Language"
+            >
+              <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
+              <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
+              <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
+              <option value="de" ${lang === 'de' ? 'selected' : ''}>DE</option>
+            </select>
           </div>
         </div>
       </div>
