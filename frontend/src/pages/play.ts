@@ -68,10 +68,10 @@ export async function renderPlayPage(
             <h3 class="text-lg font-semibold text-gray-700 mb-3">${t('play.local.label')}</h3>
             <div class="flex gap-4">
               <button id="local-game-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-                ${t('play.local.button1')}
+                ${t('play.local.local1v1.button')}
               </button>
               <button id="tournament-btn" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
-                ${t('play.local.button2')}
+                ${t('play.local.tournament.button')}
               </button>
             </div>
           </div>
@@ -81,13 +81,13 @@ export async function renderPlayPage(
             <h3 class="text-lg font-semibold text-gray-700 mb-3">${t('play.remote.label')}</h3>
             <div class="flex gap-4">
               <button id="remote-quickmatch-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                ${t('play.remote.button1')}
+                ${t('play.remote.quickmatch.button')}
               </button>
               <button id="remote-create-btn" class="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                ${t('play.remote.button2')}
+                ${t('play.remote.create.button')}
               </button>
               <button id="remote-join-btn" class="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                ${t('play.remote.button3')}
+                ${t('play.remote.join.button')}
               </button>
             </div>
             <p id="remote-login-hint" class="text-sm text-gray-500 mt-2 hidden">${t('play.remote.text')}</p>
@@ -285,20 +285,20 @@ export async function renderPlayPage(
         <div id="tournament-screen" class="hidden">
           <!-- Registration Phase -->
           <div id="tournament-registration" class="bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 mb-4">Tournament Registration</h3>
-            <p class="text-gray-600 mb-6">Add up to 8 players. Minimum 2 players required to start.</p>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">${t('play.local.tournament.registration.title')}</h3>
+            <p class="text-gray-600 mb-6">${t('play.local.tournament.registration.text')}</p>
 
             <div class="mb-6">
               <div class="flex gap-2 mb-4">
-                <input
+                <input 
                   type="text"
                   id="tournament-player-alias"
-                  placeholder="Player alias..."
+                  placeholder="${t('play.local.tournament.registration.placeholder')}"
                   maxlength="20"
                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <button id="add-tournament-player-btn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
-                  Add Player
+                  ${t('play.local.tournament.registration.addplayer.button')}
                 </button>
               </div>
               <span id="tournament-error" class="text-red-600 text-sm mt-1 hidden"></span>
@@ -310,7 +310,7 @@ export async function renderPlayPage(
 
               <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span class="text-gray-700">
-                  <span id="tournament-player-count" class="font-bold text-purple-600">0</span> / 8 players
+                  <span id="tournament-player-count" class="font-bold text-purple-600">0</span> / 8 ${t('play.local.tournament.registration.players')}
                 </span>
                 <span id="tournament-status-message" class="text-sm text-gray-500">Add at least 2 players to start</span>
               </div>
@@ -318,10 +318,10 @@ export async function renderPlayPage(
 
             <div class="flex gap-4">
               <button id="start-tournament-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
-                Start Tournament
+                ${t('play.local.tournament.registration.starttournament.button')}
               </button>
               <button id="back-from-tournament-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                Back to Menu
+                ${t('play.local.tournament.registration.backtomenu.button')}
               </button>
             </div>
           </div>
@@ -330,9 +330,9 @@ export async function renderPlayPage(
           <div id="tournament-bracket" class="hidden">
             <div class="max-w-6xl mx-auto">
               <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-gray-900">Tournament Bracket</h3>
+                <h3 class="text-2xl font-bold text-gray-900">${t('play.local.tournament.bracket.title')}</h3>
                 <button id="end-tournament-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">
-                  End Tournament
+                  ${t('play.local.tournament.bracket.end.button')}
                 </button>
               </div>
 
@@ -586,13 +586,23 @@ function setupPlayPageEvents(): void {
     // Update status message
     if (tournamentStatusMessage) {
       if (playerCount === 0) {
-        tournamentStatusMessage.textContent = 'Add at least 2 players to start';
+        tournamentStatusMessage.textContent = t('play.local.tournament.registration.smalltext');
       } else if (playerCount === 1) {
-        tournamentStatusMessage.textContent = 'Need at least 1 more player';
+        tournamentStatusMessage.textContent = t(
+          'play.local.tournament.registration.smalltext.onemore'
+        );
       } else if (playerCount < 8) {
-        tournamentStatusMessage.textContent = `Ready to start! (Can add ${8 - playerCount} more)`;
+        const remaining = 8 - playerCount;
+        tournamentStatusMessage.textContent = t(
+          'play.local.tournament.registration.smalltext.ready',
+          {
+            remaining,
+          }
+        );
       } else {
-        tournamentStatusMessage.textContent = 'Tournament is full!';
+        tournamentStatusMessage.textContent = t(
+          'play.local.tournament.registration.smalltext.full'
+        );
       }
     }
 
@@ -605,7 +615,7 @@ function setupPlayPageEvents(): void {
           <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
             <span class="font-medium text-gray-800">${escapeHtml(player.alias)}</span>
             <button class="remove-player-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition" data-player-id="${player.id}">
-              Remove
+              ${t('play.local.tournament.registration.remove.button')}
             </button>
           </div>
         `
@@ -656,14 +666,14 @@ function setupPlayPageEvents(): void {
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center mb-4">
-          <h3 class="text-2xl font-bold mb-2">Round ${round}</h3>
+          <h3 class="text-2xl font-bold mb-2"> ${t('play.local.tournament.bracket.round', { round })}</h3>
           <p class="text-xl mb-4">
             <span class="text-blue-400">${escapeHtml(match.player1.alias)}</span>
-            vs
+            ${t('play.local.tournament.bracket.versus')}
             <span class="text-green-400">${escapeHtml(match.player2.alias)}</span>
           </p>
           <button id="playMatchBtn" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-bold transition-colors">
-            Play Match
+            ${t('play.local.tournament.bracket.play.button')}
           </button>
         </div>
       `;
@@ -832,11 +842,11 @@ function setupPlayPageEvents(): void {
       const expectedMatches = Math.ceil(Math.pow(2, totalRounds - roundIndex - 1));
       matchesToShow = Math.max(roundMatches.length, expectedMatches);
     }
-
+    const index = roundIndex + 1;
     let html = `
       <div class="bracket-round-column">
         <h3 class="text-lg font-bold text-center mb-6 text-white">
-          ${isLastRound ? 'Finals' : `Round ${roundIndex + 1}`}
+          ${isLastRound ? t('play.local.tournament.bracket.islastround.finals') : t('play.local.tournament.bracket.islastround.round', { index })}
         </h3>
         <div class="bracket-matches-container" style="gap: ${verticalGap}px;">
     `;
@@ -886,12 +896,12 @@ function setupPlayPageEvents(): void {
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center">
-          <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 Tournament Complete! 🏆</h2>
+          <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
           <p class="text-2xl mb-6">
-            Winner: <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
+            ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
           </p>
           <button id="newTournamentBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
-            Start New Tournament
+            ${t('play.local.tournament.bracket.complete.startnew.button')}
           </button>
         </div>
       `;
@@ -1322,7 +1332,7 @@ function setupPlayPageEvents(): void {
       hideInlineError(tournamentErrorEl);
       updateTournamentUI();
       tournamentPlayerAliasInput.focus();
-      toast.success(`${alias} added to tournament`);
+      toast.success(t('play.local.tournament.registration.added.msg', { alias }));
     } else {
       if (!tournamentManager.canAddPlayers()) {
         showInlineError(tournamentErrorEl, 'Tournament is full (8 players max)');

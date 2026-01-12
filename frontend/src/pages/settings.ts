@@ -349,7 +349,7 @@ function setupAliasHandler(): void {
       }
 
       updateBtn.disabled = true;
-      updateBtn.textContent = 'Updating...';
+      updateBtn.textContent = t('settings.profile.picture.updating.button');
 
       try {
         await updateAlias(newAlias);
@@ -365,7 +365,7 @@ function setupAliasHandler(): void {
         showMessage(err instanceof Error ? err.message : 'Failed to update alias', true);
       } finally {
         updateBtn.disabled = false;
-        updateBtn.textContent = 'Update';
+        updateBtn.textContent = t('settings.profile.picture.update.button');
       }
     });
   }
@@ -424,7 +424,7 @@ function setup2FAHandlers(): void {
         setupBtn.classList.add('hidden');
       } catch (err) {
         showMessage(err instanceof Error ? err.message : 'Failed to setup 2FA', true);
-        setupBtn.textContent = 'Enable 2FA';
+        setupBtn.textContent = t('settings.2FA.enable2FA');
         (setupBtn as HTMLButtonElement).disabled = false;
       }
     });
@@ -448,11 +448,11 @@ function setup2FAHandlers(): void {
       }
 
       (verifyBtn as HTMLButtonElement).disabled = true;
-      verifyBtn.textContent = 'Verifying...';
+      verifyBtn.textContent = t('settings.2FA.verifying.button');
 
       try {
         await enable2FA(code);
-        showMessage('2FA has been enabled successfully!');
+        showMessage(t('settings.2FA.enable2FA.success.message'));
         // Reload page to show updated status
         setTimeout(() => {
           const event = new CustomEvent('navigate', { detail: { page: 'settings' } });
@@ -461,7 +461,7 @@ function setup2FAHandlers(): void {
       } catch (err) {
         showMessage(err instanceof Error ? err.message : 'Failed to verify code', true);
         (verifyBtn as HTMLButtonElement).disabled = false;
-        verifyBtn.textContent = 'Verify & Enable';
+        verifyBtn.textContent = t('settings.2FA.setup.verify.button');
       }
     });
   }
@@ -472,7 +472,7 @@ function setup2FAHandlers(): void {
       setupContainer?.classList.add('hidden');
       setupBtn?.classList.remove('hidden');
       if (setupBtn) {
-        setupBtn.textContent = 'Enable 2FA';
+        setupBtn.textContent = t('settings.2FA.cancel.enable2FA');
         (setupBtn as HTMLButtonElement).disabled = false;
       }
       if (verificationCode) verificationCode.value = '';
@@ -485,18 +485,16 @@ function setup2FAHandlers(): void {
     disableBtn.addEventListener('click', async () => {
       hideMessage();
 
-      if (
-        !confirm('Are you sure you want to disable 2FA? This will make your account less secure.')
-      ) {
+      if (!confirm(t('settings.2FA.disable2FA.popup.message'))) {
         return;
       }
 
       (disableBtn as HTMLButtonElement).disabled = true;
-      disableBtn.textContent = 'Disabling...';
+      disableBtn.textContent = t('settings.2FA.disabling.button');
 
       try {
         await disable2FA();
-        showMessage('2FA has been disabled');
+        showMessage(t('settings.2FA.disable2FA.confirm.message'));
         // Reload page to show updated status
         setTimeout(() => {
           const event = new CustomEvent('navigate', { detail: { page: 'settings' } });
@@ -505,7 +503,7 @@ function setup2FAHandlers(): void {
       } catch (err) {
         showMessage(err instanceof Error ? err.message : 'Failed to disable 2FA', true);
         (disableBtn as HTMLButtonElement).disabled = false;
-        disableBtn.textContent = 'Disable 2FA';
+        disableBtn.textContent = t('settings.2FA.disable2FA');
       }
     });
   }
