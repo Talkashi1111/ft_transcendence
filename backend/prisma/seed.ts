@@ -35,14 +35,14 @@ const forceDemo = process.argv.includes('--demo');
 
 // Demo users for development
 const demoUsers = [
-  { email: 'alice@example.com', alias: 'alice', password: 'password123' },
-  { email: 'bob@example.com', alias: 'bob', password: 'password123' },
-  { email: 'charlie@example.com', alias: 'charlie', password: 'password123' },
-  { email: 'demo@example.com', alias: 'demo', password: 'demo1234' },
-  { email: 'eve@example.com', alias: 'eve', password: 'password123' },
-  { email: 'frank@example.com', alias: 'frank', password: 'password123' },
-  { email: 'grace@example.com', alias: 'grace', password: 'password123' },
-  { email: 'henry@example.com', alias: 'henry', password: 'password123' },
+  { email: 'alice@example.com', alias: 'alice', password: 'Password123!' },
+  { email: 'bob@example.com', alias: 'bob', password: 'Password123!' },
+  { email: 'charlie@example.com', alias: 'charlie', password: 'Password123!' },
+  { email: 'demo@example.com', alias: 'demo', password: 'Demo1234!' },
+  { email: 'eve@example.com', alias: 'eve', password: 'Password123!' },
+  { email: 'frank@example.com', alias: 'frank', password: 'Password123!' },
+  { email: 'grace@example.com', alias: 'grace', password: 'Password123!' },
+  { email: 'henry@example.com', alias: 'henry', password: 'Password123!' },
 ];
 
 // Essential users for production (e.g., admin account)

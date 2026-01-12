@@ -28,12 +28,12 @@ describe('WebSocket Integration', () => {
     // Create two test users
     const player1 = {
       email: 'wsplayer1@example.com',
-      password: 'password123',
+      password: 'Password123!',
       alias: 'WSPlayer1',
     };
     const player2 = {
       email: 'wsplayer2@example.com',
-      password: 'password123',
+      password: 'Password123!',
       alias: 'WSPlayer2',
     };
 

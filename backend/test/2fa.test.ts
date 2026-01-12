@@ -20,7 +20,7 @@ describe('2FA Module', () => {
   const testUser = {
     email: '2fa-test@example.com',
     alias: '2fauser',
-    password: 'password123',
+    password: 'Password123!',
   };
 
   let cookies: string;
