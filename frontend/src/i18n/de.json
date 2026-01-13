@@ -241,9 +241,10 @@
 
   "auth.invalid_credentials": "Ungültige E-Mail-Adresse oder falsches Passwort.",
   "aria.label.alias": "Alias",
-  "aria.label.password": "Password",
-  "aria.label.nav.lang": "Language",
-  "aria.label.login.password": "Password",
-  "alt.nav.user.avatar": "Avatar picture",
-  "alt.nav.user.avatar.mobile": "Avatar picture"
+  "aria.label.password": "Passwort",
+  "aria.label.nav.lang": "Sprache",
+  "aria.label.login.password": "Passwort",
+  "alt.nav.user.avatar": "Avatarbild",
+  "alt.nav.user.avatar.mobile": "Avatarbild"
+}
 }

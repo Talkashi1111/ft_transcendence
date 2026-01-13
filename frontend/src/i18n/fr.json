@@ -147,7 +147,7 @@
   "friends.pending.requests.decline.button": "Refuser",
   "friends.search.results.add.friend.button": "Ajouter un ami",
   "friends.search.results.load.more.button": "Charger plus de résultats...",
-  "friends.notifications.markallasread": "Tout marquer comme lu",
+  "friends.notifications.markallasread": "Tout marquer comme lu.",
   "friends.send.request.toast.error": "Échec de l’envoi de la demande d’ami.",
   "friends.accept.request.toast.error": "Échec de l’acceptation de la demande d’ami.",
   "friends.decline.request.toast.error": "Échec du refus de la demande d’ami.",
