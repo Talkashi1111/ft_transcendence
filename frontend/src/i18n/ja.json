@@ -162,7 +162,6 @@
   "friends.opponent.reconnect.toast.success": "対戦相手が再接続しました！",
   "friends.rejoin.match.toast.success": "プレイヤー {playerNumber} としてマッチに再参加しました",
   "friends.opponent.join.match.toast.success": "{opponent} がマッチに参加しました！",
-  "friends.opponent.left.match.toast.warning": "対戦相手がマッチを退出しました！",
 
   "settings.title": "設定",
   "settings.avatar.picture": "アバター画像",
