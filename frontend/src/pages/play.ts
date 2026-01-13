@@ -173,11 +173,11 @@ export async function renderPlayPage(
               </div>
 
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 class="font-semibold text-blue-900 mb-2">${t('play.game_setup.controls.label')}</h4>
+                <h4 class="font-semibold text-blue-900 mb-2">${t('play.local.1vbot.controls')}</h4>
                 <div class="text-sm text-blue-800 space-y-1">
-                  <p><strong>Up:</strong> W or ↑</p>
-                  <p><strong>Down:</strong> S or ↓</p>
-                  <p><strong>Pause:</strong> SPACE or ESC</p>
+                  <p><strong>${t('play.local.1vbot.controls.up.label')}</strong>${t('play.local.1vbot.controls.up')}</p>
+                  <p><strong>${t('play.local.1vbot.controls.down.label')}</strong>${t('play.local.1vbot.controls.down')}</p>
+                  <p><strong>${t('play.local.1vbot.controls.pause.label')}</strong>${t('play.local.1vbot.controls.pause')}</p>
                 </div>
               </div>
 
@@ -397,7 +397,7 @@ export async function renderPlayPage(
                 <span class="text-gray-700">
                   <span id="tournament-player-count" class="font-bold text-purple-600">0</span> / 8 ${t('play.local.tournament.registration.players')}
                 </span>
-                <span id="tournament-status-message" class="text-sm text-gray-500">Add at least 2 players to start</span>
+                <span id="tournament-status-message" class="text-sm text-gray-500">${t('play.local.tournament.registration.smalltext')}</span>
               </div>
             </div>
 

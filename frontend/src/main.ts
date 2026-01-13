@@ -391,7 +391,7 @@ async function renderNavBar(
                 isDev
                   ? `
   <a
-    href="https://talkashi1111.github.io/ft_transcendence/"
+    href="https://sidneybaumann.github.io/ft_transcendence/#"
     target="_blank"
     rel="noopener noreferrer"
     class="

@@ -913,13 +913,13 @@ export async function renderFriendsPage(
       ${navBar}
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Friends</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">${t('friends.title')}</h1>
 
         <!-- Tabs -->
         <div class="border-b border-gray-200 mb-6">
           <nav class="-mb-px flex space-x-8">
             <button data-tab="friends" class="${getTabClasses('friends')}">
-              ${t('friends.title')}
+              ${t('friends.label')}
               <span id="friends-count" class="ml-1 text-gray-400">(${friends.length})</span>
             </button>
             <button data-tab="requests" class="${getTabClasses('requests')} relative">
