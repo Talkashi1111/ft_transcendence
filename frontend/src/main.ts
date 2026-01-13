@@ -481,7 +481,7 @@ async function renderNavBar(
                   <img
                     id="nav-user-avatar"
                     src="${avatarUrl}"
-                    alt="Profile"
+                    alt="${t('alt.nav.user.avatar')}"
                     class="w-6 h-6 rounded-full object-cover border border-gray-300 hover:border-blue-500 transition cursor-pointer"
                     title="View profile"
                   />
@@ -508,7 +508,7 @@ async function renderNavBar(
             <select
               id="nav-lang"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:text-gray-900 hover:bg-gray-100 appearance-none"
-              aria-label="Language"
+              aria-label="${t('aria.label.nav.lang')}"
             >
               <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
               <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
@@ -522,22 +522,22 @@ async function renderNavBar(
       <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-200">
         <div class="px-4 py-3 space-y-2">
           <button id="nav-home-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-            Home
+            ${t('mobile.home')}
           </button>
           <button id="nav-play-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-            Play
+            ${t('mobile.play')}
           </button>
           ${
             isAuth
               ? `
             <button id="nav-tournaments-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Tournaments
+              ${t('mobile.tournaments')}
             </button>
             <button id="nav-friends-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Friends
+              ${t('mobile.friends')}
             </button>
             <button id="nav-settings-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Settings
+              ${t('mobile.settings')}
             </button>
             <div class="border-t border-gray-200 my-2"></div>
             <!-- User info in mobile menu -->
@@ -548,7 +548,7 @@ async function renderNavBar(
                 <img
                   id="nav-user-avatar-mobile"
                   src="${avatarUrl}"
-                  alt="Profile"
+                  alt="${t('alt.nav.user.avatar.mobile')}"
                   class="w-8 h-8 rounded-full object-cover border border-gray-300"
                 />
               `
@@ -559,15 +559,15 @@ async function renderNavBar(
               <span id="nav-user-alias-mobile" class="font-medium text-gray-700">${escapeHtml(userAlias)}</span>
             </div>
             <button id="nav-logout-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
-              Logout
+              ${t('mobile.logout')}
             </button>
           `
               : `
             <button id="nav-login-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'login' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Login
+              ${t('mobile.login')}
             </button>
             <button id="nav-register-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Register
+              ${t('mobile.register')}
             </button>
           `
           }

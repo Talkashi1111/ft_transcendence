@@ -48,7 +48,7 @@ export async function renderLoginPage(
                   placeholder="${t('login.password.placeholder')}"
                   required
                   aria-required="true"
-                  aria-label="Password"
+                  aria-label="${t('aria.label.login.password')}"
                   autocomplete="current-password"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
@@ -85,7 +85,7 @@ export async function renderLoginPage(
                   maxlength="6"
                   inputmode="numeric"
                   pattern="[0-9]{6}"
-                  placeholder="000000"
+                  placeholder="${t('settings.2FA.setup.code.placeholder')}"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
@@ -98,14 +98,14 @@ export async function renderLoginPage(
                 id="verify-2fa-btn"
                 class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Verify
+                ${t('settings.2FA.setup.verify')}
               </button>
 
               <button
                 id="back-to-login-btn"
                 class="w-full text-gray-500 hover:text-gray-700 text-sm"
               >
-                ← Back to login
+                ${t('settings.2FA.setup.link.backtologin')}
               </button>
             </div>
 

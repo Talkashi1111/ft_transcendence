@@ -202,13 +202,13 @@ export async function renderPlayPage(
 
               <div>
                 <div class="block text-sm font-medium text-gray-700 mb-2">
-                  Select Difficulty Level for Bot
+                  ${t('play.local.1vbot.hidden.text')}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4">
-                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Paw Patrol</button>
-                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Track-y</button>
-                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am human</button>
-                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am God</button>
+                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.paw')}</button>
+                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.tracky')}</button>
+                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.human')}</button>
+                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.god')}</button>
                 </div>
               </div>
 
@@ -223,10 +223,10 @@ export async function renderPlayPage(
 
               <div class="flex gap-4">
                 <button id="start-bot-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
-                  Start Game
+                  ${t('play.local.1vbot.hidden.start.button')}
                 </button>
                 <button id="back-to-mode-from-bot-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Back
+                  ${t('play.local.1vbot.hidden.back.button')}
                 </button>
               </div>
 
@@ -302,7 +302,7 @@ export async function renderPlayPage(
             </div>
 
             <button id="cancel-remote-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">
-              Cancel
+                ${t('play.remote.waiting.room.cancel.button')}
             </button>
           </div>
         </div>
@@ -315,12 +315,12 @@ export async function renderPlayPage(
             <div class="space-y-4">
               <div>
                 <label for="match-id-input" class="block text-sm font-medium text-gray-700 mb-2">
-                  Match ID
+                  ${t('play.remote.matchID.label')}
                 </label>
                 <input
                   type="text"
                   id="match-id-input"
-                  placeholder="Enter match ID..."
+                  placeholder="${t('play.remote.matchID.placeholder')}"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
                 <span id="join-match-error" class="text-red-600 text-sm mt-1 hidden"></span>
@@ -328,10 +328,10 @@ export async function renderPlayPage(
 
               <div class="flex gap-4">
                 <button id="confirm-join-btn" class="flex-1 px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-semibold">
-                  Join Match
+                  ${t('play.remote.join.match.confirm.button')}
                 </button>
                 <button id="cancel-join-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Cancel
+                  ${t('play.remote.join.match.cancel.button')}
                 </button>
               </div>
             </div>
@@ -343,7 +343,7 @@ export async function renderPlayPage(
                 <p class="text-gray-500 text-sm">Loading matches...</p>
               </div>
               <button id="refresh-matches-btn" class="mt-3 text-sm text-cyan-600 hover:text-cyan-700">
-                ↻ Refresh
+                ${t('play.remote.available.matches.refresh.button')}
               </button>
             </div>
           </div>
@@ -650,7 +650,7 @@ function setupPlayPageEvents(): void {
             <span class="text-gray-400 text-xs ml-2">${match.id.slice(0, 8)}...</span>
           </span>
           <button class="join-available-match-btn px-3 py-1 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700" data-match-id="${match.id}">
-            Join
+            ${t('play.remote.available.matches.ws.join.button')}
           </button>
         </div>
       `
@@ -1073,10 +1073,10 @@ function setupPlayPageEvents(): void {
           handleRemoteGameEnd(winner, score1, score2);
         },
         onOpponentJoined: (opponentName) => {
-          toast.success(`${opponentName} joined the match!`);
+          toast.success(t('friends.join.match.toast.success', { opponentName }));
         },
         onOpponentLeft: () => {
-          toast.warning('Opponent left the match');
+          toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
         },
@@ -1089,7 +1089,7 @@ function setupPlayPageEvents(): void {
           if (remoteConnectionStatus) {
             remoteConnectionStatus.textContent = '';
           }
-          toast.success('Opponent reconnected!');
+          toast.success(t('friends.opponent.reconnect.toast.success'));
         },
         onError: (code, message) => {
           // Don't disconnect for non-fatal errors like unknown events
@@ -1114,7 +1114,7 @@ function setupPlayPageEvents(): void {
           }
         },
         onMatchJoined: (_matchId, _opponentName, playerNumber) => {
-          toast.success(`Rejoined match as Player ${playerNumber}!`);
+          toast.success(t('friends.rejoin.match.toast.success', { playerNumber }));
         },
       });
 
@@ -1162,7 +1162,7 @@ function setupPlayPageEvents(): void {
             <span class="text-gray-400 text-xs ml-2">${match.id.slice(0, 8)}...</span>
           </span>
           <button class="join-available-match-btn px-3 py-1 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700" data-match-id="${match.id}">
-            Join
+            ${t('play.remote.available.matches.join.button')}
           </button>
         </div>
       `
@@ -1221,10 +1221,10 @@ function setupPlayPageEvents(): void {
           handleRemoteGameEnd(winner, score1, score2);
         },
         onOpponentJoined: (opponent) => {
-          toast.success(`${opponent} joined the match!`);
+          toast.success(t('friends.opponent.join.match.toast.success', { opponent }));
         },
         onOpponentLeft: () => {
-          toast.warning('Opponent left the match');
+          toast.warning(t('friends.opponent.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
         },
@@ -1237,7 +1237,7 @@ function setupPlayPageEvents(): void {
           if (remoteConnectionStatus) {
             remoteConnectionStatus.textContent = '';
           }
-          toast.success('Opponent reconnected!');
+          toast.success(t('friends.opponent.reconnect.toast.success'));
         },
         onError: (code, message) => {
           // Don't disconnect for non-fatal errors like unknown events
@@ -1262,7 +1262,7 @@ function setupPlayPageEvents(): void {
           }
         },
         onMatchJoined: (_matchId, _opponent, playerNumber) => {
-          toast.success(`Joined match as Player ${playerNumber}!`);
+          toast.success(t('friends.join.match.toast.success', { playerNumber }));
         },
       });
 
@@ -1455,9 +1455,9 @@ function setupPlayPageEvents(): void {
       showTournamentPhase('bracket');
       renderTournamentBracket(); // Show full bracket with TBD
       startNextTournamentMatch();
-      toast.success('Tournament started!');
+      toast.success(t('friends.start.tournament.toast.success'));
     } else {
-      toast.error('Cannot start tournament. Need at least 2 players.');
+      toast.error(t('friends.start.tournament.toast.error'));
     }
   });
 

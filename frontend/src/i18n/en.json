@@ -1,5 +1,6 @@
 {
   "_meta.nav": "src/main.ts",
+  "_meta.mobile": "src/main.ts",
   "_meta.home": "src/main.ts",
   "_meta.play": "src/pages/play.ts",
   "_meta.login": "src/pages/login.ts",
@@ -18,6 +19,15 @@
   "nav.settings": "Settings",
   "nav.logout": "Logout",
 
+  "mobile.home": "Home",
+  "mobile.play": "Play",
+  "mobile.login": "Login",
+  "mobile.register": "Register",
+  "mobile.tournaments": "Tournaments",
+  "mobile.friends": "Friends",
+  "mobile.settings": "Settings",
+  "mobile.logout": "Logout",
+
   "home.welcome": "Welcome",
 
   "play.title": "Play Pong",
@@ -33,6 +43,14 @@
   "play.local.1vbot.tracky": "Track-y",
   "play.local.1vbot.human": "I am human",
   "play.local.1vbot.god": "I am God",
+
+  "play.local.1vbot.hidden.text": "Select Difficulty Level for Bot",
+  "play.local.1vbot.hidden.paw": "Paw Patrol",
+  "play.local.1vbot.hidden.tracky": "Track-y",
+  "play.local.1vbot.hidden.human": "I am human",
+  "play.local.1vbot.hidden.god": "I am God",
+  "play.local.1vbot.hidden.start.button": "Start Game",
+  "play.local.1vbot.hidden.back.button": "Back",
   "play.local.1vbot.start.button": "Start Game",
   "play.local.1vbot.back.button": "Back",
   "play.local.1vbot.controls": "Controls",
@@ -76,6 +94,16 @@
   "play.remote.leavegame.popup.message": "Are you sure you want to leave the game?",
   "play.remote.leavegame.popup.leave.button": "Leave",
   "play.remote.leavegame.popup.stay.button": "Stay",
+
+  "play.remote.waiting.room.cancel.button": "Cancel",
+  "play.remote.matchID.label": "Match ID",
+  "play.remote.matchID.placeholder": "Enter match ID...",
+  "play.remote.join.match.confirm.button": "Join Match",
+  "play.remote.join.match.cancel.button": "Cancel",
+  "play.remote.available.matches.refresh.button": "↻ Refresh",
+  "play.remote.available.matches.ws.join.button": "Join",
+  "play.remote.available.matches.join.button": "Join",
+
   "play.game_setup.title": "Game Setup",
   "play.game_setup.player1.alias.label": "Player 1 Alias",
   "play.game_setup.player1.alias.placeholder": "Enter name...",
@@ -117,6 +145,30 @@
   "friends.notifications.status": "No notifications.",
   "friends.notifications.innertext": "You're all caught up!",
 
+  "friends.sort.remove.button": "Remove",
+  "friends.pending.requests.accept.button": "Accept",
+  "friends.pending.requests.decline.button": "Decline",
+  "friends.search.results.add.friend.button": "Add friend",
+  "friends.search.results.load.more.button": "Load more results...",
+  "friends.notifications.markallasread": "Mark all as read",
+
+  "friends.send.request.toast.error": "Failed to send request.",
+  "friends.accept.request.toast.error": "Failed to accept request.",
+  "friends.decline.request.toast.error": "Failed to decline request",
+  "friends.remove.toast.error": "Failed to remove friend.",
+  "friends.send.request.toast.success": "Friend request sent!",
+  "friends.accept.request.toast.success": "Friend request accepted!",
+  "friends.decline.request.toast.success": "Friend request declined",
+  "friends.remove.toast.success": "Friend removed",
+  "friends.start.tournament.toast.success": "Tournament started!",
+  "friends.start.tournament.toast.error": "Cannot start tournament. Need at least 2 players.",
+  "friends.join.match.toast.success": "{opponentName} joined the match!",
+  "friends.left.match.toast.warning": "Opponent left the match!",
+  "friends.opponent.reconnect.toast.success": "Opponent reconnected!",
+  "friends.rejoin.match.toast.success": "Rejoined match as Player {playerNumber}",
+  "friends.opponent.join.match.toast.success": "{opponent} joined the match!",
+  "friends.opponent.left.match.toast.warning": "Opponent left the match!",
+
   "settings.title": "Settings",
   "settings.avatar.picture": "Avatar picture",
   "settings.avatar.picture.upload.button": "Upload New",
@@ -139,13 +191,13 @@
   "settings.account.info.email.alias.label": "Alias",
   "settings.account.info.email.alias.text": "3-30 characters. Cannot be changed during a match.",
   "settings.account.info.email.alias.update.button": "Update",
+
   "settings.2FA": "Two-Factor Authentication (2FA)",
   "settings.2FA.enabled": "Enabled",
   "settings.2FA.disabled": "Disabled",
   "settings.2FA.text": "Add an extra layer of security to your account by requiring a verification code from your authenticator app.",
   "settings.2FA.enable2FA": "Enable 2FA",
   "settings.2FA.enable2FA.success.message": "2FA has been enabled successfully!",
-
   "settings.2FA.disable2FA": "Disable 2FA",
   "settings.2FA.disable2FA.confirm.message": "2FA has been disabled",
   "settings.2FA.disable2FA.popup.message": "Are you sure you want to disable 2FA? This will make your account less secure.",
@@ -157,9 +209,12 @@
   "settings.2FA.setup.scan": "1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):",
   "settings.2FA.setup.manual": "Or enter this secret manually:",
   "settings.2FA.setup.code": "2. Enter the 6-digit code from your authenticator app:",
+  "settings.2FA.setup.code.placeholder": "000000",
+  "settings.2FA.setup.verification.code.placeholder": "000000",
   "settings.2FA.setup.verify.button": "Verify & Enable",
   "settings.2FA.setup.cancel": "Cancel",
-
+  "settings.2FA.setup.verify": "Verify",
+  "settings.2FA.setup.link.backtologin": "← Back to login",
   "settings.2FA.setup.error.message": "Failed to setup 2FA.",
   "settings.2FA.setup.code.error.message": "Please enter a valid 6-digit code.",
   "settings.2FA.setup.verify.code.error.message": "Failed to verify code",
@@ -193,5 +248,12 @@
   "register.text.account_holder": "Already have an account?",
   "register.link.login": "Login here",
 
-  "auth.invalid_credentials": "Invalid email or password."
+  "auth.invalid_credentials": "Invalid email or password.",
+
+  "aria.label.alias": "Alias",
+  "aria.label.password": "Password",
+  "aria.label.nav.lang": "Language",
+  "aria.label.login.password": "Password",
+  "alt.nav.user.avatar": "Avatar picture",
+  "alt.nav.user.avatar.mobile": "Avatar picture"
 }

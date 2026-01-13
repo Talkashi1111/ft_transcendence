@@ -159,7 +159,7 @@ export async function renderSettingsPage(
                     maxlength="6"
                     inputmode="numeric"
                     pattern="[0-9]{6}"
-                    placeholder="000000"
+                    placeholder="${t('settings.2FA.setup.verification.code.placeholder')}"
                     class="w-32 px-4 py-2 border border-gray-300 rounded-lg text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                   <button id="verify-code-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:bg-gray-400">
