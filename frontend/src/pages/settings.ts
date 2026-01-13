@@ -35,7 +35,7 @@ export async function renderSettingsPage(
 
         <!-- Avatar Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.profile.picture')}</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.avatar.picture')}</h2>
           <div class="flex items-center gap-6">
             <div class="relative">
               <img
@@ -54,14 +54,14 @@ export async function renderSettingsPage(
             <div class="flex-1">
               <div class="flex flex-wrap gap-2">
                 <label class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium cursor-pointer">
-                  ${t('settings.profile.picture.upload.button')}
+                  ${t('settings.avatar.picture.upload.button')}
                   <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" />
                 </label>
                 <button id="delete-avatar-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
-                  ${t('settings.profile.picture.remove.button')}
+                  ${t('settings.avatar.picture.remove.button')}
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mt-2">${t('settings.profile.picture.text')}</p>
+              <p class="text-xs text-gray-500 mt-2">${t('settings.avatar.picture.text')}</p>
               <div id="avatar-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
@@ -101,7 +101,7 @@ export async function renderSettingsPage(
         </div>
 
         <!-- 2FA Section -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.2FA')}</h2>
 
           <div id="2fa-status" class="mb-4">
@@ -239,14 +239,14 @@ function setupAvatarHandler(userId: string): void {
       // Client-side validation
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
-        showMessage('File is too large. Maximum size is 5MB.', true);
+        showMessage(t('settings.avatar.picture.filesize.error.message'), true);
         avatarInput.value = '';
         return;
       }
 
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        showMessage('Invalid file type. Please upload a JPG, PNG, WebP, or GIF image.', true);
+        showMessage(t('settings.avatar.picture.filetype.error.message'), true);
         avatarInput.value = '';
         return;
       }
@@ -268,7 +268,12 @@ function setupAvatarHandler(userId: string): void {
           navAvatar.src = getAvatarUrl(userId, Date.now());
         }
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to upload avatar', true);
+        showMessage(
+          err instanceof Error
+            ? err.message
+            : t('settings.avatar.picture.avatarupload.error.message'),
+          true
+        );
       } finally {
         setLoading(false);
         avatarInput.value = ''; // Reset input
@@ -303,7 +308,12 @@ function setupAvatarHandler(userId: string): void {
           navAvatar.src = getAvatarUrl(userId, Date.now());
         }
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to remove avatar', true);
+        showMessage(
+          err instanceof Error
+            ? err.message
+            : t('settings.avatar.picture.avatarremove.error.message'),
+          true
+        );
       } finally {
         setLoading(false);
         deleteBtn.disabled = false;
@@ -345,24 +355,21 @@ function setupAliasHandler(): void {
 
       // Client-side validation
       if (newAlias.length < 3 || newAlias.length > 30) {
-        showMessage('Alias must be between 3 and 30 characters', true);
+        showMessage(t('settings.avatar.picture.aliaslength.error.message'), true);
         return;
       }
 
       if (!/^[a-zA-Z0-9_.-]+$/.test(newAlias)) {
-        showMessage(
-          'Alias can only contain letters, numbers, underscores, dots, and hyphens',
-          true
-        );
+        showMessage(t('settings.avatar.picture.aliasformat.error.message'), true);
         return;
       }
 
       updateBtn.disabled = true;
-      updateBtn.textContent = t('settings.profile.picture.updating.button');
+      updateBtn.textContent = t('settings.avatar.picture.updating.button');
 
       try {
         await updateAlias(newAlias);
-        showMessage('Alias updated successfully!');
+        showMessage(t('settings.avatar.picture.aliasupdate.success.message'));
         aliasInput.value = newAlias;
 
         // Update navbar alias display
@@ -371,10 +378,15 @@ function setupAliasHandler(): void {
           navAlias.textContent = newAlias;
         }
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to update alias', true);
+        showMessage(
+          err instanceof Error
+            ? err.message
+            : t('settings.avatar.picture.aliasupdate.error.message'),
+          true
+        );
       } finally {
         updateBtn.disabled = false;
-        updateBtn.textContent = t('settings.profile.picture.update.button');
+        updateBtn.textContent = t('settings.avatar.picture.update.button');
       }
     });
   }
@@ -432,7 +444,10 @@ function setup2FAHandlers(): void {
         setupContainer?.classList.remove('hidden');
         setupBtn.classList.add('hidden');
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to setup 2FA', true);
+        showMessage(
+          err instanceof Error ? err.message : t('settings.2FA.setup.error.message'),
+          true
+        );
         setupBtn.textContent = t('settings.2FA.enable2FA');
         (setupBtn as HTMLButtonElement).disabled = false;
       }
@@ -452,7 +467,7 @@ function setup2FAHandlers(): void {
       const code = verificationCode.value.trim();
 
       if (!/^\d{6}$/.test(code)) {
-        showMessage('Please enter a valid 6-digit code', true);
+        showMessage(t('settings.2FA.setup.code.error.message'), true);
         return;
       }
 
@@ -468,7 +483,10 @@ function setup2FAHandlers(): void {
           window.dispatchEvent(event);
         }, 1500);
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to verify code', true);
+        showMessage(
+          err instanceof Error ? err.message : t('settings.2FA.setup.verify.code.error.message'),
+          true
+        );
         (verifyBtn as HTMLButtonElement).disabled = false;
         verifyBtn.textContent = t('settings.2FA.setup.verify.button');
       }
@@ -510,7 +528,10 @@ function setup2FAHandlers(): void {
           window.dispatchEvent(event);
         }, 1500);
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to disable 2FA', true);
+        showMessage(
+          err instanceof Error ? err.message : t('settings.2FA.disable2FA.error.message'),
+          true
+        );
         (disableBtn as HTMLButtonElement).disabled = false;
         disableBtn.textContent = t('settings.2FA.disable2FA');
       }

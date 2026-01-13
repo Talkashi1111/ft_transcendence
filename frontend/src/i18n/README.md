@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 ### Multiple language support
 
 | Go to                                         |
@@ -42,10 +44,14 @@
 - Allow users to set their preferred language as the default for subsequent visits.
 
   ```text
-  NOTE - Currently persistence is maintained using localStorage. Ultimately, will need to implement preferredLanguage in the DB.
+  NOTE - Currently persistence is maintained using localStorage. Ultimately, might want to implement preferredLanguage in the DB.
   ```
 
 This minor module aims to enhance the accessibility and inclusivity of your website by offering content in multiple languages, making it more user-friendly for a diverse international audience.
+
+<p style="text-align: right;">
+  <a href="#top">⬆ Back to top</a>
+</p>
 
 ## Current logic
 
@@ -107,16 +113,24 @@ C. `localStorage`
 D. Browser preference  
 E. Fallback to English
 
+<p style="text-align: right;">
+  <a href="#top">⬆ Back to top</a>
+</p>
+
 ## Workflow
 
 <span style="color: #ed6c02;">in progress</span> | <span style="color: #2e7d32;">done</span> | <span style="color: grey;">disabled</span>
 
 <ul style="list-style: none; padding-left: 0;">
   <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 1 - UI text</li> 
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 2 - UI errors</li>
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 3 - DB preferences and routes</li>
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 4 - CI tests</li>
+  <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 2 - CI tests</li>
+  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 3 - UI errors</li>
+  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 4 - DB preferences and routes</li>
 </ul>
+
+<p style="text-align: right;">
+  <a href="#top">⬆ Back to top</a>
+</p>
 
 ## Known issues
 
@@ -124,9 +138,22 @@ Rendering is only per page basis currently. (TO FIX)
 
 ## Files with UI text
 
-| File name | Function name |
-| --------- | ------------- |
-| main.ts   |               |
-|           |               |
+| File name      | Function name |
+| -------------- | ------------- |
+| main.ts        |               |
+| play.ts        |               |
+| login.ts       |               |
+| register.ts    |               |
+| tournaments.ts |               |
+| friends.ts     |               |
+| settings.ts    |               |
+
+<p style="text-align: right;">
+  <a href="#top">⬆ Back to top</a>
+</p>
 
 ## Files with UI errors
+
+<p style="text-align: right;">
+  <a href="#top">⬆ Back to top</a>
+</p>
