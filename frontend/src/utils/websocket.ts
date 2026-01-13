@@ -46,6 +46,7 @@ export type ServerEventType =
   | 'friend:online'
   | 'friend:offline'
   | 'friend:accepted'
+  | 'friend:removed'
   | 'notification:new'
   | 'error'
   | 'pong';
@@ -82,6 +83,7 @@ export interface ServerEvents {
   'friend:online': { friendId: string; friendAlias: string };
   'friend:offline': { friendId: string; friendAlias: string };
   'friend:accepted': { friendId: string; friendAlias: string };
+  'friend:removed': { friendId: string };
   'notification:new': { id: string; type: string; data: unknown; createdAt: string };
   error: { code: string; message: string };
   pong: Record<string, never>;

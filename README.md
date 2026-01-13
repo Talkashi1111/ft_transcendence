@@ -17,6 +17,9 @@ This project is about creating a website for the mighty Pong contest.
 - **Security**:
   - Two-Factor Authentication (2FA) support via TOTP (Google Authenticator).
   - HttpOnly cookies for session management.
+  - XSS protection via defense in depth:
+    - Backend input validation (regex allowlist for user aliases)
+    - Frontend output encoding (`escapeHtml()` for all user-controlled content)
 - **Blockchain**: Tournament scores recorded on Avalanche Fuji testnet.
 - **Social Features**: Friends system and real-time notifications.
 - **Development Environment**:
@@ -138,7 +141,7 @@ Modifying files from the host machine will not be possible. Update the `.env` fi
     localhost, mooo.com, <YOUR_IP_ADDRESS> {
     ```
 
-    _(Or just use `:443` to accept all traffic)_
+    _(Or just use `:8443` to accept all traffic)_
 
 3.  **Update Google Cloud Console**:
     Go to your Google Cloud Console credentials and add the IP-based URLs:
@@ -185,7 +188,9 @@ sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env.prod
 docker compose -f docker-compose.prod.yml --env-file .env.prod up
 ```
 
-**Access:** https://mooo.com (accept the self-signed certificate warning)
+**Access:** https://localhost:8443 or https://mooo.com:8443 (accept the self-signed certificate warning)
+
+> **Note:** Production uses unprivileged ports (8443/8080) so no root is required. If you have root access and prefer standard ports, edit `docker-compose.prod.yml` to use `443:443` and `80:80`.
 
 ### 3. Defense Setup (Multiple Devices)
 
@@ -212,10 +217,10 @@ For defense presentations where others need to access your site:
 
 3. **Configure Google OAuth (one-time):**
    - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-   - Add `https://mooo.com` to Authorized JavaScript origins
-   - Add `https://mooo.com/api/oauth/google/callback` to Authorized redirect URIs
+   - Add `https://mooo.com:8443` to Authorized JavaScript origins
+   - Add `https://mooo.com:8443/api/oauth/google/callback` to Authorized redirect URIs
 
-4. **Access from any device:** https://mooo.com
+4. **Access from any device:** https://mooo.com:8443
 
 ### Production Architecture
 
@@ -224,7 +229,7 @@ Internet/Local Network
          │
          ▼
     ┌─────────┐
-    │  Caddy  │ :443 (HTTPS) / :80 (HTTP→HTTPS redirect)
+    │  Caddy  │ :8443 (HTTPS) / :8080 (HTTP→HTTPS redirect)
     │  Proxy  │ TLS termination, routing
     └────┬────┘
          │ Internal network (HTTP)
@@ -263,11 +268,13 @@ Access from other IPs is blocked for security.
 - Ensure all callback URIs are registered in Google Cloud Console:
   - `http://localhost:5173/api/oauth/google/callback` (dev)
   - `https://localhost/api/oauth/google/callback` (prod local)
+  - `https://localhost:8443/api/oauth/google/callback` (prod local, non-root)
   - `https://mooo.com/api/oauth/google/callback` (prod remote)
+  - `https://mooo.com:8443/api/oauth/google/callback` (prod remote, non-root)
 
 **Can't access from other devices:**
 
-- Ensure firewall allows ports 443 and 80
+- Ensure firewall allows ports 8443 and 8080 (or 443/80 if using privileged ports)
 - Verify `/etc/hosts` on client points to server IP
 - Check that devices are on the same network
 

@@ -54,9 +54,8 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
-# SQLite database files
-*.db
-data/database.db
+# Data directory (database, avatars, etc.)
+data/
 
 # Optional npm cache directory
 .npm
