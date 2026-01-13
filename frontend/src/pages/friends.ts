@@ -454,7 +454,7 @@ function renderSearchTab(): string {
   return `
     <div class="mb-4">
       <div class="relative">
-        <input
+        <input 
           type="text"
           id="user-search-input"
           placeholder="${t('friends.findfriends.placeholder')}"
