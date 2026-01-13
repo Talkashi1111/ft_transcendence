@@ -9,6 +9,7 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyMultipart from '@fastify/multipart';
+import fastifyMetrics from 'fastify-metrics';
 import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
 import avatarRoutes from './modules/user/avatar.route.js';
@@ -120,6 +121,13 @@ export async function buildApp(): Promise<FastifyInstance> {
       cookieName: 'token', // Read JWT from 'token' cookie
       signed: false, // We'll handle cookie signing separately
     },
+  });
+
+  // Register Metrics plugin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await server.register(fastifyMetrics as any, {
+    endpoint: '/metrics',
+    enableDefaultMetrics: true,
   });
 
   // Authentication decorator
