@@ -41,6 +41,24 @@ release:   ## build & push prod image
 	docker compose -f docker-compose.prod.yml build
 	docker compose -f docker-compose.prod.yml push
 
+.PHONY: dev-elk
+dev-elk: ## start DEV runtime + ELK stack (DEV)
+	docker compose -f docker-compose.dev-elk.yml -f docker-compose.observability.dev.yml up -d --build
+	./scripts/elk/init-ilm-dev.sh
+	@echo "✅ DEV+ELK up:"
+	@echo "  - Frontend: http://localhost:5173"
+	@echo "  - Backend:  http://localhost:3000"
+	@echo "  - Kibana:   http://localhost:5601"
+
+.PHONY: dev-elk-logs
+dev-elk-logs: ## tail ELK logs (Filebeat + Logstash)
+	docker compose -f docker-compose.dev-elk.yml -f docker-compose.observability.dev.yml logs -f filebeat logstash
+
+.PHONY: dev-elk-down
+dev-elk-down: ## stop DEV+ELK stack
+	docker compose -f docker-compose.dev-elk.yml -f docker-compose.observability.dev.yml down -v --remove-orphans
+
+
 ## ============================================
 ## Development targets (run INSIDE devcontainer)
 ## ============================================

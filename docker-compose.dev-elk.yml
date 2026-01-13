@@ -1,0 +1,81 @@
+name: ft_transcendence_dev_elk
+
+services:
+  # One-shot setup: installs deps + prepares SQLite (migrations + seed)
+  setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    working_dir: /app
+    volumes:
+      - .:/app:cached
+      - sqlite-data:/app/data
+      - node_modules_cache:/app/node_modules
+      - frontend_node_modules:/app/frontend/node_modules
+      - backend_node_modules:/app/backend/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:/app/data/database.db
+    command: bash -lc "pnpm install && bash /app/scripts/init-db.sh"
+    restart: "no"
+    networks:
+      - dev-elk
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    working_dir: /app
+    volumes:
+      - .:/app:cached
+      - sqlite-data:/app/data
+      - node_modules_cache:/app/node_modules
+      - frontend_node_modules:/app/frontend/node_modules
+      - backend_node_modules:/app/backend/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:/app/data/database.db
+      - NODE_HOST=0.0.0.0
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    command: bash -lc "pnpm --filter backend run dev"
+    networks:
+      - dev-elk
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    working_dir: /app
+    volumes:
+      - .:/app:cached
+      - node_modules_cache:/app/node_modules
+      - frontend_node_modules:/app/frontend/node_modules
+      - backend_node_modules:/app/backend/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_started
+    command: bash -lc "pnpm --filter frontend run dev"
+    networks:
+      - dev-elk
+
+volumes:
+  sqlite-data:
+  node_modules_cache:
+  frontend_node_modules:
+  backend_node_modules:
+
+networks:
+  dev-elk:
