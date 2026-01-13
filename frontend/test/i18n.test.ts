@@ -293,10 +293,27 @@ function findTagInnerViolations(code: string, tag: string, ignoreIfNoText: boole
       .trim();
 
     if (ignoreIfNoText) {
-      // If it doesn’t look textual (icon-only), ignore.
-      const looksTextual =
-        /[A-Za-z0-9\u00C0-\u024F\u4E00-\u9FFF\u3040-\u30FF]/.test(inner) || /['"`]/.test(inner);
-      if (!looksTextual) continue;
+      // Remove tags to examine visible text-ish content only
+      const innerNoTags = inner
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Ignore common icon-only patterns (SVG icons, ×, &times;, etc.)
+      const hasLettersOrDigits = /[A-Za-z0-9\u00C0-\u024F\u4E00-\u9FFF\u3040-\u30FF]/.test(
+        innerNoTags
+      );
+      const looksLikeOnlyTimes = innerNoTags === '×' || innerNoTags === '&times;';
+
+      if (!hasLettersOrDigits || looksLikeOnlyTimes) {
+        // icon-only button (no real text) → don't require t() in inner text
+        continue;
+      }
+    }
+
+    // Allow variable-driven content like: ${escapeHtml(cancelText)}
+    if (/\$\{[^}]+\}/.test(inner) && !/t\s*\(/.test(inner)) {
+      continue;
     }
 
     if (!hasTCall(inner)) hits.push({ index: m.index, snippet: compact(block) });

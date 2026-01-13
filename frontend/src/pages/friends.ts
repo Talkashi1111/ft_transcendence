@@ -197,7 +197,7 @@ async function sendFriendRequest(userId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend request sent!');
+      toast.success(t('friends.send.request.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -205,7 +205,7 @@ async function sendFriendRequest(userId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to send request');
+    toast.error(t('friends.send.request.toast.error'));
     return false;
   }
 }
@@ -221,7 +221,7 @@ async function acceptFriendRequest(friendshipId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend request accepted!');
+      toast.success(t('friends.accept.request.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -229,7 +229,7 @@ async function acceptFriendRequest(friendshipId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to accept request');
+    toast.error(t('friends.accept.request.toast.error'));
     return false;
   }
 }
@@ -245,7 +245,7 @@ async function declineFriendRequest(friendshipId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend request declined');
+      toast.success(t('friends.decline.request.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -253,7 +253,7 @@ async function declineFriendRequest(friendshipId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to decline request');
+    toast.error(t('friends.decline.request.toast.error'));
     return false;
   }
 }
@@ -269,7 +269,7 @@ async function removeFriend(friendshipId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend removed');
+      toast.success(t('friends.remove.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -277,7 +277,7 @@ async function removeFriend(friendshipId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to remove friend');
+    toast.error(t('friends.remove.toast.error'));
     return false;
   }
 }
@@ -389,7 +389,7 @@ function renderFriendsList(): string {
             data-remove-friend="${f.id}"
             class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition"
           >
-            Remove
+            ${t('friends.sort.remove.button')}
           </button>
         </div>
       `
@@ -430,13 +430,13 @@ function renderRequestsList(): string {
               data-accept-request="${r.id}"
               class="px-3 py-1 text-sm bg-green-600 text-white hover:bg-green-700 rounded transition"
             >
-              Accept
+              ${t('friends.pending.requests.accept.button')}
             </button>
             <button
               data-decline-request="${r.id}"
               class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-200 rounded transition"
             >
-              Decline
+              ${t('friends.pending.requests.decline.button')}
             </button>
           </div>
         </div>
@@ -507,7 +507,7 @@ function renderSearchResults(): string {
               ? '<span class="text-sm text-green-600">✓ Friends</span>'
               : u.isPending
                 ? '<span class="text-sm text-yellow-600">Pending</span>'
-                : `<button data-add-friend="${u.id}" class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition">Add Friend</button>`
+                : `<button data-add-friend="${u.id}" class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition">${t('friends.search.results.add.friend.button')}</button>`
           }
         </div>
       `
@@ -518,7 +518,7 @@ function renderSearchResults(): string {
         hasMoreSearchResults
           ? `
         <button id="load-more-search" class="w-full py-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
-          Load more results...
+          ${t('friends.search.results.load.more.button')}
         </button>
       `
           : ''
@@ -551,7 +551,7 @@ function renderNotificationsList(): string {
         ? `
       <div class="mb-4 flex justify-end">
         <button id="mark-all-read" class="text-sm text-blue-600 hover:text-blue-700">
-          Mark all as read
+          ${t('friends.notifications.markallasread')}
         </button>
       </div>
     `

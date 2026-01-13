@@ -32,7 +32,7 @@ export async function renderRegisterPage(
                   placeholder="${t('register.alias.placeholder')}"
                   required
                   aria-required="true"
-                  aria-label="Alias"
+                  aria-label="${t('aria.label.alias')}"
                   autocomplete="username"
                   minlength="3"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
@@ -70,7 +70,7 @@ export async function renderRegisterPage(
                   placeholder="${t('register.password.placeholder')}"
                   required
                   aria-required="true"
-                  aria-label="Password"
+                  aria-label="${t('aria.label.password')}"
                   autocomplete="new-password"
                   minlength="8"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
