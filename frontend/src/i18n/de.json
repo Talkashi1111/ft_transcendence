@@ -163,7 +163,6 @@
   "friends.opponent.reconnect.toast.success": "Der Gegner ist wieder verbunden!",
   "friends.rejoin.match.toast.success": "Match erneut beigetreten als Spieler {playerNumber}",
   "friends.opponent.join.match.toast.success": "{opponent} ist dem Match beigetreten!",
-  "friends.opponent.left.match.toast.warning": "Der Gegner hat das Match verlassen!",
 
   "settings.title": "Einstellungen",
   "settings.avatar.picture": "Avatarbild",

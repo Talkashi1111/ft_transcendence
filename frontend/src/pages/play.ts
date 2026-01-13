@@ -375,7 +375,7 @@ export async function renderPlayPage(
 
             <div class="mb-6">
               <div class="flex gap-2 mb-4">
-                <input 
+                <input
                   type="text"
                   id="tournament-player-alias"
                   placeholder="${t('play.local.tournament.registration.placeholder')}"
@@ -1224,7 +1224,7 @@ function setupPlayPageEvents(): void {
           toast.success(t('friends.opponent.join.match.toast.success', { opponent }));
         },
         onOpponentLeft: () => {
-          toast.warning(t('friends.opponent.left.match.toast.warning'));
+          toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
         },

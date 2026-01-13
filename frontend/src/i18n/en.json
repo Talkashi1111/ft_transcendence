@@ -67,7 +67,7 @@
   "play.local.tournament.registration.smalltext.onemore": "Need at least 1 more player",
   "play.local.tournament.registration.smalltext.ready": "Ready to start! (Can add {remaining} more)",
   "play.local.tournament.registration.smalltext.full": "Tournament is full!",
-  "play.local.tournament.registration.placeholder": "T-Player alias...",
+  "play.local.tournament.registration.placeholder": "Player alias...",
   "play.local.tournament.registration.players": "players",
   "play.local.tournament.registration.addplayer.button": "Add Player",
   "play.local.tournament.registration.starttournament.button": "Start Tournament",
@@ -167,7 +167,6 @@
   "friends.opponent.reconnect.toast.success": "Opponent reconnected!",
   "friends.rejoin.match.toast.success": "Rejoined match as Player {playerNumber}",
   "friends.opponent.join.match.toast.success": "{opponent} joined the match!",
-  "friends.opponent.left.match.toast.warning": "Opponent left the match!",
 
   "settings.title": "Settings",
   "settings.avatar.picture": "Avatar picture",
@@ -184,7 +183,7 @@
   "settings.avatar.picture.aliaslength.error.message": "Alias must be between 3 and 30 characters.",
   "settings.avatar.picture.aliasformat.error.message": "Alias can only contain letters, numbers, underscores, dots, and hyphens.",
   "settings.avatar.picture.aliasupdate.error.message": "Failed to update alias.",
-  "settings.avatar.picture.aliasupdate.success.message": "Alias updated successfully!.",
+  "settings.avatar.picture.aliasupdate.success.message": "Alias updated successfully!",
 
   "settings.account.info": "Account Information",
   "settings.account.info.email": "Email:",
