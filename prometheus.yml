@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s # Check for new data every 5 seconds
+
+scrape_configs:
+  - job_name: 'ft_transcendence_backend'
+    static_configs:
+      - targets: ['app:3000'] # Connects to the 'app' service on port 3000

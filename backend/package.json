@@ -47,6 +47,7 @@
     "better-sqlite3": "^12.2.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.4.0",
+    "fastify-metrics": "^12.1.0",
     "file-type": "^21.3.0",
     "otpauth": "^9.4.1",
     "prisma": "^7.0.1",
