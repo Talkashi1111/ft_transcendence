@@ -1,0 +1,66 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: ft_elk_elasticsearch_dev
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elk_es_data:/usr/share/elasticsearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+    networks:
+      - dev-elk
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.2
+    container_name: ft_elk_kibana_dev
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "127.0.0.1:5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - dev-elk
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.2
+    container_name: ft_elk_logstash_dev
+    volumes:
+      - ./infra/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    environment:
+      - xpack.monitoring.enabled=false
+    ports:
+      - "127.0.0.1:5044:5044"
+    depends_on:
+      - elasticsearch
+    networks:
+      - dev-elk
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.2
+    container_name: ft_elk_filebeat_dev
+    user: root
+    command: ["-e", "--strict.perms=false"]
+    volumes:
+      - ./infra/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - logstash
+    networks:
+      - dev-elk
+
+volumes:
+  elk_es_data:
+
+networks:
+  dev-elk:
+    name: ft_transcendence_dev_elk_dev-elk

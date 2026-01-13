@@ -1,0 +1,39 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*-json.log
+
+    parsers:
+      - container:
+          stream: all
+          format: docker
+
+    prospector.scanner.symlinks: true
+
+processors:
+  # Assure que le champ "source" existe (utile pour add_docker_metadata)
+  - copy_fields:
+      fields:
+        - from: log.file.path
+          to: source
+      fail_on_error: false
+      ignore_missing: true
+
+  - add_docker_metadata:
+      host: 'unix:///var/run/docker.sock'
+      match_source: true
+      # souvent 4 marche (var/lib/docker/containers/<id>/...), si ça ne matche pas teste 5
+      match_source_index: 4
+
+  # optionnel: tagger l'env
+  - add_fields:
+      target: ''
+      fields:
+        env: dev
+
+output.logstash:
+  hosts: ['logstash:5044']
+
+logging.level: info
