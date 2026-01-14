@@ -1,4 +1,6 @@
 import './index.css';
+import { onLangChange, getLang, setLang } from './i18n/i18n';
+import { t } from './i18n/i18n';
 import {
   renderPlayPage,
   cleanupPlayPage,
@@ -375,14 +377,43 @@ async function renderNavBar(
       avatarUrl = `/api/users/${userId}/avatar?t=${Date.now()}`;
     }
   }
+  const lang = getLang();
+  const isDev = import.meta.env.DEV;
 
   return `
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
-            <div class="flex-shrink-0 flex items-center">
+            <div class="flex-shrink-0 flex items-center gap-2">
               <h1 class="text-xl sm:text-2xl font-bold text-gray-900">ft_transcendence</h1>
+              ${
+                isDev
+                  ? `
+  <a
+    href="https://sidneybaumann.github.io/ft_transcendence/#"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="
+      text-xs font-semibold
+      text-red-600
+      visited:text-red-600
+      active:text-red-600
+      focus:text-red-600
+      border border-red-600
+      rounded px-2 py-0.5
+      hover:bg-red-100
+      focus:outline-none
+      transition
+    "
+    title="Use Ctrl/Cmd + click to open documentation in a background tab"
+    aria-label="Open project documentation (Ctrl or Cmd + click for background tab)"
+  >
+    DEV
+  </a>
+`
+                  : ''
+              }
             </div>
           </div>
           <!-- Mobile menu button -->
@@ -404,6 +435,17 @@ async function renderNavBar(
             `
                 : ''
             }
+            <!-- Mobile: Language selector -->
+            <select
+              id="nav-lang-mobile"
+              class="px-2 py-1 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:bg-gray-100 appearance-none mr-1"
+              aria-label="${t('aria.label.nav.lang')}"
+            >
+              <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
+              <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
+              <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
+              <option value="de" ${lang === 'de' ? 'selected' : ''}>DE</option>
+            </select>
             <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path id="menu-icon-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -414,22 +456,22 @@ async function renderNavBar(
           <!-- Desktop menu -->
           <div class="hidden lg:flex items-center space-x-4">
             <button id="nav-home" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Home
+              ${t('nav.home')}
             </button>
             <button id="nav-play" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Play
+              ${t('nav.play')}
             </button>
             ${
               isAuth
                 ? `
               <button id="nav-tournaments" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Tournaments
+                ${t('nav.tournaments')}
               </button>
               <button id="nav-friends" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Friends
+                ${t('nav.friends')}
               </button>
               <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Settings
+                ${t('nav.settings')}
               </button>
               <div class="border-l border-gray-300 h-6 mx-2"></div>
               <!-- Notification Bell -->
@@ -450,7 +492,7 @@ async function renderNavBar(
                   <img
                     id="nav-user-avatar"
                     src="${avatarUrl}"
-                    alt="Profile"
+                    alt="${t('alt.nav.user.avatar')}"
                     class="w-6 h-6 rounded-full object-cover border border-gray-300 hover:border-blue-500 transition cursor-pointer"
                     title="View profile"
                   />
@@ -462,18 +504,28 @@ async function renderNavBar(
                 <span id="nav-user-alias" class="font-medium">${escapeHtml(userAlias)}</span>
               </span>
               <button id="nav-logout" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
-                Logout
+                ${t('nav.logout')}
               </button>
             `
                 : `
               <button id="nav-login" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'login' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Login
+                ${t('nav.login')}
               </button>
               <button id="nav-register" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-                Register
+                ${t('nav.register')}
               </button>
             `
             }
+            <select
+              id="nav-lang"
+              class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:text-gray-900 hover:bg-gray-100 appearance-none"
+              aria-label="${t('aria.label.nav.lang')}"
+            >
+              <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
+              <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
+              <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
+              <option value="de" ${lang === 'de' ? 'selected' : ''}>DE</option>
+            </select>
           </div>
         </div>
       </div>
@@ -481,22 +533,22 @@ async function renderNavBar(
       <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-200">
         <div class="px-4 py-3 space-y-2">
           <button id="nav-home-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'home' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-            Home
+            ${t('mobile.home')}
           </button>
           <button id="nav-play-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'play' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-            Play
+            ${t('mobile.play')}
           </button>
           ${
             isAuth
               ? `
             <button id="nav-tournaments-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'tournaments' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Tournaments
+              ${t('mobile.tournaments')}
             </button>
             <button id="nav-friends-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Friends
+              ${t('mobile.friends')}
             </button>
             <button id="nav-settings-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Settings
+              ${t('mobile.settings')}
             </button>
             <div class="border-t border-gray-200 my-2"></div>
             <!-- User info in mobile menu -->
@@ -507,7 +559,7 @@ async function renderNavBar(
                 <img
                   id="nav-user-avatar-mobile"
                   src="${avatarUrl}"
-                  alt="Profile"
+                  alt="${t('alt.nav.user.avatar.mobile')}"
                   class="w-8 h-8 rounded-full object-cover border border-gray-300"
                 />
               `
@@ -518,15 +570,15 @@ async function renderNavBar(
               <span id="nav-user-alias-mobile" class="font-medium text-gray-700">${escapeHtml(userAlias)}</span>
             </div>
             <button id="nav-logout-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
-              Logout
+              ${t('mobile.logout')}
             </button>
           `
               : `
             <button id="nav-login-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'login' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Login
+              ${t('mobile.login')}
             </button>
             <button id="nav-register-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'register' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
-              Register
+              ${t('mobile.register')}
             </button>
           `
           }
@@ -546,7 +598,7 @@ async function renderHome(app: HTMLElement) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-2xl mx-auto">
           <div class="bg-white rounded-lg shadow-lg p-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Welcome</h2>
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">${t('home.welcome')}</h2>
 
             <div class="flex justify-center">
               <img
@@ -574,26 +626,26 @@ async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">Tournament Matches</h2>
-          <p class="text-gray-600">View matches from the blockchain</p>
+          <h2 class="text-3xl font-bold text-gray-900 mb-2">${t('tournaments.title')}</h2>
+          <p class="text-gray-600">${t('tournaments.text')}</p>
         </div>
 
         <div class="bg-white rounded-lg shadow p-6 mb-6">
           <label for="tournament-id" class="block text-sm font-medium text-gray-700 mb-2">
-            Enter Tournament ID:
+            ${t('tournaments.input.label')}
           </label>
           <div class="flex gap-2">
             <input
               type="number"
               id="tournament-id"
-              placeholder="e.g., 1"
+              placeholder="${t('tournaments.input.placeholder')}"
               class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 border"
             />
             <button
               id="load-tournament"
               class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             >
-              Load Matches
+              ${t('tournaments.load.button')}
             </button>
           </div>
         </div>
@@ -609,7 +661,7 @@ async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
 
         <div id="matches-container" class="space-y-4">
           <div class="text-center py-12 text-gray-500">
-            Enter a tournament ID to view matches
+            ${t('tournaments.bottom.text')}
           </div>
         </div>
       </div>
@@ -636,6 +688,16 @@ function setupNavigation() {
   const logoutBtn = document.getElementById('nav-logout');
   const notificationsBtn = document.getElementById('nav-notifications');
   const avatarImg = document.getElementById('nav-user-avatar');
+  const langSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
+  const langSelectMobile = document.getElementById('nav-lang-mobile') as HTMLSelectElement | null;
+
+  langSelect?.addEventListener('change', () => {
+    setLang(langSelect.value as 'en' | 'fr' | 'ja' | 'de');
+  });
+
+  langSelectMobile?.addEventListener('change', () => {
+    setLang(langSelectMobile.value as 'en' | 'fr' | 'ja' | 'de');
+  });
 
   // Mobile navigation buttons
   const homeBtnMobile = document.getElementById('nav-home-mobile');
@@ -910,6 +972,8 @@ document.addEventListener('DOMContentLoaded', () => {
       navigate(page);
     }
   }) as EventListener);
+
+  onLangChange(render);
 
   render();
 });

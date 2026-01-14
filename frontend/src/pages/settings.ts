@@ -8,6 +8,7 @@ import {
   deleteAvatar,
   getAvatarUrl,
 } from '../utils/auth';
+import { t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
 
 export async function renderSettingsPage(
@@ -30,11 +31,11 @@ export async function renderSettingsPage(
       ${navBar}
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">${t('settings.title')}</h1>
 
         <!-- Avatar Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Profile Picture</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.avatar.picture')}</h2>
           <div class="flex items-center gap-6">
             <div class="relative">
               <img
@@ -53,14 +54,14 @@ export async function renderSettingsPage(
             <div class="flex-1">
               <div class="flex flex-wrap gap-2">
                 <label class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium cursor-pointer">
-                  Upload New
+                  ${t('settings.avatar.picture.upload.button')}
                   <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" />
                 </label>
                 <button id="delete-avatar-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
-                  Remove
+                  ${t('settings.avatar.picture.remove.button')}
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mt-2">JPG, PNG, WebP, or GIF. Max 5MB.</p>
+              <p class="text-xs text-gray-500 mt-2">${t('settings.avatar.picture.text')}</p>
               <div id="avatar-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
@@ -68,15 +69,15 @@ export async function renderSettingsPage(
 
         <!-- User Info Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.account.info')}</h2>
           <div class="space-y-4">
             <div class="text-gray-600">
-              <span class="font-medium">Email:</span> ${escapeHtml(user.email)}
+              <span class="font-medium">${t('settings.account.info.email')}</span> ${escapeHtml(user.email)}
             </div>
 
             <!-- Alias Edit Section -->
             <div>
-              <label for="alias-input" class="block text-sm font-medium text-gray-700 mb-1">Alias</label>
+              <label for="alias-input" class="block text-sm font-medium text-gray-700 mb-1">${t('settings.account.info.email.alias.label')}</label>
               <div class="flex gap-2">
                 <input
                   type="text"
@@ -90,29 +91,33 @@ export async function renderSettingsPage(
                   id="update-alias-btn"
                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-400"
                 >
-                  Update
+                  ${t('settings.account.info.email.alias.update.button')}
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mt-1">3-30 characters. Cannot be changed during a match.</p>
+              <p class="text-xs text-gray-500 mt-1">${t('settings.account.info.email.alias.text')}</p>
               <div id="alias-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
         </div>
 
         <!-- 2FA Section -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4">Two-Factor Authentication (2FA)</h2>
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.2FA')}</h2>
 
           <div id="2fa-status" class="mb-4">
             ${
               user.twoFactorEnabled
-                ? '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">✓ Enabled</span>'
-                : '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">Disabled</span>'
+                ? `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    ✓ ${t('settings.2FA.enabled')}
+                   </span>`
+                : `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                      ${t('settings.2FA.disabled')}
+                  </span>`
             }
           </div>
 
           <p class="text-gray-600 text-sm mb-4">
-            Add an extra layer of security to your account by requiring a verification code from your authenticator app.
+            ${t('settings.2FA.text')}
           </p>
 
           <!-- 2FA Actions -->
@@ -120,33 +125,33 @@ export async function renderSettingsPage(
             ${
               user.twoFactorEnabled
                 ? `<button id="disable-2fa-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
-                  Disable 2FA
+                  ${t('settings.2FA.disable2FA')}
                 </button>`
                 : `<button id="setup-2fa-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
-                  Enable 2FA
+                  ${t('settings.2FA.enable2FA')}
                 </button>`
             }
           </div>
 
           <!-- 2FA Setup Container (hidden initially) -->
           <div id="2fa-setup-container" class="hidden mt-6 p-4 border border-gray-200 rounded-lg">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Setup Two-Factor Authentication</h3>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">${t('settings.2FA.setup')}</h3>
 
             <div class="space-y-4">
               <div>
-                <p class="text-sm text-gray-600 mb-2">1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.scan')}</p>
                 <div id="qr-code-container" class="flex justify-center bg-white p-4 rounded border">
                   <div class="animate-pulse bg-gray-200 w-48 h-48"></div>
                 </div>
               </div>
 
               <div>
-                <p class="text-sm text-gray-600 mb-2">Or enter this secret manually:</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.manual')}</p>
                 <code id="secret-code" class="block bg-gray-100 p-2 rounded text-sm font-mono break-all"></code>
               </div>
 
               <div>
-                <p class="text-sm text-gray-600 mb-2">2. Enter the 6-digit code from your authenticator app:</p>
+                <p class="text-sm text-gray-600 mb-2">${t('settings.2FA.setup.code')}</p>
                 <div class="flex gap-2">
                   <input
                     type="text"
@@ -154,17 +159,17 @@ export async function renderSettingsPage(
                     maxlength="6"
                     inputmode="numeric"
                     pattern="[0-9]{6}"
-                    placeholder="000000"
+                    placeholder="${t('settings.2FA.setup.verification.code.placeholder')}"
                     class="w-32 px-4 py-2 border border-gray-300 rounded-lg text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                   <button id="verify-code-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:bg-gray-400">
-                    Verify & Enable
+                    ${t('settings.2FA.setup.verify.button')}
                   </button>
                 </div>
               </div>
 
               <button id="cancel-setup-btn" class="text-gray-500 hover:text-gray-700 text-sm">
-                Cancel
+                ${t('settings.2FA.setup.cancel')}
               </button>
             </div>
           </div>
@@ -176,7 +181,7 @@ export async function renderSettingsPage(
         <!-- Back to Home -->
         <div class="mt-6">
           <button id="back-home-btn" class="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to Home
+            ← ${t('settings.link.backtohome')}
           </button>
         </div>
       </div>
@@ -234,14 +239,14 @@ function setupAvatarHandler(userId: string): void {
       // Client-side validation
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
-        showMessage('File is too large. Maximum size is 5MB.', true);
+        showMessage(t('settings.avatar.picture.filesize.error.message'), true);
         avatarInput.value = '';
         return;
       }
 
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        showMessage('Invalid file type. Please upload a JPG, PNG, WebP, or GIF image.', true);
+        showMessage(t('settings.avatar.picture.filetype.error.message'), true);
         avatarInput.value = '';
         return;
       }
@@ -263,7 +268,12 @@ function setupAvatarHandler(userId: string): void {
           navAvatar.src = getAvatarUrl(userId, Date.now());
         }
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to upload avatar', true);
+        showMessage(
+          err instanceof Error
+            ? err.message
+            : t('settings.avatar.picture.avatarupload.error.message'),
+          true
+        );
       } finally {
         setLoading(false);
         avatarInput.value = ''; // Reset input
@@ -298,7 +308,12 @@ function setupAvatarHandler(userId: string): void {
           navAvatar.src = getAvatarUrl(userId, Date.now());
         }
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to remove avatar', true);
+        showMessage(
+          err instanceof Error
+            ? err.message
+            : t('settings.avatar.picture.avatarremove.error.message'),
+          true
+        );
       } finally {
         setLoading(false);
         deleteBtn.disabled = false;
@@ -340,24 +355,21 @@ function setupAliasHandler(): void {
 
       // Client-side validation
       if (newAlias.length < 3 || newAlias.length > 30) {
-        showMessage('Alias must be between 3 and 30 characters', true);
+        showMessage(t('settings.avatar.picture.aliaslength.error.message'), true);
         return;
       }
 
       if (!/^[a-zA-Z0-9_.-]+$/.test(newAlias)) {
-        showMessage(
-          'Alias can only contain letters, numbers, underscores, dots, and hyphens',
-          true
-        );
+        showMessage(t('settings.avatar.picture.aliasformat.error.message'), true);
         return;
       }
 
       updateBtn.disabled = true;
-      updateBtn.textContent = 'Updating...';
+      updateBtn.textContent = t('settings.avatar.picture.updating.button');
 
       try {
         await updateAlias(newAlias);
-        showMessage('Alias updated successfully!');
+        showMessage(t('settings.avatar.picture.aliasupdate.success.message'));
         aliasInput.value = newAlias;
 
         // Update navbar alias display
@@ -366,10 +378,15 @@ function setupAliasHandler(): void {
           navAlias.textContent = newAlias;
         }
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to update alias', true);
+        showMessage(
+          err instanceof Error
+            ? err.message
+            : t('settings.avatar.picture.aliasupdate.error.message'),
+          true
+        );
       } finally {
         updateBtn.disabled = false;
-        updateBtn.textContent = 'Update';
+        updateBtn.textContent = t('settings.avatar.picture.update.button');
       }
     });
   }
@@ -412,7 +429,7 @@ function setup2FAHandlers(): void {
   if (setupBtn) {
     setupBtn.addEventListener('click', async () => {
       hideMessage();
-      setupBtn.textContent = 'Loading...';
+      setupBtn.textContent = t('settings.2FA.loading.button');
       (setupBtn as HTMLButtonElement).disabled = true;
 
       try {
@@ -427,8 +444,11 @@ function setup2FAHandlers(): void {
         setupContainer?.classList.remove('hidden');
         setupBtn.classList.add('hidden');
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to setup 2FA', true);
-        setupBtn.textContent = 'Enable 2FA';
+        showMessage(
+          err instanceof Error ? err.message : t('settings.2FA.setup.error.message'),
+          true
+        );
+        setupBtn.textContent = t('settings.2FA.enable2FA');
         (setupBtn as HTMLButtonElement).disabled = false;
       }
     });
@@ -447,25 +467,28 @@ function setup2FAHandlers(): void {
       const code = verificationCode.value.trim();
 
       if (!/^\d{6}$/.test(code)) {
-        showMessage('Please enter a valid 6-digit code', true);
+        showMessage(t('settings.2FA.setup.code.error.message'), true);
         return;
       }
 
       (verifyBtn as HTMLButtonElement).disabled = true;
-      verifyBtn.textContent = 'Verifying...';
+      verifyBtn.textContent = t('settings.2FA.verifying.button');
 
       try {
         await enable2FA(code);
-        showMessage('2FA has been enabled successfully!');
+        showMessage(t('settings.2FA.enable2FA.success.message'));
         // Reload page to show updated status
         setTimeout(() => {
           const event = new CustomEvent('navigate', { detail: { page: 'settings' } });
           window.dispatchEvent(event);
         }, 1500);
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to verify code', true);
+        showMessage(
+          err instanceof Error ? err.message : t('settings.2FA.setup.verify.code.error.message'),
+          true
+        );
         (verifyBtn as HTMLButtonElement).disabled = false;
-        verifyBtn.textContent = 'Verify & Enable';
+        verifyBtn.textContent = t('settings.2FA.setup.verify.button');
       }
     });
   }
@@ -476,7 +499,7 @@ function setup2FAHandlers(): void {
       setupContainer?.classList.add('hidden');
       setupBtn?.classList.remove('hidden');
       if (setupBtn) {
-        setupBtn.textContent = 'Enable 2FA';
+        setupBtn.textContent = t('settings.2FA.cancel.enable2FA');
         (setupBtn as HTMLButtonElement).disabled = false;
       }
       if (verificationCode) verificationCode.value = '';
@@ -489,27 +512,28 @@ function setup2FAHandlers(): void {
     disableBtn.addEventListener('click', async () => {
       hideMessage();
 
-      if (
-        !confirm('Are you sure you want to disable 2FA? This will make your account less secure.')
-      ) {
+      if (!confirm(t('settings.2FA.disable2FA.popup.message'))) {
         return;
       }
 
       (disableBtn as HTMLButtonElement).disabled = true;
-      disableBtn.textContent = 'Disabling...';
+      disableBtn.textContent = t('settings.2FA.disabling.button');
 
       try {
         await disable2FA();
-        showMessage('2FA has been disabled');
+        showMessage(t('settings.2FA.disable2FA.confirm.message'));
         // Reload page to show updated status
         setTimeout(() => {
           const event = new CustomEvent('navigate', { detail: { page: 'settings' } });
           window.dispatchEvent(event);
         }, 1500);
       } catch (err) {
-        showMessage(err instanceof Error ? err.message : 'Failed to disable 2FA', true);
+        showMessage(
+          err instanceof Error ? err.message : t('settings.2FA.disable2FA.error.message'),
+          true
+        );
         (disableBtn as HTMLButtonElement).disabled = false;
-        disableBtn.textContent = 'Disable 2FA';
+        disableBtn.textContent = t('settings.2FA.disable2FA');
       }
     });
   }
