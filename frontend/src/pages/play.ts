@@ -200,46 +200,6 @@ export async function renderPlayPage(
           </div>
         </div>
 
-        <!-- Game Setup Screen VS Bot -->
-        <div id="bot-game-setup" class="hidden">
-          <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Game Setup Versus Bot</h3>
-            <div class="space-y-4">
-
-              <div>
-                <div class="block text-sm font-medium text-gray-700 mb-2">
-                  ${t('play.local.1vbot.hidden.text')}
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-4">
-                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.paw')}</button>
-                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.tracky')}</button>
-                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.human')}</button>
-                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.god')}</button>
-                </div>
-              </div>
-
-              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 class="font-semibold text-blue-900 mb-2">Controls:</h4>
-                <div class="text-sm text-blue-800 space-y-1">
-                  <p><strong>Up:</strong> W or ↑</p>
-                  <p><strong>Down:</strong> S or ↓</p>
-                  <p><strong>Pause:</strong> SPACE or ESC</p>
-                </div>
-              </div>
-
-              <div class="flex gap-4">
-                <button id="start-bot-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
-                  ${t('play.local.1vbot.hidden.start.button')}
-                </button>
-                <button id="back-to-mode-from-bot-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  ${t('play.local.1vbot.hidden.back.button')}
-                </button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
         <!-- Game Canvas Screen -->
         <div id="game-screen" class="hidden">
           <div class="flex flex-col items-center">
