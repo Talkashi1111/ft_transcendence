@@ -58,6 +58,7 @@ export async function findUserById(id: string) {
       email: true,
       alias: true,
       twoFactorEnabled: true,
+      preferredLanguage: true,
       createdAt: true,
     },
   });
@@ -72,6 +73,25 @@ export async function updateUserAlias(id: string, alias: string) {
       email: true,
       alias: true,
       twoFactorEnabled: true,
+      preferredLanguage: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function updateUserPreferredLanguage(
+  id: string,
+  preferredLanguage: 'en' | 'de' | 'fr' | 'ja'
+) {
+  return prisma.user.update({
+    where: { id },
+    data: { preferredLanguage },
+    select: {
+      id: true,
+      email: true,
+      alias: true,
+      twoFactorEnabled: true,
+      preferredLanguage: true,
       createdAt: true,
     },
   });

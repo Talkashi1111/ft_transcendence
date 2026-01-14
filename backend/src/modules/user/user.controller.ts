@@ -7,6 +7,7 @@ import {
   findUserById,
   updateUserAlias,
   searchUsers,
+  updateUserPreferredLanguage,
 } from './user.service.js';
 import {
   createUserSchema,
@@ -15,6 +16,8 @@ import {
   type CreateUserInput,
   type LoginInput,
   type UpdateAliasInput,
+  updatePreferredLanguageSchema,
+  type UpdatePreferredLanguageInput,
 } from './user.schema.js';
 import { verifyPassword } from '../../utils/hash.js';
 import { generateTempToken, getTempTokenExpiry } from '../../utils/auth-helpers.js';
@@ -227,6 +230,7 @@ export async function getMeHandler(request: FastifyRequest, reply: FastifyReply)
       email: user.email,
       alias: user.alias,
       twoFactorEnabled: user.twoFactorEnabled,
+      preferredLanguage: user.preferredLanguage ?? null,
       createdAt: user.createdAt.toISOString(),
     });
   } catch (error) {
@@ -281,6 +285,7 @@ export async function updateAliasHandler(
       email: user.email,
       alias: user.alias,
       twoFactorEnabled: user.twoFactorEnabled,
+      preferredLanguage: user.preferredLanguage ?? null,
       createdAt: user.createdAt.toISOString(),
     });
   } catch (error) {
@@ -300,6 +305,42 @@ export async function updateAliasHandler(
         statusCode: 409,
         error: 'Conflict',
         message: 'This alias is already taken',
+      });
+    }
+
+    request.log.error(error);
+    return reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Something went wrong',
+    });
+  }
+}
+
+export async function updatePreferredLanguageHandler(
+  request: FastifyRequest<{ Body: UpdatePreferredLanguageInput }>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.user as { id: string; email: string };
+    const validatedData = updatePreferredLanguageSchema.parse(request.body);
+
+    const user = await updateUserPreferredLanguage(id, validatedData.preferredLanguage);
+
+    return reply.send({
+      id: user.id,
+      email: user.email,
+      alias: user.alias,
+      twoFactorEnabled: user.twoFactorEnabled,
+      preferredLanguage: user.preferredLanguage ?? null,
+      createdAt: user.createdAt.toISOString(),
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return reply.status(400).send({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: error.issues[0].message,
       });
     }
 

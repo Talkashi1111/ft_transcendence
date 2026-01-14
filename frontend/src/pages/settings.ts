@@ -7,8 +7,9 @@ import {
   uploadAvatar,
   deleteAvatar,
   getAvatarUrl,
+  updatePreferredLanguage,
 } from '../utils/auth';
-import { t } from '../i18n/i18n';
+import { getLang, setLang, t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
 
 type SettingsUIState = {
@@ -143,6 +144,48 @@ export async function renderSettingsPage(
           </div>
         </div>
 
+        <!-- Set preferred language Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-1">Language</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            Choose the language for the UI. This will be saved to your account.
+          </p>
+
+          <form id="preferredLanguageForm" class="space-y-3">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="en" class="h-4 w-4" />
+              <span class="text-gray-900">English</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="de" class="h-4 w-4" />
+              <span class="text-gray-900">Deutsch</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="fr" class="h-4 w-4" />
+              <span class="text-gray-900">Français</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="ja" class="h-4 w-4" />
+              <span class="text-gray-900">日本語</span>
+            </label>
+
+            <div class="pt-2 flex items-center gap-3">
+              <button
+                id="preferredLanguageSaveBtn"
+                type="submit"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold"
+              >
+                Save
+              </button>
+
+              <span id="preferredLanguageStatus" class="text-sm text-gray-600"></span>
+            </div>
+          </form>
+        </div>
+
         <!-- 2FA Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.2FA')}</h2>
@@ -234,6 +277,7 @@ export async function renderSettingsPage(
   setupNavigation();
   setupAvatarHandler(user.id);
   setupAliasHandler();
+  setupPreferredLanguageHandler(user.preferredLanguage ?? null);
   setup2FAHandlers();
   restore2FAUIFromState();
 }
@@ -434,6 +478,55 @@ function setupAliasHandler(): void {
       }
     });
   }
+}
+
+function setupPreferredLanguageHandler(initialFromDb: string | null): void {
+  const form = document.getElementById('preferredLanguageForm') as HTMLFormElement | null;
+  const status = document.getElementById('preferredLanguageStatus') as HTMLSpanElement | null;
+  const saveBtn = document.getElementById('preferredLanguageSaveBtn') as HTMLButtonElement | null;
+
+  if (!form || !status || !saveBtn) return;
+
+  // Preselect: DB value first, otherwise current app lang
+  const fallback = getLang();
+  const initial = initialFromDb ?? fallback;
+
+  const initialRadio = form.querySelector<HTMLInputElement>(
+    `input[name="preferredLanguage"][value="${initial}"]`
+  );
+  if (initialRadio) initialRadio.checked = true;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const checked = form.querySelector<HTMLInputElement>('input[name="preferredLanguage"]:checked');
+    const value = checked?.value;
+
+    if (value !== 'en' && value !== 'de' && value !== 'fr' && value !== 'ja') {
+      status.textContent = 'Please choose a language.';
+      return;
+    }
+
+    status.textContent = 'Saving...';
+    saveBtn.disabled = true;
+
+    try {
+      await updatePreferredLanguage(value); // ✅ use your auth util
+
+      setLang(value); // ✅ apply immediately
+      status.textContent = 'Saved.';
+
+      // Optional: re-render page so every string refreshes immediately
+      setTimeout(() => {
+        const event = new CustomEvent('navigate', { detail: { page: 'settings' } });
+        window.dispatchEvent(event);
+      }, 300);
+    } catch (err) {
+      status.textContent = err instanceof Error ? err.message : 'Failed to save language.';
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
 }
 
 function setup2FAHandlers(): void {
