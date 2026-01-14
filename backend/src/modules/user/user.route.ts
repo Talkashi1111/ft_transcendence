@@ -7,6 +7,7 @@ import {
   logoutHandler,
   updateAliasHandler,
   searchUsersHandler,
+  updatePreferredLanguageHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
@@ -16,6 +17,7 @@ import {
   userMeResponseJsonSchema,
   loginResponseJsonSchema,
   usersResponseJsonSchema,
+  updatePreferredLanguageJsonSchema,
 } from './user.schema.js';
 
 async function userRoutes(server: FastifyInstance) {
@@ -164,6 +166,23 @@ async function userRoutes(server: FastifyInstance) {
     },
     searchUsersHandler
   );
+
+  // Update preferred language
+  server.route<{ Body: { preferredLanguage: 'en' | 'de' | 'fr' | 'ja' } }>({
+    method: 'PATCH',
+    url: '/me/language',
+    onRequest: [server.authenticate],
+    schema: {
+      description: 'Update preferred language for the current user.',
+      tags: ['Users'],
+      security: [{ bearerAuth: [] }],
+      body: updatePreferredLanguageJsonSchema,
+      response: {
+        200: userMeResponseJsonSchema,
+      },
+    },
+    handler: updatePreferredLanguageHandler,
+  });
 }
 
 export default userRoutes;

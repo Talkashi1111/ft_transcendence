@@ -1,6 +1,5 @@
 import './index.css';
-import { onLangChange, getLang, setLang } from './i18n/i18n';
-import { t } from './i18n/i18n';
+import { onLangChange, getLang, setLang, t, syncLangFromAccount } from './i18n/i18n';
 import {
   renderPlayPage,
   cleanupPlayPage,
@@ -930,7 +929,7 @@ function setupTournamentLoader() {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Determine initial page from URL
   const path = window.location.pathname.substring(1); // Remove leading slash
   if (
@@ -969,16 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }) as EventListener);
 
+  await syncLangFromAccount();
   onLangChange(render);
-  // onLangChange(() => {
-  //   // If we're on Settings, do the small patch (keeps 2FA container open)
-  //   if (document.getElementById('settings-title')) {
-  //     applySettingsTranslations();
-  //     return;
-  //   }
-
-  //   // Otherwise fallback to full rerender (for now)
-  //   render();
-  // });
   render();
 });
