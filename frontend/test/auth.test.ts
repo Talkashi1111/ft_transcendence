@@ -15,6 +15,7 @@ describe('Auth Utility', () => {
     email: 'test@test.com',
     alias: 'testuser',
     createdAt: '2024-01-01T00:00:00.000Z',
+    preferredLanguage: null,
   };
 
   beforeEach(() => {
@@ -304,7 +305,6 @@ describe('Auth Utility', () => {
       });
 
       const user = await getCurrentUser();
-
       expect(user).toEqual(mockUser);
       expect(fetch).toHaveBeenCalledWith('/api/users/me', {
         credentials: 'include',

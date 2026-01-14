@@ -146,30 +146,30 @@ export async function renderSettingsPage(
 
         <!-- Set preferred language Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-1">Language</h2>
+          <h2 class="text-xl font-semibold text-gray-900 mb-1">${t('settings.language.title')}</h2>
           <p class="text-sm text-gray-600 mb-4">
-            Choose the language for the UI. This will be saved to your account.
+            ${t('settings.language.text')}
           </p>
 
           <form id="preferredLanguageForm" class="space-y-3">
             <label class="flex items-center gap-3 cursor-pointer">
               <input type="radio" name="preferredLanguage" value="en" class="h-4 w-4" />
-              <span class="text-gray-900">English</span>
+              <span class="text-gray-900">${t('settings.language.english')}</span>
             </label>
 
             <label class="flex items-center gap-3 cursor-pointer">
               <input type="radio" name="preferredLanguage" value="de" class="h-4 w-4" />
-              <span class="text-gray-900">Deutsch</span>
+              <span class="text-gray-900">${t('settings.language.german')}</span>
             </label>
 
             <label class="flex items-center gap-3 cursor-pointer">
               <input type="radio" name="preferredLanguage" value="fr" class="h-4 w-4" />
-              <span class="text-gray-900">Français</span>
+              <span class="text-gray-900">${t('settings.language.french')}</span>
             </label>
 
             <label class="flex items-center gap-3 cursor-pointer">
               <input type="radio" name="preferredLanguage" value="ja" class="h-4 w-4" />
-              <span class="text-gray-900">日本語</span>
+              <span class="text-gray-900">${t('settings.language.japanese')}</span>
             </label>
 
             <div class="pt-2 flex items-center gap-3">
@@ -178,7 +178,7 @@ export async function renderSettingsPage(
                 type="submit"
                 class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold"
               >
-                Save
+                ${t('settings.language.save.button')}
               </button>
 
               <span id="preferredLanguageStatus" class="text-sm text-gray-600"></span>
