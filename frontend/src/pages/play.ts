@@ -20,6 +20,8 @@ const GAME_END_DELAY_MS = 2000; // Delay before showing result screen after game
 let pageCleanup: (() => void) | null = null;
 let isInActiveRemoteGame = false;
 
+let lastPlayScreenId = 'mode-selection';
+
 /**
  * Check if user is in an active remote game
  */
@@ -47,6 +49,10 @@ export function cleanupPlayPage(): void {
     pageCleanup = null;
   }
   isInActiveRemoteGame = false;
+}
+
+export function resetPlayUIState(): void {
+  lastPlayScreenId = 'mode-selection';
 }
 
 export async function renderPlayPage(
@@ -586,6 +592,7 @@ function setupPlayPageEvents(): void {
     remoteWaitingScreen?.classList.add('hidden');
     joinMatchScreen?.classList.add('hidden');
     remoteGameScreen?.classList.add('hidden');
+    lastPlayScreenId = screen.id;
     screen.classList.remove('hidden');
 
     // Subscribe to match list updates when join screen is visible
@@ -1684,6 +1691,9 @@ function setupPlayPageEvents(): void {
       }
     }
   });
+
+  const restoreEl = document.getElementById(lastPlayScreenId);
+  if (restoreEl) showScreen(restoreEl);
 
   function showResultScreen(
     winner: string,

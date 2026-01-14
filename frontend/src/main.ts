@@ -6,10 +6,11 @@ import {
   cleanupPlayPage,
   hasActiveRemoteGame,
   leaveRemoteGame,
+  resetPlayUIState,
 } from './pages/play';
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
-import { renderSettingsPage } from './pages/settings';
+import { renderSettingsPage, cleanupSettingsUIState } from './pages/settings';
 import { renderFriendsPage, cleanupFriendsPage } from './pages/friends';
 import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
 import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
@@ -252,6 +253,8 @@ async function navigate(
     cleanupPlayPage();
   } else if (currentPage === 'friends') {
     cleanupFriendsPage();
+  } else if (currentPage === 'settings') {
+    cleanupSettingsUIState();
   }
 
   currentPage = page;
@@ -283,6 +286,8 @@ window.addEventListener('popstate', async (event) => {
     cleanupPlayPage();
   } else if (currentPage === 'friends') {
     cleanupFriendsPage();
+  } else if (currentPage === 'settings') {
+    cleanupSettingsUIState();
   }
 
   if (event.state && event.state.page) {
@@ -390,28 +395,28 @@ async function renderNavBar(
               ${
                 isDev
                   ? `
-  <a
-    href="https://sidneybaumann.github.io/ft_transcendence/#"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="
-      text-xs font-semibold
-      text-red-600
-      visited:text-red-600
-      active:text-red-600
-      focus:text-red-600
-      border border-red-600
-      rounded px-2 py-0.5
-      hover:bg-red-100
-      focus:outline-none
-      transition
-    "
-    title="Use Ctrl/Cmd + click to open documentation in a background tab"
-    aria-label="Open project documentation (Ctrl or Cmd + click for background tab)"
-  >
-    DEV
-  </a>
-`
+                      <a
+                        href="https://sidneybaumann.github.io/ft_transcendence/#"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="
+                          text-xs font-semibold
+                          text-red-600
+                          visited:text-red-600
+                          active:text-red-600
+                          focus:text-red-600
+                          border border-red-600
+                          rounded px-2 py-0.5
+                          hover:bg-red-100
+                          focus:outline-none
+                          transition
+                        "
+                        title="Use Ctrl/Cmd + click to open documentation in a background tab"
+                        aria-label="Open project documentation (Ctrl or Cmd + click for background tab)"
+                      >
+                        DEV
+                      </a>
+                    `
                   : ''
               }
             </div>
@@ -611,8 +616,7 @@ async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
   const navBar = await renderNavBar('tournaments', authenticated);
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      ${navBar}
-
+        ${navBar}
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
           <h2 class="text-3xl font-bold text-gray-900 mb-2">${t('tournaments.title')}</h2>
@@ -719,7 +723,11 @@ function setupNavigation() {
 
   // Desktop navigation
   homeBtn?.addEventListener('click', () => navigate('home'));
-  playBtn?.addEventListener('click', () => navigate('play'));
+  playBtn?.addEventListener('click', () => {
+    // Optional safety: don't reset if user is in an active remote game
+    if (!hasActiveRemoteGame()) resetPlayUIState();
+    navigate('play');
+  });
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
   friendsBtn?.addEventListener('click', () => navigate('friends'));
   settingsBtn?.addEventListener('click', () => navigate('settings'));
@@ -733,6 +741,8 @@ function setupNavigation() {
   });
   playBtnMobile?.addEventListener('click', () => {
     closeMobileMenu();
+    // Optional safety: don't reset if user is in an active remote game
+    if (!hasActiveRemoteGame()) resetPlayUIState();
     navigate('play');
   });
   tournamentsBtnMobile?.addEventListener('click', () => {
@@ -928,7 +938,8 @@ document.addEventListener('DOMContentLoaded', () => {
     path === 'tournaments' ||
     path === 'login' ||
     path === 'register' ||
-    path === 'settings'
+    path === 'settings' ||
+    path === 'friends'
   ) {
     currentPage = path;
   } else {
@@ -951,13 +962,23 @@ document.addEventListener('DOMContentLoaded', () => {
       page === 'register' ||
       page === 'play' ||
       page === 'tournaments' ||
-      page === 'settings'
+      page === 'settings' ||
+      page === 'friends'
     ) {
       navigate(page);
     }
   }) as EventListener);
 
   onLangChange(render);
+  // onLangChange(() => {
+  //   // If we're on Settings, do the small patch (keeps 2FA container open)
+  //   if (document.getElementById('settings-title')) {
+  //     applySettingsTranslations();
+  //     return;
+  //   }
 
+  //   // Otherwise fallback to full rerender (for now)
+  //   render();
+  // });
   render();
 });
