@@ -435,6 +435,17 @@ async function renderNavBar(
             `
                 : ''
             }
+            <!-- Mobile: Language selector -->
+            <select
+              id="nav-lang-mobile"
+              class="px-2 py-1 border border-gray-300 rounded-md text-sm bg-white cursor-pointer hover:bg-gray-100 appearance-none mr-1"
+              aria-label="${t('aria.label.nav.lang')}"
+            >
+              <option value="en" ${lang === 'en' ? 'selected' : ''}>EN</option>
+              <option value="fr" ${lang === 'fr' ? 'selected' : ''}>FR</option>
+              <option value="ja" ${lang === 'ja' ? 'selected' : ''}>JA</option>
+              <option value="de" ${lang === 'de' ? 'selected' : ''}>DE</option>
+            </select>
             <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path id="menu-icon-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -678,9 +689,14 @@ function setupNavigation() {
   const notificationsBtn = document.getElementById('nav-notifications');
   const avatarImg = document.getElementById('nav-user-avatar');
   const langSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
+  const langSelectMobile = document.getElementById('nav-lang-mobile') as HTMLSelectElement | null;
 
   langSelect?.addEventListener('change', () => {
     setLang(langSelect.value as 'en' | 'fr' | 'ja' | 'de');
+  });
+
+  langSelectMobile?.addEventListener('change', () => {
+    setLang(langSelectMobile.value as 'en' | 'fr' | 'ja' | 'de');
   });
 
   // Mobile navigation buttons

@@ -19,7 +19,7 @@
  *   I18N_LIST_RULES=true pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -514,5 +514,108 @@ describe('i18n usage enforcement (runtime toggles via env)', () => {
     }
 
     expect(violations.length).toBe(0);
+  });
+});
+
+// -----------------------
+// i18n runtime behavior tests
+// -----------------------
+import { getLang, setLang, onLangChange } from '../src/i18n/i18n';
+
+describe('i18n runtime behavior', () => {
+  const originalNavigator = navigator;
+  let mockNavigator: { language: string; languages: string[] };
+
+  beforeEach(() => {
+    localStorage.clear();
+    mockNavigator = { language: 'en', languages: ['en'] };
+    Object.defineProperty(globalThis, 'navigator', {
+      value: mockNavigator,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  describe('detectBrowserLang via getLang()', () => {
+    it('should detect Japanese browser language', () => {
+      mockNavigator.language = 'ja-JP';
+      mockNavigator.languages = ['ja-JP', 'ja'];
+      expect(getLang()).toBe('ja');
+    });
+
+    it('should detect French browser language', () => {
+      mockNavigator.language = 'fr-FR';
+      mockNavigator.languages = ['fr-FR', 'fr'];
+      expect(getLang()).toBe('fr');
+    });
+
+    it('should detect German browser language', () => {
+      mockNavigator.language = 'de-DE';
+      mockNavigator.languages = ['de-DE', 'de'];
+      expect(getLang()).toBe('de');
+    });
+
+    it('should fallback to English for unsupported languages', () => {
+      mockNavigator.language = 'es-ES';
+      mockNavigator.languages = ['es-ES', 'es'];
+      expect(getLang()).toBe('en');
+    });
+  });
+
+  describe('setLang()', () => {
+    it('should not trigger listeners when setting same language', () => {
+      localStorage.setItem('lang', 'en');
+      const listener = vi.fn();
+      const unsubscribe = onLangChange(listener);
+
+      setLang('en'); // same as current
+      expect(listener).not.toHaveBeenCalled();
+
+      unsubscribe();
+    });
+
+    it('should trigger listeners when setting different language', () => {
+      localStorage.setItem('lang', 'en');
+      const listener = vi.fn();
+      const unsubscribe = onLangChange(listener);
+
+      setLang('fr'); // different from current
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(getLang()).toBe('fr');
+
+      unsubscribe();
+    });
+
+    it('should update localStorage when language changes', () => {
+      setLang('ja');
+      expect(localStorage.getItem('lang')).toBe('ja');
+
+      setLang('de');
+      expect(localStorage.getItem('lang')).toBe('de');
+    });
+  });
+
+  describe('onLangChange()', () => {
+    it('should register and unregister listeners', () => {
+      const listener = vi.fn();
+      const unsubscribe = onLangChange(listener);
+
+      setLang('fr');
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+
+      setLang('de');
+      expect(listener).toHaveBeenCalledTimes(1); // still 1, not called again
+    });
   });
 });
