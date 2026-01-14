@@ -11,6 +11,49 @@ import {
 import { t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
 
+type SettingsUIState = {
+  is2faSetupOpen: boolean;
+  qrCodeDataUrl?: string;
+  secret?: string;
+  verificationCodeDraft?: string;
+};
+
+const settingsUIState: SettingsUIState = {
+  is2faSetupOpen: false,
+};
+
+export function cleanupSettingsUIState(): void {
+  settingsUIState.is2faSetupOpen = false;
+  settingsUIState.secret = undefined;
+  settingsUIState.qrCodeDataUrl = undefined;
+  settingsUIState.verificationCodeDraft = undefined;
+}
+
+function restore2FAUIFromState(): void {
+  if (!settingsUIState.is2faSetupOpen) return;
+
+  const setupContainer = document.getElementById('2fa-setup-container');
+  const qrCodeContainer = document.getElementById('qr-code-container');
+  const secretCode = document.getElementById('secret-code');
+  const setupBtn = document.getElementById('setup-2fa-btn');
+  const verificationCode = document.getElementById('verification-code') as HTMLInputElement | null;
+
+  setupContainer?.classList.remove('hidden');
+  setupBtn?.classList.add('hidden');
+
+  if (qrCodeContainer && settingsUIState.qrCodeDataUrl) {
+    qrCodeContainer.innerHTML = `<img src="${settingsUIState.qrCodeDataUrl}" alt="2FA QR Code" class="w-48 h-48" />`;
+  }
+
+  if (secretCode && settingsUIState.secret) {
+    secretCode.textContent = settingsUIState.secret;
+  }
+
+  if (verificationCode && settingsUIState.verificationCodeDraft) {
+    verificationCode.value = settingsUIState.verificationCodeDraft;
+  }
+}
+
 export async function renderSettingsPage(
   app: HTMLElement,
   renderNavBar: (page: 'home' | 'play' | 'tournaments' | 'settings' | 'friends') => Promise<string>,
@@ -31,7 +74,7 @@ export async function renderSettingsPage(
       ${navBar}
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">${t('settings.title')}</h1>
+        <h1 id="settings-title" class="text-3xl font-bold text-gray-900 mb-8">${t('settings.title')}</h1>
 
         <!-- Avatar Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -192,6 +235,7 @@ export async function renderSettingsPage(
   setupAvatarHandler(user.id);
   setupAliasHandler();
   setup2FAHandlers();
+  restore2FAUIFromState();
 }
 
 function setupAvatarHandler(userId: string): void {
@@ -435,6 +479,10 @@ function setup2FAHandlers(): void {
       try {
         const { secret, qrCodeDataUrl } = await setup2FA();
 
+        settingsUIState.is2faSetupOpen = true;
+        settingsUIState.secret = secret;
+        settingsUIState.qrCodeDataUrl = qrCodeDataUrl;
+
         if (qrCodeContainer) {
           qrCodeContainer.innerHTML = `<img src="${qrCodeDataUrl}" alt="2FA QR Code" class="w-48 h-48" />`;
         }
@@ -460,6 +508,7 @@ function setup2FAHandlers(): void {
     verificationCode.addEventListener('input', (e) => {
       const input = e.target as HTMLInputElement;
       input.value = input.value.replace(/[^\d]/g, '');
+      settingsUIState.verificationCodeDraft = input.value;
     });
 
     verifyBtn.addEventListener('click', async () => {
@@ -496,6 +545,11 @@ function setup2FAHandlers(): void {
   // Cancel button
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
+      settingsUIState.is2faSetupOpen = false;
+      settingsUIState.secret = undefined;
+      settingsUIState.qrCodeDataUrl = undefined;
+      settingsUIState.verificationCodeDraft = undefined;
+
       setupContainer?.classList.add('hidden');
       setupBtn?.classList.remove('hidden');
       if (setupBtn) {
