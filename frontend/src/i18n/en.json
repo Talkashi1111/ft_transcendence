@@ -184,6 +184,14 @@
   "settings.account.info.email.alias.text": "3-30 characters. Cannot be changed during a match.",
   "settings.account.info.email.alias.update.button": "Update",
 
+  "settings.language.title": "Language",
+  "settings.language.text": "Choose the language of the website. This will be saved to your account.",
+  "settings.language.english": "English",
+  "settings.language.german": "Deutsch",
+  "settings.language.french": "Français",
+  "settings.language.japanese": "日本語",
+  "settings.language.save.button": "Save",
+
   "settings.2FA": "Two-Factor Authentication (2FA)",
   "settings.2FA.enabled": "Enabled",
   "settings.2FA.disabled": "Disabled",

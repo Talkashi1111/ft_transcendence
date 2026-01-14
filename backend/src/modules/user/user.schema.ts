@@ -88,4 +88,6 @@ export const userResponseJsonSchema = z.toJSONSchema(userResponseSchema, { targe
 export const userMeResponseJsonSchema = z.toJSONSchema(userMeResponseSchema, { target: 'draft-7' });
 export const loginResponseJsonSchema = z.toJSONSchema(loginResponseSchema, { target: 'draft-7' });
 export const usersResponseJsonSchema = z.toJSONSchema(usersResponseSchema, { target: 'draft-7' });
-export const updatePreferredLanguageJsonSchema = z.toJSONSchema(updatePreferredLanguageSchema, { target: 'draft-7' });
+export const updatePreferredLanguageJsonSchema = z.toJSONSchema(updatePreferredLanguageSchema, {
+  target: 'draft-7',
+});
