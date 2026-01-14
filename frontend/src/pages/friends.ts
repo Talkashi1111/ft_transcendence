@@ -13,6 +13,7 @@ import { getWebSocketManager } from '../utils/websocket';
 import { escapeHtml } from '../utils/sanitize';
 import { toast } from '../utils/toast';
 import { showConfirmModal } from '../utils/modal';
+import { t } from '../i18n/i18n';
 
 // Types - match backend API response structure
 interface Friend {
@@ -196,7 +197,7 @@ async function sendFriendRequest(userId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend request sent!');
+      toast.success(t('friends.send.request.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -204,7 +205,7 @@ async function sendFriendRequest(userId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to send request');
+    toast.error(t('friends.send.request.toast.error'));
     return false;
   }
 }
@@ -220,7 +221,7 @@ async function acceptFriendRequest(friendshipId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend request accepted!');
+      toast.success(t('friends.accept.request.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -228,7 +229,7 @@ async function acceptFriendRequest(friendshipId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to accept request');
+    toast.error(t('friends.accept.request.toast.error'));
     return false;
   }
 }
@@ -244,7 +245,7 @@ async function declineFriendRequest(friendshipId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend request declined');
+      toast.success(t('friends.decline.request.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -252,7 +253,7 @@ async function declineFriendRequest(friendshipId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to decline request');
+    toast.error(t('friends.decline.request.toast.error'));
     return false;
   }
 }
@@ -268,7 +269,7 @@ async function removeFriend(friendshipId: string): Promise<boolean> {
     });
 
     if (response.ok) {
-      toast.success('Friend removed');
+      toast.success(t('friends.remove.toast.success'));
       return true;
     } else {
       const data = await response.json();
@@ -276,7 +277,7 @@ async function removeFriend(friendshipId: string): Promise<boolean> {
       return false;
     }
   } catch {
-    toast.error('Failed to remove friend');
+    toast.error(t('friends.remove.toast.error'));
     return false;
   }
 }
@@ -356,8 +357,8 @@ function renderFriendsList(): string {
         <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
         </svg>
-        <p class="text-lg font-medium mb-2">No friends yet</p>
-        <p class="text-sm">Search for users to add them as friends!</p>
+        <p class="text-lg font-medium mb-2">${t('friends.nofriends.status')}</p>
+        <p class="text-sm">${t('friends.nofriends.innertext')}</p>
       </div>
     `;
   }
@@ -388,7 +389,7 @@ function renderFriendsList(): string {
             data-remove-friend="${f.id}"
             class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition"
           >
-            Remove
+            ${t('friends.sort.remove.button')}
           </button>
         </div>
       `
@@ -408,8 +409,8 @@ function renderRequestsList(): string {
         <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
-        <p class="text-lg font-medium mb-2">No pending requests</p>
-        <p class="text-sm">Friend requests will appear here</p>
+        <p class="text-lg font-medium mb-2">${t('friends.requests.status')}</p>
+        <p class="text-sm">${t('friends.requests.innertext')}</p>
       </div>
     `;
   }
@@ -429,13 +430,13 @@ function renderRequestsList(): string {
               data-accept-request="${r.id}"
               class="px-3 py-1 text-sm bg-green-600 text-white hover:bg-green-700 rounded transition"
             >
-              Accept
+              ${t('friends.pending.requests.accept.button')}
             </button>
             <button
               data-decline-request="${r.id}"
               class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-200 rounded transition"
             >
-              Decline
+              ${t('friends.pending.requests.decline.button')}
             </button>
           </div>
         </div>
@@ -453,19 +454,13 @@ function renderSearchTab(): string {
   return `
     <div class="mb-4">
       <div class="relative">
-        <input
-          type="text"
-          id="user-search-input"
-          placeholder="Search users by alias (min 2 characters)..."
-          value="${escapeHtml(searchQuery)}"
-          class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+        <input type="text" id="user-search-input" placeholder="${t('friends.findfriends.placeholder')}" value="${escapeHtml(searchQuery)}" class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         />
         <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
       </div>
     </div>
-
     <div id="search-results">
       ${renderSearchResults()}
     </div>
@@ -479,7 +474,7 @@ function renderSearchResults(): string {
   if (searchQuery.length < 2) {
     return `
       <div class="text-center py-8 text-gray-500">
-        <p class="text-sm">Enter at least 2 characters to search</p>
+        <p class="text-sm">${t('friends.findfriends.innertext')}</p>
       </div>
     `;
   }
@@ -507,7 +502,7 @@ function renderSearchResults(): string {
               ? '<span class="text-sm text-green-600">✓ Friends</span>'
               : u.isPending
                 ? '<span class="text-sm text-yellow-600">Pending</span>'
-                : `<button data-add-friend="${u.id}" class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition">Add Friend</button>`
+                : `<button data-add-friend="${u.id}" class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition">${t('friends.search.results.add.friend.button')}</button>`
           }
         </div>
       `
@@ -518,7 +513,7 @@ function renderSearchResults(): string {
         hasMoreSearchResults
           ? `
         <button id="load-more-search" class="w-full py-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
-          Load more results...
+          ${t('friends.search.results.load.more.button')}
         </button>
       `
           : ''
@@ -539,8 +534,8 @@ function renderNotificationsList(): string {
         <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
-        <p class="text-lg font-medium mb-2">No notifications</p>
-        <p class="text-sm">You're all caught up!</p>
+        <p class="text-lg font-medium mb-2">${t('friends.notifications.status')}</p>
+        <p class="text-sm">${t('friends.notifications.innertext')}</p>
       </div>
     `;
   }
@@ -551,7 +546,7 @@ function renderNotificationsList(): string {
         ? `
       <div class="mb-4 flex justify-end">
         <button id="mark-all-read" class="text-sm text-blue-600 hover:text-blue-700">
-          Mark all as read
+          ${t('friends.notifications.markallasread')}
         </button>
       </div>
     `
@@ -913,24 +908,24 @@ export async function renderFriendsPage(
       ${navBar}
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Friends</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">${t('friends.title')}</h1>
 
         <!-- Tabs -->
         <div class="border-b border-gray-200 mb-6">
           <nav class="-mb-px flex space-x-8">
             <button data-tab="friends" class="${getTabClasses('friends')}">
-              Friends
+              ${t('friends.label')}
               <span id="friends-count" class="ml-1 text-gray-400">(${friends.length})</span>
             </button>
             <button data-tab="requests" class="${getTabClasses('requests')} relative">
-              Requests
+              ${t('friends.requests.label')}
               <span id="request-count" class="${pendingRequests.length > 0 ? '' : 'hidden'} ml-1 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">${pendingRequests.length}</span>
             </button>
             <button data-tab="search" class="${getTabClasses('search')}">
-              Find Friends
+              ${t('friends.findfriends.label')}
             </button>
             <button data-tab="notifications" class="${getTabClasses('notifications')} relative">
-              Notifications
+              ${t('friends.notifications.label')}
               <span id="notification-tab-count" class="${notifications.filter((n) => !n.read).length > 0 ? '' : 'hidden'} ml-1 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">${notifications.filter((n) => !n.read).length}</span>
             </button>
           </nav>
