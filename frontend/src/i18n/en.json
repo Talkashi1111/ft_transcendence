@@ -44,13 +44,6 @@
   "play.local.1vbot.human": "I am human",
   "play.local.1vbot.god": "I am God",
 
-  "play.local.1vbot.hidden.text": "Select Difficulty Level for Bot",
-  "play.local.1vbot.hidden.paw": "Paw Patrol",
-  "play.local.1vbot.hidden.tracky": "Track-y",
-  "play.local.1vbot.hidden.human": "I am human",
-  "play.local.1vbot.hidden.god": "I am God",
-  "play.local.1vbot.hidden.start.button": "Start Game",
-  "play.local.1vbot.hidden.back.button": "Back",
   "play.local.1vbot.start.button": "Start Game",
   "play.local.1vbot.back.button": "Back",
   "play.local.1vbot.controls": "Controls",
