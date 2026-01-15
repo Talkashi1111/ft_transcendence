@@ -4,16 +4,17 @@
 
 | Go to                                            |
 | ------------------------------------------------ |
-| [Module requirements](#module-requirements)       |
+| [Module requirements](#module-requirements)      |
 | [Legal](#lawful-basis-and-transparency)          |
 | [Data security](#data-security)                  |
 | [Accountability](#accountability-and-governance) |
 | [Privacy rights](#privacy-rights)                |
 
 ## Module requirements
+
 Minor module : GDPR compliance options with user anonymization, local data management, and account deletion.
 
-####  The goal of this minor module is to introduce GDPR compliance options that allow users to exercise their data privacy rights. Key features and objectives include:
+#### The goal of this minor module is to introduce GDPR compliance options that allow users to exercise their data privacy rights. Key features and objectives include:
 
 - Implement GDPR-compliant features that enable users to request anonymization of their personal data, ensuring that their identity and sensitive information are protected.
 
@@ -26,26 +27,26 @@ Minor module : GDPR compliance options with user anonymization, local data manag
 - Offer a streamlined process for users to request the permanent deletion of their accounts, including all associated data, ensuring compliance with data protection regulations.
 
   ```text
-  NOTE - Users can go to settings and require anonimisation and export of their data as well as the deletion of their account.  
+  NOTE - Users can go to settings and require anonimisation and export of their data as well as the deletion of their account.
   ```
 
 - Maintain clear and transparent communication with users regarding their data privacy rights, with easily accessible options to exercise these rights.
 
   ```text
-  NOTE - It is clearly listed in the settings what we collected, how we store it and what can be done about it.  
+  NOTE - It is clearly listed in the settings what we collected, how we store it and what can be done about it.
   ```
 
 #### This minor module aims to enhance user privacy and data protection by offering GDPR compliance options that empower users to control their personal information and exercise their data privacy rights within the system.
 
 If you are not familiar with the General Data Protection Regulation (GDPR), it is essential to understand its principles and implications, especially regarding user
-data management and privacy. The GDPR is a regulation that aims to protect the personal data and privacy of individuals within the European Union (EU) and the European Economic Area (EEA). It sets out strict rules and guidelines for 
+data management and privacy. The GDPR is a regulation that aims to protect the personal data and privacy of individuals within the European Union (EU) and the European Economic Area (EEA). It sets out strict rules and guidelines for
 organizations on how they should handle and process personal data.
 
-To gain a better understanding of the GDPR and its requirements, it is strongly recommended to visit the official 
+To gain a better understanding of the GDPR and its requirements, it is strongly recommended to visit the official
 website of the European Commission on data protection (https://commission.europa.eu/law/law-topic/data-protectiondata-protection-eu_en)
- 
-This website provides comprehensive information about the GDPR, including its principles, objectives, and user rights. 
-It also offers additional resources to delve deeper into the topic and ensure compliance with the regulation. If you are unfamiliar with the GDPR, please take the time to visit the provided link and familiarize yourself with the regulations > before proceeding with this project. 
+
+This website provides comprehensive information about the GDPR, including its principles, objectives, and user rights.
+It also offers additional resources to delve deeper into the topic and ensure compliance with the regulation. If you are unfamiliar with the GDPR, please take the time to visit the provided link and familiarize yourself with the regulations > before proceeding with this project.
 
 <p style="text-align: right;">
   <a href="#top">⬆ Back to top</a>

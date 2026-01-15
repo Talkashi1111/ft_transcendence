@@ -191,6 +191,9 @@
   "settings.account.info.email.alias.text": "3-30 characters. Cannot be changed during a match.",
   "settings.account.info.email.alias.update.button": "Update",
 
+  "settings.gdpr.export.button": "Export",
+  "settings.gdpr.delete.button": "Delete",
+
   "settings.2FA": "Two-Factor Authentication (2FA)",
   "settings.2FA.enabled": "Enabled",
   "settings.2FA.disabled": "Disabled",
