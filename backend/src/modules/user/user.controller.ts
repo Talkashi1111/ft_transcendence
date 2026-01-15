@@ -7,6 +7,7 @@ import {
   findUserById,
   updateUserAlias,
   searchUsers,
+  exportMyData,
 } from './user.service.js';
 import {
   createUserSchema,
@@ -375,4 +376,29 @@ export async function searchUsersHandler(request: FastifyRequest, reply: Fastify
     users: usersWithStatus,
     nextCursor,
   });
+}
+
+export async function exportMyDataHandler(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.user as { id: string; email: string };
+
+    const data = await exportMyData(id);
+
+    if (!data) {
+      return reply.status(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'User not found',
+      });
+    }
+
+    return reply.send(data);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Something went wrong',
+    });
+  }
 }

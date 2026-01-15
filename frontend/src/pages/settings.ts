@@ -7,6 +7,10 @@ import {
   uploadAvatar,
   deleteAvatar,
   getAvatarUrl,
+  exportMyData,
+  anonymiseMyAccount,
+  deleteMyAccount,
+  logout,
 } from '../utils/auth';
 import { t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
@@ -364,7 +368,6 @@ export async function renderSettingsPage(
             </div>
           </div>
         </details>
-        </div>
 
         <!-- Back to Home -->
         <div class="mt-6">
@@ -380,6 +383,7 @@ export async function renderSettingsPage(
   setupAvatarHandler(user.id);
   setupAliasHandler();
   setup2FAHandlers();
+  setupGdprHandlers();
 }
 
 function setupAvatarHandler(userId: string): void {
@@ -733,4 +737,84 @@ function setup2FAHandlers(): void {
       window.dispatchEvent(event);
     });
   }
+}
+
+// --------------------------------------
+// GDPR Helpers
+// --------------------------------------
+
+async function downloadJson(
+  filename: string,
+  data: unknown
+): Promise<void> {
+  const blob = new Blob(
+    [JSON.stringify(data, null, 2)],
+    { type: 'application/json' }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+// GDPR
+function setupGdprHandlers(): void {
+  const exportBtn = document.getElementById('export-data-btn') as HTMLButtonElement | null;
+  const anonymiseBtn = document.getElementById('anonymise-account-btn') as HTMLButtonElement | null;
+  const deleteBtn = document.getElementById('delete-account-btn') as HTMLButtonElement | null;
+
+  exportBtn?.addEventListener('click', async () => {
+    if (!exportBtn) return;
+    exportBtn.disabled = true;
+    try {
+      const data = await exportMyData();
+      await downloadJson('my-data.json', data);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      exportBtn.disabled = false;
+    }
+  });
+
+  anonymiseBtn?.addEventListener('click', async () => {
+    const ok = confirm(
+      'Are you sure you want to anonymise your account? This will disable your account.'
+    );
+    if (!ok) return;
+    if (!anonymiseBtn) return;
+    anonymiseBtn.disabled = true;
+    try {
+      await anonymiseMyAccount();
+      await logout();
+      window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'login' } }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Anonymise failed');
+    } finally {
+      anonymiseBtn.disabled = false;
+    }
+  });
+
+  deleteBtn?.addEventListener('click', async () => {
+    const ok = confirm('Are you sure you want to delete your account? This cannot be undone.');
+    if (!ok) return;
+
+    if (!deleteBtn) return;
+    deleteBtn.disabled = true;
+    try {
+      await deleteMyAccount();
+      await logout();
+      window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'login' } }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      deleteBtn.disabled = false;
+    }
+  });
 }
