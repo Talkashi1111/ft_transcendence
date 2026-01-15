@@ -217,6 +217,78 @@ export function getAuthHeaders(): RequestInit {
 }
 
 // ============================================================================
+// Privacy / GDPR Functions
+// ============================================================================
+
+export interface ExportMyDataResponse {
+  // Keep it flexible for now; backend can return structured object later
+  [key: string]: unknown;
+}
+
+/**
+ * Export current user's private data (GDPR: access/portability)
+ * Backend should return JSON.
+ */
+export async function exportMyData(): Promise<ExportMyDataResponse> {
+  const response = await fetch('/api/users/me/export', {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    let msg = 'Failed to export data';
+    try {
+      const errorData = await response.json();
+      msg = errorData.message || errorData.error || msg;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(msg);
+  }
+
+  return response.json();
+}
+
+/**
+ * Anonymise current user's account (GDPR: remove identifiers, keep stats)
+ */
+export async function anonymiseMyAccount(): Promise<void> {
+  const response = await fetch('/api/users/me/anonymise', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    let msg = 'Failed to anonymise account';
+    try {
+      const errorData = await response.json();
+      msg = errorData.message || errorData.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+}
+
+/**
+ * Delete current user's account (GDPR: erasure)
+ * Note: you can implement this as "soft delete + anonymise" server-side.
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const response = await fetch('/api/users/me/delete', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    let msg = 'Failed to delete account';
+    try {
+      const errorData = await response.json();
+      msg = errorData.message || errorData.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+}
+
+// ============================================================================
 // Two-Factor Authentication (2FA) Functions
 // ============================================================================
 

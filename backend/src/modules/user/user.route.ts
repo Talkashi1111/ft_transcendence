@@ -7,6 +7,7 @@ import {
   logoutHandler,
   updateAliasHandler,
   searchUsersHandler,
+  exportMyDataHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
@@ -16,6 +17,7 @@ import {
   userMeResponseJsonSchema,
   loginResponseJsonSchema,
   usersResponseJsonSchema,
+  exportMyDataResponseJsonSchema,
 } from './user.schema.js';
 
 async function userRoutes(server: FastifyInstance) {
@@ -101,6 +103,22 @@ async function userRoutes(server: FastifyInstance) {
       },
     },
     updateAliasHandler
+  );
+
+  server.get(
+    '/me/export',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Export current user private data (GDPR portability)',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: exportMyDataResponseJsonSchema,
+        },
+      },
+    },
+    exportMyDataHandler
   );
 
   // Logout (clear authentication cookie)

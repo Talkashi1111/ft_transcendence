@@ -64,6 +64,19 @@ export const loginResponseSchema = z.object({
   // Note: tempToken is sent via HTTP-only cookie (not in response body)
 });
 
+// GDPR export response schema
+export const exportMyDataResponseSchema = z.object({
+  exportedAt: z.string(), // ISO timestamp
+  user: z.object({
+    id: z.string(),
+    email: z.email(),
+    alias: z.string(),
+    twoFactorEnabled: z.boolean(),
+    createdAt: z.string(),
+    lastSeenAt: z.string().nullable().optional(),
+  }),
+});
+
 export const usersResponseSchema = z.array(userResponseSchema);
 
 // TypeScript types
@@ -80,3 +93,6 @@ export const userResponseJsonSchema = z.toJSONSchema(userResponseSchema, { targe
 export const userMeResponseJsonSchema = z.toJSONSchema(userMeResponseSchema, { target: 'draft-7' });
 export const loginResponseJsonSchema = z.toJSONSchema(loginResponseSchema, { target: 'draft-7' });
 export const usersResponseJsonSchema = z.toJSONSchema(usersResponseSchema, { target: 'draft-7' });
+export const exportMyDataResponseJsonSchema = z.toJSONSchema(exportMyDataResponseSchema, {
+  target: 'draft-7',
+});

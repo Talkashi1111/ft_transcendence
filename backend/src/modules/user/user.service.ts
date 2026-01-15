@@ -128,3 +128,31 @@ export async function searchUsers(
     nextCursor,
   };
 }
+
+export async function exportMyData(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      alias: true,
+      twoFactorEnabled: true,
+      createdAt: true,
+      lastSeenAt: true,
+    },
+  });
+
+  if (!user) return null;
+
+  return {
+    exportedAt: new Date().toISOString(),
+    user: {
+      id: user.id,
+      email: user.email,
+      alias: user.alias,
+      twoFactorEnabled: user.twoFactorEnabled,
+      createdAt: user.createdAt.toISOString(),
+      lastSeenAt: user.lastSeenAt?.toISOString() ?? null,
+    },
+  };
+}
