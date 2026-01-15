@@ -20,6 +20,8 @@ import friendsRoutes from './modules/friends/friends.route.js';
 import notificationsRoutes from './modules/notifications/notifications.route.js';
 import { registerGameWebSocket } from './modules/game/game.gateway.js';
 
+import { findUserAuthStateById } from './modules/user/user.service.js';
+
 const PORT = process.env.PORT || 3000;
 
 // Ensure JWT_SECRET is set securely
@@ -122,24 +124,62 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   });
 
-  // Authentication decorator
-  server.decorate(
-    'authenticate',
-    async function (
-      request: import('fastify').FastifyRequest,
-      reply: import('fastify').FastifyReply
-    ) {
-      try {
-        await request.jwtVerify();
-      } catch (err) {
-        const message =
-          err instanceof Error && err.message.includes('expired')
-            ? 'Token has expired'
-            : 'Invalid or missing token';
-        reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message });
+  // Original Authentication decorator
+  // server.decorate(
+  //   'authenticate',
+  //   async function (
+  //     request: import('fastify').FastifyRequest,
+  //     reply: import('fastify').FastifyReply
+  //   ) {
+  //     try {
+  //       await request.jwtVerify();
+  //     } catch (err) {
+  //       const message =
+  //         err instanceof Error && err.message.includes('expired')
+  //           ? 'Token has expired'
+  //           : 'Invalid or missing token';
+  //       reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message });
+  //     }
+  //   }
+  // );
+
+  // Updated Auth decorator to deal with db check of deleted user to invalidate lingering JWT
+  server.decorate('authenticate', async function (request, reply) {
+    try {
+      await request.jwtVerify();
+
+      const { id } = request.user as { id: string; email: string };
+
+      const dbUser = await findUserAuthStateById(id);
+      if (!dbUser) {
+        reply.status(401).send({
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'User not found',
+        });
+        return;
       }
+
+      // Reject “deleted” accounts (no schema change needed)
+      const isDeletedByEmail = dbUser.email?.startsWith('deleted+');
+      const hasNoAuthMethods = dbUser.password == null && dbUser.googleId == null;
+
+      if (isDeletedByEmail || hasNoAuthMethods) {
+        reply.status(401).send({
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Account is deleted',
+        });
+        return;
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message.includes('expired')
+          ? 'Token has expired'
+          : 'Invalid or missing token';
+      reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message });
     }
-  );
+  });
 
   // Custom validation error handler
   server.setErrorHandler((error, request, reply) => {

@@ -184,6 +184,8 @@
   "settings.account.info.email.alias.label": "Alias",
   "settings.account.info.email.alias.text": "3–30 Zeichen. Kann während eines Spiels nicht geändert werden.",
   "settings.account.info.email.alias.update.button": "Aktualisieren",
+  "settings.gdpr.export.button": "Exportieren",
+  "settings.gdpr.delete.button": "Löschen",
   "settings.2FA": "Zwei-Faktor-Authentifizierung (2FA)",
   "settings.2FA.enabled": "Aktiviert",
   "settings.2FA.disabled": "Deaktiviert",

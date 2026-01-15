@@ -202,3 +202,16 @@ export async function deleteUserAccount(userId: string) {
     return user;
   });
 }
+
+// To check if user is deleted in order to invalidate lingering token
+export async function findUserAuthStateById(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      googleId: true,
+    },
+  });
+}
