@@ -6,6 +6,9 @@ import {
   hasActiveRemoteGame,
   leaveRemoteGame,
   resetPlayUIState,
+  applyPlayInGameTranslations,
+  markPlayNeedsRerenderAfterGame,
+  isPlayInNoRerenderScreen,
 } from './pages/play';
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
@@ -34,6 +37,36 @@ interface TournamentData {
   tournamentId: number;
   matchIds: string[];
   matches: Match[];
+}
+
+function applyNavTranslationsInPlace(): void {
+  const byId: Record<string, string> = {
+    'nav-home': 'nav.home',
+    'nav-play': 'nav.play',
+    'nav-tournaments': 'nav.tournaments',
+    'nav-friends': 'nav.friends',
+    'nav-settings': 'nav.settings',
+    'nav-login': 'nav.login',
+    'nav-register': 'nav.register',
+    'nav-logout': 'nav.logout',
+
+    'nav-home-mobile': 'mobile.home',
+    'nav-play-mobile': 'mobile.play',
+    'nav-tournaments-mobile': 'mobile.tournaments',
+    'nav-friends-mobile': 'mobile.friends',
+    'nav-settings-mobile': 'mobile.settings',
+    'nav-login-mobile': 'mobile.login',
+    'nav-register-mobile': 'mobile.register',
+    'nav-logout-mobile': 'mobile.logout',
+  };
+
+  for (const [id, key] of Object.entries(byId)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(key);
+  }
+
+  const langSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
+  if (langSelect) langSelect.value = getLang();
 }
 
 // Utility functions
@@ -968,7 +1001,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }) as EventListener);
 
+  window.addEventListener('play:rerender', () => {
+    if (currentPage === 'play') render();
+  });
+
   await syncLangFromAccount();
-  onLangChange(render);
+
+  onLangChange(() => {
+    if (currentPage !== 'play') {
+      render();
+      return;
+    }
+
+    // we're on play page
+    if (isPlayInNoRerenderScreen()) {
+      // don't rerender; keep game alive
+      applyNavTranslationsInPlace();
+      applyPlayInGameTranslations();
+      markPlayNeedsRerenderAfterGame();
+      return;
+    }
+
+    // safe screens inside play (menu/setup/etc): rerender fully
+    render();
+  });
+
   render();
 });

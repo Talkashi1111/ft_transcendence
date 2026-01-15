@@ -22,11 +22,53 @@ let isInActiveRemoteGame = false;
 
 let lastPlayScreenId = 'mode-selection';
 
+let playNeedsRerenderAfterGame = false;
+
+function requestPlayRerenderIfNeeded(): void {
+  if (!playNeedsRerenderAfterGame) return;
+  playNeedsRerenderAfterGame = false;
+  window.dispatchEvent(new CustomEvent('play:rerender'));
+}
+
+export function markPlayNeedsRerenderAfterGame(): void {
+  playNeedsRerenderAfterGame = true;
+}
+
+export function isPlayInNoRerenderScreen(): boolean {
+  return (
+    lastPlayScreenId === 'game-screen' ||
+    lastPlayScreenId === 'result-screen' ||
+    lastPlayScreenId === 'remote-game-screen'
+  );
+}
+
 /**
  * Check if user is in an active remote game
  */
 export function hasActiveRemoteGame(): boolean {
   return isInActiveRemoteGame;
+}
+
+// Updates language strings on screen during a game
+export function applyPlayInGameTranslations(): void {
+  if (
+    lastPlayScreenId !== 'game-screen' &&
+    lastPlayScreenId !== 'result-screen' &&
+    lastPlayScreenId === 'remote-game-screen'
+  )
+    return;
+
+  const endBtn = document.getElementById('end-game-btn');
+  if (endBtn) endBtn.textContent = t('play.endgame.button');
+
+  const backBtn = document.getElementById('back-to-menu-btn');
+  if (backBtn) backBtn.textContent = t('play.gameover.backtomenu.button');
+
+  const playAgain = document.getElementById('play-again-btn');
+  if (playAgain) playAgain.textContent = t('play.gameover.playagain.button');
+
+  const leaveRemote = document.getElementById('leave-remote-game-btn');
+  if (leaveRemote) leaveRemote.textContent = t('play.remote.leavegame.button');
 }
 
 /**
@@ -53,6 +95,7 @@ export function cleanupPlayPage(): void {
 
 export function resetPlayUIState(): void {
   lastPlayScreenId = 'mode-selection';
+  playNeedsRerenderAfterGame = false;
 }
 
 export async function renderPlayPage(
@@ -1046,6 +1089,7 @@ function setupPlayPageEvents(): void {
           toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          requestPlayRerenderIfNeeded();
         },
         onOpponentDisconnected: (timeout) => {
           if (remoteConnectionStatus) {
@@ -1067,6 +1111,7 @@ function setupPlayPageEvents(): void {
           toast.error(message);
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          requestPlayRerenderIfNeeded();
         },
         onConnectionStateChange: (state) => {
           if (remoteConnectionStatus) {
@@ -1194,6 +1239,7 @@ function setupPlayPageEvents(): void {
           toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          requestPlayRerenderIfNeeded();
         },
         onOpponentDisconnected: (timeout) => {
           if (remoteConnectionStatus) {
@@ -1215,6 +1261,7 @@ function setupPlayPageEvents(): void {
           toast.error(message);
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          requestPlayRerenderIfNeeded();
         },
         onConnectionStateChange: (state) => {
           if (remoteConnectionStatus) {
@@ -1352,6 +1399,7 @@ function setupPlayPageEvents(): void {
   cancelRemoteBtn?.addEventListener('click', async () => {
     cleanupRemoteGame();
     showScreen(modeSelection!);
+    requestPlayRerenderIfNeeded();
   });
 
   // Event: Leave remote game
@@ -1367,6 +1415,7 @@ function setupPlayPageEvents(): void {
     if (confirmed) {
       cleanupRemoteGame();
       showScreen(modeSelection!);
+      requestPlayRerenderIfNeeded();
     }
   });
 
@@ -1491,7 +1540,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player1 = t('play.player1.label'); // Default name
+      player1 = t('play.player1.default.label'); // Default name
     }
 
     // Validate player 2 alias
@@ -1502,7 +1551,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player2 = t('play.player2.label'); // Default name
+      player2 = t('play.player2.default.label'); // Default name
     }
 
     // Check for duplicate names
@@ -1599,6 +1648,7 @@ function setupPlayPageEvents(): void {
       showScreen(tournamentScreen!);
     } else {
       showScreen(modeSelection!);
+      requestPlayRerenderIfNeeded();
     }
   });
 
@@ -1619,6 +1669,7 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
     showScreen(modeSelection!);
+    requestPlayRerenderIfNeeded();
   });
 
   // Event delegation for dynamically created buttons in tournament

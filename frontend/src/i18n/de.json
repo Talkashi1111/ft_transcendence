@@ -31,6 +31,10 @@
   "home.welcome": "Willkommen",
 
   "play.title": "Pong spielen",
+
+  "play.player1.default.label": "Spieler 1",
+  "play.player2.default.label": "Spieler 2",
+
   "play.player1.label": "Spieler 1",
   "play.player2.label": "Spieler 2",
   "play.text": "Wähle einen Spielmodus, um zu starten",
