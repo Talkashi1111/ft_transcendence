@@ -1,0 +1,22 @@
+groups:
+  - name: transcendence_alerts
+    rules:
+      # Alert 1: High Game Traffic
+      - alert: HighGameTraffic
+        expr: transcendence_active_games_total > 2
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High game traffic detected"
+          description: "There are currently {{ $value }} active games, which is high load."
+
+      # Alert 2: Instance Down (Standard check)
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."

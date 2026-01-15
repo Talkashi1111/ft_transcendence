@@ -51,6 +51,27 @@ let unreadNotificationCount = 0;
 let notificationListenerRegistered = false;
 
 /**
+ * Analytics: Track page view
+ */
+async function trackPageView(pageName: string) {
+  // 1. Only track if user is authenticated
+  const isAuth = await isAuthenticated();
+  if (!isAuth) return;
+
+  // 2. Send fire-and-forget request
+  try {
+    await fetch('/api/analytics/page-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: pageName }),
+    });
+  } catch {
+    // Fail silently - analytics should never break the app
+    console.warn('[Analytics] Failed to track page view');
+  }
+}
+
+/**
  * Connect global WebSocket when authenticated
  * This shared connection is used for:
  * - Match list updates (play page)
@@ -253,6 +274,9 @@ async function navigate(
   }
 
   currentPage = page;
+
+  trackPageView(page);
+
   // Update browser history
   window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
   render();
@@ -289,6 +313,7 @@ window.addEventListener('popstate', async (event) => {
     // Default to home if no state
     currentPage = 'home';
   }
+  trackPageView(currentPage);
   render();
 });
 
@@ -895,6 +920,8 @@ document.addEventListener('DOMContentLoaded', () => {
     '',
     `/${currentPage === 'home' ? '' : currentPage}${window.location.search}`
   );
+
+  trackPageView(currentPage);
 
   // Listen for custom navigation events (from login/register links)
   window.addEventListener('navigate', ((event: CustomEvent) => {

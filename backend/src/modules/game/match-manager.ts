@@ -12,6 +12,13 @@ import type {
 } from './game.types.js';
 import { GameEngine } from './engine/index.js';
 import { RECONNECT_TIMEOUT } from './engine/config.js';
+import { Gauge } from 'prom-client';
+
+const activeMatchesGauge = new Gauge({
+  name: 'transcendence_active_remote_matches_total',
+  help: 'Number of active remote matches currently ongoing',
+  labelNames: ['mode'], // We will label them as '1v1' or 'tournament'
+});
 
 interface ActiveMatch {
   id: string;
@@ -93,6 +100,8 @@ export class MatchManager {
     this.playerMatches.set(playerId, matchId);
 
     console.log(`[MatchManager] Match ${matchId} created by ${username}`);
+    
+    activeMatchesGauge.inc({ mode: mode }); // +1 for this specific mode
 
     // Notify about new available match
     this.notifyMatchListUpdate();
@@ -423,6 +432,8 @@ export class MatchManager {
     if (match.player2) {
       this.playerMatches.delete(match.player2.id);
     }
+
+    activeMatchesGauge.dec({ mode: match.mode }); // -1 for this specific mode
 
     // Remove match
     this.matches.delete(matchId);
