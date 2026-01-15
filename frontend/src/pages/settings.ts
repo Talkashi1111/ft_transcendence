@@ -768,7 +768,7 @@ function setupGdprHandlers(): void {
       await deleteMyAccount();
 
       // optional: backend should already clear cookie, but this is fine
-      // await logout();
+      await logout();
 
       window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'login' } }));
     } catch (err) {
