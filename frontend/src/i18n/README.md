@@ -2,14 +2,13 @@
 
 ### Multiple language support
 
-| Go to                                         |
-| --------------------------------------------- |
-| [Module requirements](#module-requirements)   |
-| [Current logic](#current-logic)               |
-| [Workflow](#workflow)                         |
-| [Known issues](#known-issues)                 |
-| [Files with UI text](#files-with-ui-text)     |
-| [Files with UI errors](#files-with-ui-errors) |
+| Go to                                                       |
+| ----------------------------------------------------------- |
+| [Module requirements](#module-requirements)                 |
+| [Current logic](#current-logic)                             |
+| [Workflow](#workflow)                                       |
+| [Known issues](#known-issues)                               |
+| [Files with UI text/errors](#files-with-ui-text/errors)     |
 
 ## Module requirements
 
@@ -123,9 +122,9 @@ E. Fallback to English
 
 <ul style="list-style: none; padding-left: 0;">
   <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 1 - UI text</li> 
-  <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 2 - CI tests</li>
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 3 - UI errors</li>
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 4 - DB preferences and routes</li>
+  <li><input type="checkbox" style="accent-color: #2e7d32;" checked> Step 2 - CI tests</li>
+  <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 3 - UI errors</li>
+  <li><input type="checkbox" style="accent-color: #2e7d32;" checked> Step 4 - DB preferences and routes</li>
 </ul>
 
 <p style="text-align: right;">
@@ -134,9 +133,19 @@ E. Fallback to English
 
 ## Known issues
 
-Rendering is only per page basis currently. (TO FIX)
+<input type="checkbox" style="accent-color: #2e7d32;" checked> Issue #1 - Rendering is only per main page basis.
 
-## Files with UI text
+> Fixed for play and settings as far as I know.
+
+<input type="checkbox" style="accent-color: red;" checked> Issue #2 - When returning to a game that was left using the browser the game's empty canvas is rendered instead of the main screen.
+
+<input type="checkbox" style="accent-color: red;" checked> Issue #3 - Translation while game is running. Inline?
+
+<p style="text-align: right;">
+  <a href="#top">⬆ Back to top</a>
+</p>
+
+## Files with UI text/errors
 
 | File name      | Function name |
 | -------------- | ------------- |
@@ -147,12 +156,6 @@ Rendering is only per page basis currently. (TO FIX)
 | tournaments.ts |               |
 | friends.ts     |               |
 | settings.ts    |               |
-
-<p style="text-align: right;">
-  <a href="#top">⬆ Back to top</a>
-</p>
-
-## Files with UI errors
 
 <p style="text-align: right;">
   <a href="#top">⬆ Back to top</a>
