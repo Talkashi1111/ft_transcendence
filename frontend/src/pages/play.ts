@@ -10,6 +10,7 @@ import { escapeHtml } from '../utils/sanitize';
 import { isAuthenticated } from '../utils/auth';
 import { getWebSocketManager } from '../utils/websocket';
 import type { AvailableMatch } from '../utils/websocket';
+import { t } from '../i18n/i18n';
 import { BotLevel } from '../types/game';
 
 // Constants
@@ -61,57 +62,57 @@ export async function renderPlayPage(
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Mode Selection -->
         <div id="mode-selection" class="mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 mb-4">Play Pong</h2>
-          <p class="text-gray-600 mb-6">Choose a game mode to start playing</p>
+          <h2 class="text-3xl font-bold text-gray-900 mb-4">${t('play.title')}</h2>
+          <p class="text-gray-600 mb-6">${t('play.text')}</p>
 
           <!-- Local Games (No Login Required) -->
           <div class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">Local Play</h3>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">${t('play.local.label')}</h3>
             <div class="flex gap-4">
               <button id="local-game-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-                Local 1v1
+                ${t('play.local.local1v1.button')}
               </button>
               <button id="bot-opponent-btn" class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold">
-                1vBot
+                ${t('play.local.1vbot.button')}
               </button>
               <button id="tournament-btn" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
-                Local Tournament
+                ${t('play.local.tournament.button')}
               </button>
             </div>
           </div>
 
           <!-- Remote Games (Login Required) -->
           <div>
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">Remote Play</h3>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">${t('play.remote.label')}</h3>
             <div class="flex gap-4">
               <button id="remote-quickmatch-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Quick Match
+                ${t('play.remote.quickmatch.button')}
               </button>
               <button id="remote-create-btn" class="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Create Match
+                ${t('play.remote.create.button')}
               </button>
               <button id="remote-join-btn" class="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Join Match
+                ${t('play.remote.join.button')}
               </button>
             </div>
-            <p id="remote-login-hint" class="text-sm text-gray-500 mt-2 hidden">Please log in to play remote games</p>
+            <p id="remote-login-hint" class="text-sm text-gray-500 mt-2 hidden">${t('play.remote.text')}</p>
           </div>
         </div>
 
         <!-- Game Setup Screen -->
         <div id="game-setup" class="hidden">
           <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Game Setup</h3>
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">${t('play.game_setup.title')}</h3>
 
             <div class="space-y-4">
               <div>
                 <label for="player1-alias" class="block text-sm font-medium text-gray-700 mb-2">
-                  Player 1 Alias
+                  ${t('play.game_setup.player1.alias.label')}
                 </label>
                 <input
                   type="text"
                   id="player1-alias"
-                  placeholder="Enter name..."
+                  placeholder="${t('play.game_setup.player1.alias.placeholder')}"
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -120,12 +121,12 @@ export async function renderPlayPage(
 
               <div>
                 <label for="player2-alias" class="block text-sm font-medium text-gray-700 mb-2">
-                  Player 2 Alias
+                  ${t('play.game_setup.player2.alias.label')}
                 </label>
                 <input
                   type="text"
                   id="player2-alias"
-                  placeholder="Enter name..."
+                  placeholder="${t('play.game_setup.player2.alias.placeholder')}"
                   maxlength="20"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -133,22 +134,62 @@ export async function renderPlayPage(
               </div>
 
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 class="font-semibold text-blue-900 mb-2">Controls:</h4>
+                <h4 class="font-semibold text-blue-900 mb-2">${t('play.game_setup.controls.label')}</h4>
                 <div class="text-sm text-blue-800 space-y-1">
-                  <p><strong>Player 1:</strong> W (Up) / S (Down)</p>
-                  <p><strong>Player 2:</strong> ↑ (Up) / ↓ (Down)</p>
-                  <p><strong>Pause:</strong> SPACE or ESC</p>
+                  <p><strong>${t('play.game_setup.controls.player1.key')}</strong> ${t('play.game_setup.controls.player1.value')}</p>
+                  <p><strong>${t('play.game_setup.controls.player2.key')}</strong> ${t('play.game_setup.controls.player2.value')}</p>
+                  <p><strong>${t('play.game_setup.controls.pause.key')}</strong> ${t('play.game_setup.controls.pause.value')}</p>
                 </div>
               </div>
 
               <div class="flex gap-4">
                 <button id="start-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
-                  Start Game
+                  ${t('play.game_setup.button.start')}
                 </button>
                 <button id="back-to-mode-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Back
+                  ${t('play.game_setup.button.back')}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Setup Screen VS Bot -->
+        <div id="bot-game-setup" class="hidden">
+          <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">${t('play.local.1vbot.title')}</h3>
+            <div class="space-y-4">
+
+              <div>
+                <div class="block text-sm font-medium text-gray-700 mb-2">
+                  ${t('play.local.1vbot.text')}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4">
+                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.paw')}</button>
+                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.tracky')}</button>
+                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.human')}</button>
+                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.god')}</button>
+                </div>
+              </div>
+
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-900 mb-2">${t('play.local.1vbot.controls')}</h4>
+                <div class="text-sm text-blue-800 space-y-1">
+                  <p><strong>${t('play.local.1vbot.controls.up.label')}</strong>${t('play.local.1vbot.controls.up')}</p>
+                  <p><strong>${t('play.local.1vbot.controls.down.label')}</strong>${t('play.local.1vbot.controls.down')}</p>
+                  <p><strong>${t('play.local.1vbot.controls.pause.label')}</strong>${t('play.local.1vbot.controls.pause')}</p>
+                </div>
+              </div>
+
+              <div class="flex gap-4">
+                <button id="start-bot-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
+                  ${t('play.local.1vbot.start.button')}
+                </button>
+                <button id="back-to-mode-from-bot-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
+                  ${t('play.local.1vbot.back.button')}
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -161,13 +202,13 @@ export async function renderPlayPage(
 
               <div>
                 <div class="block text-sm font-medium text-gray-700 mb-2">
-                  Select Difficulty Level for Bot
+                  ${t('play.local.1vbot.hidden.text')}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4">
-                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Paw Patrol</button>
-                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">Track-y</button>
-                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am human</button>
-                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">I am God</button>
+                  <button id="botlvl-1-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.paw')}</button>
+                  <button id="botlvl-2-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.tracky')}</button>
+                  <button id="botlvl-3-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.human')}</button>
+                  <button id="botlvl-4-btn" class="bg-gray-200 p-2 border border-gray-300 hover:bg-gray-400 transition">${t('play.local.1vbot.hidden.god')}</button>
                 </div>
               </div>
 
@@ -182,10 +223,10 @@ export async function renderPlayPage(
 
               <div class="flex gap-4">
                 <button id="start-bot-game-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
-                  Start Game
+                  ${t('play.local.1vbot.hidden.start.button')}
                 </button>
                 <button id="back-to-mode-from-bot-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Back
+                  ${t('play.local.1vbot.hidden.back.button')}
                 </button>
               </div>
 
@@ -202,7 +243,7 @@ export async function renderPlayPage(
 
             <div class="flex gap-4">
               <button id="end-game-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                End Game
+                ${t('play.endgame.button')}
               </button>
             </div>
           </div>
@@ -211,18 +252,18 @@ export async function renderPlayPage(
         <!-- Game Result Screen -->
         <div id="result-screen" class="hidden">
           <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
-            <h3 class="text-3xl font-bold text-gray-900 mb-4">Game Over!</h3>
+            <h3 class="text-3xl font-bold text-gray-900 mb-4">${t('play.gameover.title')}</h3>
 
             <div class="mb-6">
               <p class="text-5xl font-bold text-blue-600 mb-4" id="winner-name">Winner</p>
               <div class="flex justify-center gap-8 text-2xl">
                 <div>
-                  <p class="text-gray-600" id="result-player1">Player 1</p>
+                  <p class="text-gray-600" id="result-player1">${t('play.player1.label')}</p>
                   <p class="font-bold text-gray-900" id="result-score1">0</p>
                 </div>
                 <div class="text-gray-400">-</div>
                 <div>
-                  <p class="text-gray-600" id="result-player2">Player 2</p>
+                  <p class="text-gray-600" id="result-player2">${t('play.player2.label')}</p>
                   <p class="font-bold text-gray-900" id="result-score2">0</p>
                 </div>
               </div>
@@ -230,10 +271,10 @@ export async function renderPlayPage(
 
             <div class="flex gap-4 justify-center">
               <button id="play-again-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-                Play Again
+                ${t('play.gameover.playagain.button')}
               </button>
               <button id="back-to-menu-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                Back to Menu
+                ${t('play.gameover.backtomenu.button')}
               </button>
             </div>
           </div>
@@ -261,7 +302,7 @@ export async function renderPlayPage(
             </div>
 
             <button id="cancel-remote-btn" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">
-              Cancel
+                ${t('play.remote.waiting.room.cancel.button')}
             </button>
           </div>
         </div>
@@ -274,12 +315,12 @@ export async function renderPlayPage(
             <div class="space-y-4">
               <div>
                 <label for="match-id-input" class="block text-sm font-medium text-gray-700 mb-2">
-                  Match ID
+                  ${t('play.remote.matchID.label')}
                 </label>
                 <input
                   type="text"
                   id="match-id-input"
-                  placeholder="Enter match ID..."
+                  placeholder="${t('play.remote.matchID.placeholder')}"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
                 <span id="join-match-error" class="text-red-600 text-sm mt-1 hidden"></span>
@@ -287,10 +328,10 @@ export async function renderPlayPage(
 
               <div class="flex gap-4">
                 <button id="confirm-join-btn" class="flex-1 px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-semibold">
-                  Join Match
+                  ${t('play.remote.join.match.confirm.button')}
                 </button>
                 <button id="cancel-join-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                  Cancel
+                  ${t('play.remote.join.match.cancel.button')}
                 </button>
               </div>
             </div>
@@ -302,7 +343,7 @@ export async function renderPlayPage(
                 <p class="text-gray-500 text-sm">Loading matches...</p>
               </div>
               <button id="refresh-matches-btn" class="mt-3 text-sm text-cyan-600 hover:text-cyan-700">
-                ↻ Refresh
+                ${t('play.remote.available.matches.refresh.button')}
               </button>
             </div>
           </div>
@@ -319,7 +360,7 @@ export async function renderPlayPage(
 
             <div class="flex gap-4">
               <button id="leave-remote-game-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                Leave Game
+                ${t('play.remote.leavegame.button')}
               </button>
             </div>
           </div>
@@ -329,20 +370,20 @@ export async function renderPlayPage(
         <div id="tournament-screen" class="hidden">
           <!-- Registration Phase -->
           <div id="tournament-registration" class="bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 mb-4">Tournament Registration</h3>
-            <p class="text-gray-600 mb-6">Add up to 8 players. Minimum 2 players required to start.</p>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">${t('play.local.tournament.registration.title')}</h3>
+            <p class="text-gray-600 mb-6">${t('play.local.tournament.registration.text')}</p>
 
             <div class="mb-6">
               <div class="flex gap-2 mb-4">
                 <input
                   type="text"
                   id="tournament-player-alias"
-                  placeholder="Player alias..."
+                  placeholder="${t('play.local.tournament.registration.placeholder')}"
                   maxlength="20"
                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <button id="add-tournament-player-btn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
-                  Add Player
+                  ${t('play.local.tournament.registration.addplayer.button')}
                 </button>
               </div>
               <span id="tournament-error" class="text-red-600 text-sm mt-1 hidden"></span>
@@ -354,18 +395,18 @@ export async function renderPlayPage(
 
               <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span class="text-gray-700">
-                  <span id="tournament-player-count" class="font-bold text-purple-600">0</span> / 8 players
+                  <span id="tournament-player-count" class="font-bold text-purple-600">0</span> / 8 ${t('play.local.tournament.registration.players')}
                 </span>
-                <span id="tournament-status-message" class="text-sm text-gray-500">Add at least 2 players to start</span>
+                <span id="tournament-status-message" class="text-sm text-gray-500">${t('play.local.tournament.registration.smalltext')}</span>
               </div>
             </div>
 
             <div class="flex gap-4">
               <button id="start-tournament-btn" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
-                Start Tournament
+                ${t('play.local.tournament.registration.starttournament.button')}
               </button>
               <button id="back-from-tournament-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
-                Back to Menu
+                ${t('play.local.tournament.registration.backtomenu.button')}
               </button>
             </div>
           </div>
@@ -374,9 +415,9 @@ export async function renderPlayPage(
           <div id="tournament-bracket" class="hidden">
             <div class="max-w-6xl mx-auto">
               <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-gray-900">Tournament Bracket</h3>
+                <h3 class="text-2xl font-bold text-gray-900">${t('play.local.tournament.bracket.title')}</h3>
                 <button id="end-tournament-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">
-                  End Tournament
+                  ${t('play.local.tournament.bracket.end.button')}
                 </button>
               </div>
 
@@ -609,7 +650,7 @@ function setupPlayPageEvents(): void {
             <span class="text-gray-400 text-xs ml-2">${match.id.slice(0, 8)}...</span>
           </span>
           <button class="join-available-match-btn px-3 py-1 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700" data-match-id="${match.id}">
-            Join
+            ${t('play.remote.available.matches.ws.join.button')}
           </button>
         </div>
       `
@@ -638,13 +679,23 @@ function setupPlayPageEvents(): void {
     // Update status message
     if (tournamentStatusMessage) {
       if (playerCount === 0) {
-        tournamentStatusMessage.textContent = 'Add at least 2 players to start';
+        tournamentStatusMessage.textContent = t('play.local.tournament.registration.smalltext');
       } else if (playerCount === 1) {
-        tournamentStatusMessage.textContent = 'Need at least 1 more player';
+        tournamentStatusMessage.textContent = t(
+          'play.local.tournament.registration.smalltext.onemore'
+        );
       } else if (playerCount < 8) {
-        tournamentStatusMessage.textContent = `Ready to start! (Can add ${8 - playerCount} more)`;
+        const remaining = 8 - playerCount;
+        tournamentStatusMessage.textContent = t(
+          'play.local.tournament.registration.smalltext.ready',
+          {
+            remaining,
+          }
+        );
       } else {
-        tournamentStatusMessage.textContent = 'Tournament is full!';
+        tournamentStatusMessage.textContent = t(
+          'play.local.tournament.registration.smalltext.full'
+        );
       }
     }
 
@@ -657,7 +708,7 @@ function setupPlayPageEvents(): void {
           <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
             <span class="font-medium text-gray-800">${escapeHtml(player.alias)}</span>
             <button class="remove-player-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition" data-player-id="${player.id}">
-              Remove
+              ${t('play.local.tournament.registration.remove.button')}
             </button>
           </div>
         `
@@ -708,14 +759,14 @@ function setupPlayPageEvents(): void {
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center mb-4">
-          <h3 class="text-2xl font-bold mb-2">Round ${round}</h3>
+          <h3 class="text-2xl font-bold mb-2"> ${t('play.local.tournament.bracket.round', { round })}</h3>
           <p class="text-xl mb-4">
             <span class="text-blue-400">${escapeHtml(match.player1.alias)}</span>
-            vs
+            ${t('play.local.tournament.bracket.versus')}
             <span class="text-green-400">${escapeHtml(match.player2.alias)}</span>
           </p>
           <button id="playMatchBtn" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-bold transition-colors">
-            Play Match
+            ${t('play.local.tournament.bracket.play.button')}
           </button>
         </div>
       `;
@@ -884,11 +935,11 @@ function setupPlayPageEvents(): void {
       const expectedMatches = Math.ceil(Math.pow(2, totalRounds - roundIndex - 1));
       matchesToShow = Math.max(roundMatches.length, expectedMatches);
     }
-
+    const index = roundIndex + 1;
     let html = `
       <div class="bracket-round-column">
         <h3 class="text-lg font-bold text-center mb-6 text-white">
-          ${isLastRound ? 'Finals' : `Round ${roundIndex + 1}`}
+          ${isLastRound ? t('play.local.tournament.bracket.islastround.finals') : t('play.local.tournament.bracket.islastround.round', { index })}
         </h3>
         <div class="bracket-matches-container" style="gap: ${verticalGap}px;">
     `;
@@ -938,12 +989,12 @@ function setupPlayPageEvents(): void {
 
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center">
-          <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 Tournament Complete! 🏆</h2>
+          <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
           <p class="text-2xl mb-6">
-            Winner: <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
+            ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
           </p>
           <button id="newTournamentBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
-            Start New Tournament
+            ${t('play.local.tournament.bracket.complete.startnew.button')}
           </button>
         </div>
       `;
@@ -1022,10 +1073,10 @@ function setupPlayPageEvents(): void {
           handleRemoteGameEnd(winner, score1, score2);
         },
         onOpponentJoined: (opponentName) => {
-          toast.success(`${opponentName} joined the match!`);
+          toast.success(t('friends.join.match.toast.success', { opponentName }));
         },
         onOpponentLeft: () => {
-          toast.warning('Opponent left the match');
+          toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
         },
@@ -1038,7 +1089,7 @@ function setupPlayPageEvents(): void {
           if (remoteConnectionStatus) {
             remoteConnectionStatus.textContent = '';
           }
-          toast.success('Opponent reconnected!');
+          toast.success(t('friends.opponent.reconnect.toast.success'));
         },
         onError: (code, message) => {
           // Don't disconnect for non-fatal errors like unknown events
@@ -1063,7 +1114,7 @@ function setupPlayPageEvents(): void {
           }
         },
         onMatchJoined: (_matchId, _opponentName, playerNumber) => {
-          toast.success(`Rejoined match as Player ${playerNumber}!`);
+          toast.success(t('friends.rejoin.match.toast.success', { playerNumber }));
         },
       });
 
@@ -1111,7 +1162,7 @@ function setupPlayPageEvents(): void {
             <span class="text-gray-400 text-xs ml-2">${match.id.slice(0, 8)}...</span>
           </span>
           <button class="join-available-match-btn px-3 py-1 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700" data-match-id="${match.id}">
-            Join
+            ${t('play.remote.available.matches.join.button')}
           </button>
         </div>
       `
@@ -1170,10 +1221,10 @@ function setupPlayPageEvents(): void {
           handleRemoteGameEnd(winner, score1, score2);
         },
         onOpponentJoined: (opponent) => {
-          toast.success(`${opponent} joined the match!`);
+          toast.success(t('friends.opponent.join.match.toast.success', { opponent }));
         },
         onOpponentLeft: () => {
-          toast.warning('Opponent left the match');
+          toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
         },
@@ -1186,7 +1237,7 @@ function setupPlayPageEvents(): void {
           if (remoteConnectionStatus) {
             remoteConnectionStatus.textContent = '';
           }
-          toast.success('Opponent reconnected!');
+          toast.success(t('friends.opponent.reconnect.toast.success'));
         },
         onError: (code, message) => {
           // Don't disconnect for non-fatal errors like unknown events
@@ -1211,7 +1262,7 @@ function setupPlayPageEvents(): void {
           }
         },
         onMatchJoined: (_matchId, _opponent, playerNumber) => {
-          toast.success(`Joined match as Player ${playerNumber}!`);
+          toast.success(t('friends.join.match.toast.success', { playerNumber }));
         },
       });
 
@@ -1231,8 +1282,8 @@ function setupPlayPageEvents(): void {
 
   function handleRemoteGameEnd(winner: string, score1: number, score2: number): void {
     // Get player aliases from the last game state
-    const player1 = remoteGame?.getCurrentState()?.player1.alias || 'Player 1';
-    const player2 = remoteGame?.getCurrentState()?.player2.alias || 'Player 2';
+    const player1 = remoteGame?.getCurrentState()?.player1.alias || t('play.player1.label');
+    const player2 = remoteGame?.getCurrentState()?.player2.alias || t('play.player2.label');
 
     cleanupRemoteGame();
 
@@ -1339,10 +1390,10 @@ function setupPlayPageEvents(): void {
   // Event: Leave remote game
   leaveRemoteGameBtn?.addEventListener('click', async () => {
     const confirmed = await showConfirmModal({
-      title: 'Leave Game',
-      message: 'Are you sure you want to leave the game?',
-      confirmText: 'Leave',
-      cancelText: 'Stay',
+      title: t('play.remote.leavegame.popup.title'),
+      message: t('play.remote.leavegame.popup.message'),
+      confirmText: t('play.remote.leavegame.popup.leave.button'),
+      cancelText: t('play.remote.leavegame.popup.stay.button'),
       isDangerous: true,
     });
 
@@ -1379,7 +1430,7 @@ function setupPlayPageEvents(): void {
       hideInlineError(tournamentErrorEl);
       updateTournamentUI();
       tournamentPlayerAliasInput.focus();
-      toast.success(`${alias} added to tournament`);
+      toast.success(t('play.local.tournament.registration.added.msg', { alias }));
     } else {
       if (!tournamentManager.canAddPlayers()) {
         showInlineError(tournamentErrorEl, 'Tournament is full (8 players max)');
@@ -1404,9 +1455,9 @@ function setupPlayPageEvents(): void {
       showTournamentPhase('bracket');
       renderTournamentBracket(); // Show full bracket with TBD
       startNextTournamentMatch();
-      toast.success('Tournament started!');
+      toast.success(t('friends.start.tournament.toast.success'));
     } else {
-      toast.error('Cannot start tournament. Need at least 2 players.');
+      toast.error(t('friends.start.tournament.toast.error'));
     }
   });
 
@@ -1473,7 +1524,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player1 = 'Player 1'; // Default name
+      player1 = t('play.player1.label'); // Default name
     }
 
     // Validate player 2 alias
@@ -1484,7 +1535,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player2 = 'Player 2'; // Default name
+      player2 = t('play.player2.label'); // Default name
     }
 
     // Check for duplicate names
@@ -1642,7 +1693,7 @@ function setupPlayPageEvents(): void {
     score2: number,
     isRemoteGame: boolean = false
   ): void {
-    if (winnerNameEl) winnerNameEl.textContent = `${winner} WINS!`;
+    if (winnerNameEl) winnerNameEl.textContent = t('play.gameover.winner', { winner });
     if (resultPlayer1El) resultPlayer1El.textContent = player1;
     if (resultScore1El) resultScore1El.textContent = score1.toString();
     if (resultPlayer2El) resultPlayer2El.textContent = player2;

@@ -1,5 +1,6 @@
 import type { GameState } from '../types/game';
 import { GAME_CONFIG, COLORS } from './config';
+import { t } from '../i18n/i18n';
 
 export function setupCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   canvas.width = GAME_CONFIG.canvasWidth;
@@ -103,7 +104,8 @@ export function drawWinnerScreen(ctx: CanvasRenderingContext2D, winner: string):
   ctx.fillStyle = COLORS.text;
   ctx.font = 'bold 48px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText(`${winner} WINS!`, GAME_CONFIG.canvasWidth / 2, GAME_CONFIG.canvasHeight / 2);
+  const text = t('play.gameover.winner', { winner });
+  ctx.fillText(text, GAME_CONFIG.canvasWidth / 2, GAME_CONFIG.canvasHeight / 2);
 }
 
 export function render(ctx: CanvasRenderingContext2D, gameState: GameState): void {
