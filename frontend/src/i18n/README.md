@@ -137,9 +137,9 @@ E. Fallback to English
 
 > Fixed for play and settings as far as I know.
 
-<input type="checkbox" style="accent-color: red;" checked> Issue #2 - When returning to a game that was left using the browser the game's empty canvas is rendered instead of the main screen.
+<input type="checkbox" style="accent-color: #2e7d32;" checked> Issue #2 - When returning to a game that was left using the browser the game's empty canvas is rendered instead of the main screen.
 
-<input type="checkbox" style="accent-color: red;" checked> Issue #3 - Translation while game is running. Inline?
+<input type="checkbox" style="accent-color: #2e7d32;" checked> Issue #3 - Translation while game is running. Inline?
 
 <p style="text-align: right;">
   <a href="#top">⬆ Back to top</a>
