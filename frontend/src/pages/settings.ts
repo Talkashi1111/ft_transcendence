@@ -8,7 +8,6 @@ import {
   deleteAvatar,
   getAvatarUrl,
   exportMyData,
-  anonymiseMyAccount,
   deleteMyAccount,
   logout,
 } from '../utils/auth';
@@ -235,30 +234,13 @@ export async function renderSettingsPage(
                       Export
                     </button>
                   </div>
-
-                  <div class="flex items-start justify-between gap-4">
-                    <div>
-                      <p class="font-medium text-gray-900">Anonymise my account</p>
-                      <p class="text-xs text-gray-600">Remove personal identifiers while preserving game history.</p>
-                    </div>
-                    <button
-                      id="anonymise-account-btn"
-                      class="min-w-[7.5rem] inline-flex items-center justify-center rounded-md
-                            border border-gray-300 bg-white px-2 py-2 text-sm font-medium
-                            text-gray-900 text-center leading-tight hover:bg-gray-100"
-                      type="button"
-                    >
-                      Anonymise
-                    </button>
-                  </div>
-
                   <div class="pt-3 border-t border-gray-200">
                     <p class="text-xs font-semibold text-red-700 mb-2">Danger zone</p>
 
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <p class="font-medium text-gray-900">Delete account</p>
-                        <p class="text-xs text-gray-600">Permanently delete your account and erase personal data.</p>
+                        <p class="text-xs text-gray-600">Permanently delete your account and erase personal data. Your game history may remain anonymised for integrity of rankings.</p>
                       </div>
                       <button
                         id="delete-account-btn"
@@ -743,14 +725,8 @@ function setup2FAHandlers(): void {
 // GDPR Helpers
 // --------------------------------------
 
-async function downloadJson(
-  filename: string,
-  data: unknown
-): Promise<void> {
-  const blob = new Blob(
-    [JSON.stringify(data, null, 2)],
-    { type: 'application/json' }
-  );
+async function downloadJson(filename: string, data: unknown): Promise<void> {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 
   const url = URL.createObjectURL(blob);
 
@@ -767,7 +743,6 @@ async function downloadJson(
 // GDPR
 function setupGdprHandlers(): void {
   const exportBtn = document.getElementById('export-data-btn') as HTMLButtonElement | null;
-  const anonymiseBtn = document.getElementById('anonymise-account-btn') as HTMLButtonElement | null;
   const deleteBtn = document.getElementById('delete-account-btn') as HTMLButtonElement | null;
 
   exportBtn?.addEventListener('click', async () => {
@@ -783,38 +758,22 @@ function setupGdprHandlers(): void {
     }
   });
 
-  anonymiseBtn?.addEventListener('click', async () => {
-    const ok = confirm(
-      'Are you sure you want to anonymise your account? This will disable your account.'
-    );
-    if (!ok) return;
-    if (!anonymiseBtn) return;
-    anonymiseBtn.disabled = true;
-    try {
-      await anonymiseMyAccount();
-      await logout();
-      window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'login' } }));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Anonymise failed');
-    } finally {
-      anonymiseBtn.disabled = false;
-    }
-  });
-
   deleteBtn?.addEventListener('click', async () => {
     const ok = confirm('Are you sure you want to delete your account? This cannot be undone.');
     if (!ok) return;
 
-    if (!deleteBtn) return;
     deleteBtn.disabled = true;
+
     try {
       await deleteMyAccount();
-      await logout();
+
+      // optional: backend should already clear cookie, but this is fine
+      // await logout();
+
       window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'login' } }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed');
-    } finally {
-      deleteBtn.disabled = false;
+      deleteBtn.disabled = false; // only re-enable on failure
     }
   });
 }

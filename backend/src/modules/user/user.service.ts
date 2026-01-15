@@ -156,3 +156,50 @@ export async function exportMyData(userId: string) {
     },
   };
 }
+
+export async function deleteUserAccount(userId: string) {
+  const deletedEmail = `deleted+${userId}@example.invalid`;
+  const deletedAlias = `DeletedUser_${userId.slice(0, 8)}`;
+
+  return prisma.$transaction(async (tx) => {
+    // Remove social graph + notifications
+    await tx.friendship.deleteMany({
+      where: {
+        OR: [{ userId }, { friendId: userId }],
+      },
+    });
+
+    await tx.notification.deleteMany({
+      where: { userId },
+    });
+
+    // Scrub identifiers + disable auth
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: {
+        email: deletedEmail,
+        alias: deletedAlias,
+
+        password: null,
+        googleId: null,
+
+        twoFactorSecret: null,
+        twoFactorEnabled: false,
+
+        avatarPath: null,
+        avatarMimeType: null,
+        avatarUpdatedAt: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        alias: true,
+        twoFactorEnabled: true,
+        createdAt: true,
+      },
+    });
+
+    return user;
+  });
+}
+  

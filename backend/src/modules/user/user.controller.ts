@@ -8,6 +8,7 @@ import {
   updateUserAlias,
   searchUsers,
   exportMyData,
+  deleteUserAccount,
 } from './user.service.js';
 import {
   createUserSchema,
@@ -393,6 +394,28 @@ export async function exportMyDataHandler(request: FastifyRequest, reply: Fastif
     }
 
     return reply.send(data);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Something went wrong',
+    });
+  }
+}
+
+export async function deleteUserAccountHandler(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.user as { id: string; email: string };
+
+    await deleteUserAccount(id);
+
+    // Clear auth cookie immediately
+    reply.clearCookie('token', { path: '/' });
+    // Also clear 2FA temp cookie if it exists
+    reply.clearCookie('2fa-temp-token', { path: '/' });
+
+    return reply.send({ success: true });
   } catch (error) {
     request.log.error(error);
     return reply.status(500).send({

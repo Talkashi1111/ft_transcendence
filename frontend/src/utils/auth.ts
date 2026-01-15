@@ -250,25 +250,6 @@ export async function exportMyData(): Promise<ExportMyDataResponse> {
 }
 
 /**
- * Anonymise current user's account (GDPR: remove identifiers, keep stats)
- */
-export async function anonymiseMyAccount(): Promise<void> {
-  const response = await fetch('/api/users/me/anonymise', {
-    method: 'POST',
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    let msg = 'Failed to anonymise account';
-    try {
-      const errorData = await response.json();
-      msg = errorData.message || errorData.error || msg;
-    } catch {}
-    throw new Error(msg);
-  }
-}
-
-/**
  * Delete current user's account (GDPR: erasure)
  * Note: you can implement this as "soft delete + anonymise" server-side.
  */
@@ -279,12 +260,8 @@ export async function deleteMyAccount(): Promise<void> {
   });
 
   if (!response.ok) {
-    let msg = 'Failed to delete account';
-    try {
-      const errorData = await response.json();
-      msg = errorData.message || errorData.error || msg;
-    } catch {}
-    throw new Error(msg);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.error || 'Failed to delete account');
   }
 }
 
