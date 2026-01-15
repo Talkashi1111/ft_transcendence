@@ -8,6 +8,7 @@ import {
   updateAliasHandler,
   searchUsersHandler,
   exportMyDataHandler,
+  deleteUserAccountHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
@@ -105,6 +106,7 @@ async function userRoutes(server: FastifyInstance) {
     updateAliasHandler
   );
 
+  // Export authenticated user data
   server.get(
     '/me/export',
     {
@@ -119,6 +121,28 @@ async function userRoutes(server: FastifyInstance) {
       },
     },
     exportMyDataHandler
+  );
+
+  // Delete account (scrub identifiers, disable login, preserve history)
+  server.post(
+    '/me/delete',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Delete current user account (scrub personal data, disable login)',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+            },
+          },
+        },
+      },
+    },
+    deleteUserAccountHandler
   );
 
   // Logout (clear authentication cookie)
