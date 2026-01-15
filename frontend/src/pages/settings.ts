@@ -98,7 +98,7 @@ export async function renderSettingsPage(
               <div id="alias-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
-        </div>
+        </div>  
 
         <!-- 2FA Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -176,6 +176,194 @@ export async function renderSettingsPage(
 
           <!-- Messages -->
           <div id="2fa-message" class="hidden mt-4 p-3 rounded-lg" role="alert"></div>
+        </div>
+
+        <!-- GDPR Info Section (toggleable card) -->
+        <details class="group bg-white rounded-lg shadow-lg mb-6">
+          <!-- Header / Toggle -->
+          <summary
+            class="list-none cursor-pointer p-6 flex items-center justify-between
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <div class="flex flex-col">
+              <h2 class="text-xl font-semibold text-gray-900">
+                GDPR & Privacy
+              </h2>
+              <p class="text-xs text-gray-500 mt-1 group-open:hidden">
+                Click to view details
+              </p>
+              <p class="text-xs text-gray-500 mt-1 hidden group-open:block">
+                Click to hide details
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 text-blue-600">
+              <span class="text-sm font-medium group-open:hidden">Show</span>
+              <span class="text-sm font-medium hidden group-open:inline">Hide</span>
+              <span class="transition-transform duration-200 group-open:rotate-90 text-gray-500">
+                ›
+              </span>
+            </div>
+          </summary>
+
+          <!-- Content -->
+          <div class="px-6 pb-6">
+            <div class="space-y-6 text-gray-700 text-sm leading-relaxed">
+              <!-- Privacy & Data Control (inside the same card) -->
+              <div class="mt-1 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 class="text-base font-semibold text-gray-900 mb-3">
+                  Privacy & Data Control
+                </h3>
+
+                <div class="space-y-3">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <p class="font-medium text-gray-900">Export my data</p>
+                      <p class="text-xs text-gray-600">Download a copy of your personal data.</p>
+                    </div>
+                    <button
+                      id="export-data-btn"
+                      class="min-w-[7.5rem] inline-flex items-center justify-center rounded-md
+                            border border-gray-300 bg-white px-2 py-2 text-sm font-medium
+                            text-gray-900 text-center leading-tight hover:bg-gray-100"
+                      type="button"
+                    >
+                      Export
+                    </button>
+                  </div>
+
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <p class="font-medium text-gray-900">Anonymise my account</p>
+                      <p class="text-xs text-gray-600">Remove personal identifiers while preserving game history.</p>
+                    </div>
+                    <button
+                      id="anonymise-account-btn"
+                      class="min-w-[7.5rem] inline-flex items-center justify-center rounded-md
+                            border border-gray-300 bg-white px-2 py-2 text-sm font-medium
+                            text-gray-900 text-center leading-tight hover:bg-gray-100"
+                      type="button"
+                    >
+                      Anonymise
+                    </button>
+                  </div>
+
+                  <div class="pt-3 border-t border-gray-200">
+                    <p class="text-xs font-semibold text-red-700 mb-2">Danger zone</p>
+
+                    <div class="flex items-start justify-between gap-4">
+                      <div>
+                        <p class="font-medium text-gray-900">Delete account</p>
+                        <p class="text-xs text-gray-600">Permanently delete your account and erase personal data.</p>
+                      </div>
+                      <button
+                        id="delete-account-btn"
+                        class="min-w-[7.5rem] inline-flex items-center justify-center rounded-md
+                              bg-red-600 px-2 py-2 text-sm font-semibold text-white
+                              text-center leading-tight hover:bg-red-700"
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <section>
+                <h3 class="font-semibold text-gray-900 mb-2">
+                  1) What data we collect
+                </h3>
+                <p>
+                  We collect only the data necessary to provide authentication,
+                  gameplay, and account management features.
+                </p>
+
+                <div class="mt-4">
+                  <h3 class="font-semibold text-gray-900 mb-2">
+                    Cookies & local storage
+                  </h3>
+                  <p>
+                    We use strictly necessary cookies and local storage mechanisms to ensure
+                    secure authentication, session management, and basic application
+                    functionality (such as language preferences). These technologies are
+                    essential for the service to operate and do not require user consent
+                    under applicable data protection laws.
+                  </p>
+                </div>
+              </section>
+
+              <section>
+                <h3 class="font-semibold text-gray-900 mb-2">
+                  2) Where data is stored
+                </h3>
+                <p>
+                  All user data is stored securely on servers located within the EU.
+                </p>
+              </section>
+
+              <!-- Section 3 toggle (no SVG; simple chevron) -->
+              <section>
+                <details class="group/inner rounded-lg border border-gray-200">
+                  <summary
+                    class="flex items-center justify-between cursor-pointer px-4 py-3 font-semibold text-gray-900
+                          hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <span>3) User rights</span>
+                    <span class="transition-transform duration-200 group-open/inner:rotate-90 text-gray-500">
+                      ›
+                    </span>
+                  </summary>
+
+                  <div class="px-4 pb-4 text-sm text-gray-700">
+                    <ul class="list-disc list-inside space-y-1">
+                      <li>Right to access personal data</li>
+                      <li>Right to rectification</li>
+                      <li>Right to erasure</li>
+                      <li>Right to data portability</li>
+                    </ul>
+                  </div>
+                </details>
+              </section>
+
+              <section>
+                <h3 class="font-semibold text-gray-900 mb-2">
+                  4) Anonymisation & deletion policy
+                </h3>
+                <p>
+                  Users may request account deletion at any time. Upon deletion,
+                  personal identifiers are anonymised while preserving statistical data.
+                </p>
+              </section>
+
+              <section>
+                <h3 class="font-semibold text-gray-900 mb-2">
+                  5) Retention and security
+                </h3>
+                <p>
+                  Data is retained only as long as required and protected using
+                  industry-standard encryption and access controls.
+                </p>
+              </section>
+
+              <section>
+                <h3 class="font-semibold text-gray-900 mb-2">
+                  6) External reference
+                </h3>
+                <p>
+                  For more information, see the official GDPR text:
+                  <a
+                    href="https://gdpr.eu"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 hover:underline"
+                  >
+                    https://gdpr.eu
+                  </a>
+                </p>
+              </section>
+            </div>
+          </div>
+        </details>
         </div>
 
         <!-- Back to Home -->
