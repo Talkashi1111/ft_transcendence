@@ -31,8 +31,13 @@
   "home.welcome": "ようこそ",
 
   "play.title": "Pongをプレイ",
+
+  "play.player1.default.label": "プレイヤー1",
+  "play.player2.default.label": "プレイヤー2",
+
   "play.player1.label": "プレイヤー1",
   "play.player2.label": "プレイヤー2",
+  
   "play.text": "ゲームモードを選択してください",
   "play.local.label": "ローカルプレイ",
   "play.local.local1v1.button": "ローカル 1対1",

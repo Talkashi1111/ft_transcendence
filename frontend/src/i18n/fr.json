@@ -31,6 +31,10 @@
   "home.welcome": "Bienvenue",
 
   "play.title": "Jouer à Pong",
+
+  "play.player1.default.label": "Joueur 1",
+  "play.player2.default.label": "Joueur 2",
+
   "play.player1.label": "Joueur 1",
   "play.player2.label": "Joueur 2",
   "play.text": "Choisissez un mode de jeu pour commencer",
