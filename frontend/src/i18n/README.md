@@ -2,13 +2,13 @@
 
 ### Multiple language support
 
-| Go to                                                       |
-| ----------------------------------------------------------- |
-| [Module requirements](#module-requirements)                 |
-| [Current logic](#current-logic)                             |
-| [Workflow](#workflow)                                       |
-| [Known issues](#known-issues)                               |
-| [Files with UI text/errors](#files-with-ui-text/errors)     |
+| Go to                                                   |
+| ------------------------------------------------------- |
+| [Module requirements](#module-requirements)             |
+| [Current logic](#current-logic)                         |
+| [Workflow](#workflow)                                   |
+| [Known issues](#known-issues)                           |
+| [Files with UI text/errors](#files-with-ui-text/errors) |
 
 ## Module requirements
 
