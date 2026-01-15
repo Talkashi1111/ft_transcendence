@@ -19,6 +19,7 @@ import twoFactorRoutes from './modules/2fa/2fa.route.js';
 import gameRoutes from './modules/game/game.route.js';
 import friendsRoutes from './modules/friends/friends.route.js';
 import notificationsRoutes from './modules/notifications/notifications.route.js';
+import analyticsRoutes from './modules/analytics/analytics.route.js';
 import { registerGameWebSocket } from './modules/game/game.gateway.js';
 
 const PORT = process.env.PORT || 3000;
@@ -189,6 +190,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await server.register(gameRoutes, { prefix: '/api/game' });
   await server.register(friendsRoutes, { prefix: '/api/friends' });
   await server.register(notificationsRoutes, { prefix: '/api/notifications' });
+  await server.register(analyticsRoutes, { prefix: '/api/analytics' });
 
   // Register WebSocket gateway for real-time game communication
   await registerGameWebSocket(server);

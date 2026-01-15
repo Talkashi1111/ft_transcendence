@@ -5,3 +5,11 @@ scrape_configs:
   - job_name: 'ft_transcendence_backend'
     static_configs:
       - targets: ['app:3000'] # Connects to the 'app' service on port 3000
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080'] # Even though we map to 8081 externally, use 8080 internally (they are in the same Docker network)
