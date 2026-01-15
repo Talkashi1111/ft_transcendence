@@ -9,10 +9,10 @@ import {
   getAvatarUrl,
   exportMyData,
   deleteMyAccount,
-  logout,
 } from '../utils/auth';
 import { t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
+import { setupGdprDeleteHandler } from './settings.gdpr';
 
 export async function renderSettingsPage(
   app: HTMLElement,
@@ -366,6 +366,7 @@ export async function renderSettingsPage(
   setupAliasHandler();
   setup2FAHandlers();
   setupGdprHandlers();
+  setupGdprDeleteHandler();
 }
 
 function setupAvatarHandler(userId: string): void {
@@ -766,10 +767,6 @@ function setupGdprHandlers(): void {
 
     try {
       await deleteMyAccount();
-
-      // optional: backend should already clear cookie, but this is fine
-      await logout();
-
       window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'login' } }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed');
