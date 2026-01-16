@@ -8,6 +8,13 @@ const pageViewCounter = new Counter({
   labelNames: ['page'], // We will label counts by page name (e.g., 'home', 'play')
 });
 
+// Initialize all known pages to 0 so they appear in Grafana immediately
+const knownPages = ['home', 'play', 'tournaments', 'settings', 'friends'];
+knownPages.forEach(page => {
+  // .labels(...) creates the time series with value 0
+  pageViewCounter.labels(page).inc(0);
+});
+
 export default async function analyticsRoutes(server: FastifyInstance) {
   // 2. Define the Endpoint
   server.post<{ Body: { page: string } }>(

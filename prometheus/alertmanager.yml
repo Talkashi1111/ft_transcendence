@@ -1,0 +1,24 @@
+global:
+  resolve_timeout: 5m # Time to wait before resolving an alert
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s 
+  group_interval: 10s # Time to wait before sending a new notification about a group
+  repeat_interval: 1h # Time to wait before resending a notification about a resolved alert
+  receiver: 'discord_webhook' # Default receiver
+  routes:
+    - matchers:
+        - env = "dev" # Match alerts from the development environment
+      receiver: 'dev-null' # Drop or silence dev alerts
+
+receivers:
+  - name: 'discord_webhook'
+    discord_configs:
+      - webhook_url: ''
+        send_resolved: true # Notify when alerts are resolved
+
+  - name: 'dev-null' # Receiver to drop alerts in development
+    webhook_configs:
+      - url: 'http://127.0.0.1:1/' # Dummy URL to drop alerts
+        send_resolved: true

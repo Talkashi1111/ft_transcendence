@@ -14,12 +14,6 @@ import { GameEngine } from './engine/index.js';
 import { RECONNECT_TIMEOUT } from './engine/config.js';
 import { Gauge } from 'prom-client';
 
-const activeMatchesGauge = new Gauge({
-  name: 'transcendence_active_remote_matches_total',
-  help: 'Number of active remote matches currently ongoing',
-  labelNames: ['mode'], // We will label them as '1v1' or 'tournament'
-});
-
 interface ActiveMatch {
   id: string;
   mode: MatchMode;
@@ -34,6 +28,16 @@ interface ActiveMatch {
 
 // Callback for broadcasting match list updates
 type MatchListUpdateCallback = () => void;
+
+const activeMatchesGauge = new Gauge({
+  name: 'transcendence_active_remote_matches_total',
+  help: 'Number of active remote matches currently ongoing',
+  labelNames: ['mode'], // We will label them as '1v1' or 'tournament'
+});
+
+// Initialize gauge with 0 values for known modes
+activeMatchesGauge.labels({ mode: '1v1' }).set(0);
+activeMatchesGauge.labels({ mode: 'tournament' }).set(0);
 
 export class MatchManager {
   private matches: Map<string, ActiveMatch> = new Map();
