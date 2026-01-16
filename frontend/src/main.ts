@@ -1,5 +1,12 @@
 import './index.css';
-import { onLangChange, getLang, setLang, t, syncLangFromAccount } from './i18n/i18n';
+import {
+  onLangChange,
+  getLang,
+  setLang,
+  t,
+  clearAccountLang,
+  syncLangFromAccount,
+} from './i18n/i18n';
 import {
   renderPlayPage,
   cleanupPlayPage,
@@ -339,6 +346,7 @@ async function render() {
   if (currentPage === 'login') {
     renderLoginPage(app, renderNavBar, setupNavigation, async () => {
       // After successful login, connect WebSocket and go to home
+      await syncLangFromAccount();
       await connectGlobalWebSocket();
       navigate('home');
     });
@@ -832,6 +840,7 @@ function setupNavigation() {
     }
 
     await logout();
+    clearAccountLang();
     // Disconnect global WebSocket on logout
     resetWebSocketManager();
     navigate('home');
