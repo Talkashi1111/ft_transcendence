@@ -3,13 +3,13 @@ groups:
     rules:
       # Alert 1: High Game Traffic
       - alert: HighGameTraffic
-        expr: transcendence_active_games_total > 2
+        expr: sum(transcendence_active_remote_matches_total) > 1 # Threshold set to 1 for testing
         for: 10s
         labels:
           severity: warning
         annotations:
-          summary: "High game traffic detected"
-          description: "There are currently {{ $value }} active games, which is high load."
+          summary: 'High game traffic detected'
+          description: 'There are currently {{ $value }} active games, which is high load.'
 
       # Alert 2: Instance Down (Standard check)
       - alert: InstanceDown
@@ -18,5 +18,35 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Instance {{ $labels.instance }} down"
-          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+          summary: 'Instance {{ $labels.instance }} down'
+          description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute.'
+
+      # Alert 3: High Heap Utilization (possible leak early signal)
+      - alert: HighHeapUtilization
+        expr: (nodejs_heap_size_used_bytes / nodejs_heap_size_total_bytes) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High heap usage for {{ $labels.instance }}'
+          description: 'Node.js heap use is above 80% for 5m. Current ratio: {{ $value }}'
+
+      # Alert 3b: High Heap Utilization (critical)
+      - alert: HighHeapUtilizationCritical
+        expr: (nodejs_heap_size_used_bytes / nodejs_heap_size_total_bytes) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Critical heap usage for {{ $labels.instance }}'
+          description: 'Node.js heap use is above 90% for 2m. Current ratio: {{ $value }}'
+
+      # Alert 4: Possible Memory Leak (steady RSS growth)
+      - alert: PossibleMemoryLeak
+        expr: increase(process_resident_memory_bytes[15m]) > 2e8 # 200MB increase over 15 minutes
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Possible memory leak on {{ $labels.instance }}'
+          description: 'RSS grew by >200MB over 15m. Current growth: {{ $value }} bytes'
