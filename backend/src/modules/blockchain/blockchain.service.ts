@@ -2,9 +2,9 @@
  * Blockchain service module for interacting with TournamentScores smart contract
  *
  * This module provides functions to:
- * - Record tournament match results on the blockchain
- * - Query match data from the blockchain
- * - Get tournament match history
+ * - Record complete tournament results on the blockchain
+ * - Query tournament data from the blockchain
+ * - Verify tournament authenticity
  */
 
 import {
@@ -12,10 +12,12 @@ import {
   createWalletClient,
   http,
   getContract,
+  defineChain,
   type PublicClient,
   type WalletClient,
   type Address,
   type Abi,
+  type Chain,
 } from 'viem';
 import { avalancheFuji } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -60,6 +62,28 @@ function loadContractABI(): Abi {
   }
 }
 
+// Define local Hardhat chain for development
+const hardhatLocal: Chain = defineChain({
+  id: 31337,
+  name: 'Hardhat Local',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['http://127.0.0.1:8545'] },
+  },
+});
+
+/**
+ * Get the appropriate chain based on RPC URL
+ */
+function getChain(): Chain {
+  const rpcUrl = process.env.FUJI_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
+  // Use Hardhat local chain for localhost
+  if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
+    return hardhatLocal;
+  }
+  return avalancheFuji;
+}
+
 /**
  * Get a Viem public client for reading blockchain data
  */
@@ -67,7 +91,7 @@ function getPublicClient(): PublicClient {
   const rpcUrl = process.env.FUJI_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
 
   return createPublicClient({
-    chain: avalancheFuji,
+    chain: getChain(),
     transport: http(rpcUrl),
   });
 }
@@ -91,7 +115,7 @@ function getWalletClient(): WalletClient {
 
   return createWalletClient({
     account,
-    chain: avalancheFuji,
+    chain: getChain(),
     transport: http(rpcUrl),
   });
 }
@@ -126,134 +150,207 @@ function getContractInstance(readOnly: boolean = false) {
   }
 }
 
+// ============================================
+// Types
+// ============================================
+
+export interface TournamentMatch {
+  player1: string;
+  player2: string;
+  score1: number;
+  score2: number;
+  round: number;
+}
+
+export interface RecordTournamentParams {
+  odUserId: string; // Organizer's UUID from database
+  organizer: string; // Organizer's alias
+  players: string[]; // All player aliases (2-8)
+  matches: TournamentMatch[];
+  winner: string;
+}
+
+export interface TournamentData {
+  odUserId: string;
+  organizer: string;
+  players: string[];
+  winner: string;
+  timestamp: bigint;
+  recordedBy: string;
+}
+
+export interface TournamentMatchData {
+  player1: string;
+  player2: string;
+  score1: number;
+  score2: number;
+  round: number;
+}
+
+// ============================================
+// Write Functions
+// ============================================
+
 /**
- * Record a tournament match result on the blockchain
+ * Record a complete tournament on the blockchain in a single transaction
  *
- * @param tournamentId - The tournament identifier
- * @param player1Id - Database ID of player 1
- * @param player1Alias - Alias/username of player 1
- * @param player2Id - Database ID of player 2
- * @param player2Alias - Alias/username of player 2
- * @param score1 - Score of player 1
- * @param score2 - Score of player 2
- * @returns Transaction receipt and match ID
+ * @param params - Tournament data including organizer, players, matches, and winner
+ * @returns Transaction hash and blockchain tournament ID
  */
-export async function recordMatch(
-  tournamentId: number,
-  player1Id: number,
-  player1Alias: string,
-  player2Id: number,
-  player2Alias: string,
-  score1: number,
-  score2: number
-): Promise<{ matchId: bigint; txHash: string }> {
+export async function recordTournament(
+  params: RecordTournamentParams
+): Promise<{ blockchainId: bigint; txHash: string }> {
+  const { odUserId, organizer, players, matches, winner } = params;
+
   const contract = getContractInstance(false);
   const publicClient = getPublicClient();
 
-  // Call the recordMatch function
-  const hash = await contract.write.recordMatch([
-    BigInt(tournamentId),
-    BigInt(player1Id),
-    player1Alias,
-    BigInt(player2Id),
-    player2Alias,
-    BigInt(score1),
-    BigInt(score2),
+  // Separate match data into arrays (contract requires this format)
+  const matchPlayers1 = matches.map((m) => m.player1);
+  const matchPlayers2 = matches.map((m) => m.player2);
+  const matchScores1 = matches.map((m) => m.score1);
+  const matchScores2 = matches.map((m) => m.score2);
+  const matchRounds = matches.map((m) => m.round);
+
+  // Call the recordTournament function
+  const hash = await contract.write.recordTournament([
+    odUserId,
+    organizer,
+    players,
+    matchPlayers1,
+    matchPlayers2,
+    matchScores1,
+    matchScores2,
+    matchRounds,
+    winner,
   ]);
 
   // Wait for transaction confirmation
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-  // Extract matchId from the MatchRecorded event
-  let matchId: bigint = 0n;
+  // Extract blockchainId from the TournamentRecorded event
+  let blockchainId: bigint = 0n;
 
   if (receipt.logs && receipt.logs.length > 0) {
-    // The first log should be the MatchRecorded event
-    // matchId is the first indexed parameter (after topics[0] which is the event signature)
-    const matchRecordedLog = receipt.logs[0];
+    // The first log should be the TournamentRecorded event
+    // tournamentId is the first indexed parameter (topics[1])
+    const tournamentRecordedLog = receipt.logs[0];
     if (
-      matchRecordedLog.topics &&
-      matchRecordedLog.topics.length > 1 &&
-      matchRecordedLog.topics[1]
+      tournamentRecordedLog.topics &&
+      tournamentRecordedLog.topics.length > 1 &&
+      tournamentRecordedLog.topics[1]
     ) {
-      matchId = BigInt(matchRecordedLog.topics[1]);
+      blockchainId = BigInt(tournamentRecordedLog.topics[1]);
     }
   }
 
   return {
-    matchId,
+    blockchainId,
     txHash: hash,
   };
 }
 
+// ============================================
+// Read Functions
+// ============================================
+
 /**
- * Get match details by match ID
+ * Get tournament details by blockchain ID
  *
- * @param matchId - The match identifier
- * @returns Match data
+ * @param blockchainId - The blockchain tournament identifier
+ * @returns Tournament data
  */
-export async function getMatch(matchId: number): Promise<{
-  tournamentId: bigint;
-  player1Id: bigint;
-  player1Alias: string;
-  player2Id: bigint;
-  player2Alias: string;
-  score1: bigint;
-  score2: bigint;
-  timestamp: bigint;
-  recordedBy: string;
-}> {
+export async function getTournament(blockchainId: number): Promise<TournamentData> {
   const contract = getContractInstance(true);
 
-  const result = (await contract.read.getMatch([BigInt(matchId)])) as [
-    bigint,
-    bigint,
-    string,
-    bigint,
-    string,
-    bigint,
-    bigint,
-    bigint,
-    string,
+  const result = (await contract.read.getTournament([BigInt(blockchainId)])) as [
+    string, // odUserId
+    string, // organizer
+    string[], // players
+    string, // winner
+    bigint, // timestamp
+    string, // recordedBy
   ];
 
   return {
-    tournamentId: result[0],
-    player1Id: result[1],
-    player1Alias: result[2],
-    player2Id: result[3],
-    player2Alias: result[4],
-    score1: result[5],
-    score2: result[6],
-    timestamp: result[7],
-    recordedBy: result[8],
+    odUserId: result[0],
+    organizer: result[1],
+    players: result[2],
+    winner: result[3],
+    timestamp: result[4],
+    recordedBy: result[5],
   };
 }
 
 /**
- * Get all match IDs for a tournament
+ * Get all matches for a tournament
  *
- * @param tournamentId - The tournament identifier
- * @returns Array of match IDs
+ * @param blockchainId - The blockchain tournament identifier
+ * @returns Array of match data
  */
-export async function getTournamentMatches(tournamentId: number): Promise<bigint[]> {
+export async function getTournamentMatches(blockchainId: number): Promise<TournamentMatchData[]> {
   const contract = getContractInstance(true);
 
-  const matchIds = (await contract.read.getTournamentMatches([BigInt(tournamentId)])) as bigint[];
-  return matchIds;
+  const result = (await contract.read.getTournamentMatches([BigInt(blockchainId)])) as [
+    string[], // player1s
+    string[], // player2s
+    number[], // scores1
+    number[], // scores2
+    number[], // rounds
+  ];
+
+  const [player1s, player2s, scores1, scores2, rounds] = result;
+
+  return player1s.map((_, i) => ({
+    player1: player1s[i],
+    player2: player2s[i],
+    score1: Number(scores1[i]),
+    score2: Number(scores2[i]),
+    round: Number(rounds[i]),
+  }));
 }
 
 /**
- * Get the total number of matches recorded
+ * Get the total number of tournaments recorded
  *
- * @returns Total match count
+ * @returns Total tournament count
  */
-export async function getTotalMatches(): Promise<bigint> {
+export async function getTournamentCount(): Promise<bigint> {
   const contract = getContractInstance(true);
 
-  const count = (await contract.read.getTotalMatches([])) as bigint;
+  const count = (await contract.read.getTournamentCount([])) as bigint;
   return count;
 }
+
+/**
+ * Get match count for a tournament
+ *
+ * @param blockchainId - The blockchain tournament identifier
+ * @returns Number of matches
+ */
+export async function getMatchCount(blockchainId: number): Promise<bigint> {
+  const contract = getContractInstance(true);
+
+  const count = (await contract.read.getMatchCount([BigInt(blockchainId)])) as bigint;
+  return count;
+}
+
+/**
+ * Get player count for a tournament
+ *
+ * @param blockchainId - The blockchain tournament identifier
+ * @returns Number of players
+ */
+export async function getPlayerCount(blockchainId: number): Promise<bigint> {
+  const contract = getContractInstance(true);
+
+  const count = (await contract.read.getPlayerCount([BigInt(blockchainId)])) as bigint;
+  return count;
+}
+
+// ============================================
+// Utility Functions
+// ============================================
 
 /**
  * Check if blockchain is configured and ready
@@ -266,4 +363,11 @@ export function isBlockchainConfigured(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get the Snowtrace URL for a transaction
+ */
+export function getSnowtraceUrl(txHash: string): string {
+  return `https://testnet.snowtrace.io/tx/${txHash}`;
 }

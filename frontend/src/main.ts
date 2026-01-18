@@ -11,38 +11,11 @@ import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
 import { renderSettingsPage } from './pages/settings';
 import { renderFriendsPage, cleanupFriendsPage } from './pages/friends';
+import { renderTournamentsPage } from './pages/tournaments';
 import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
 import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
 import { showConfirmModal } from './utils/modal';
 import { escapeHtml } from './utils/sanitize';
-
-// Types
-interface Match {
-  matchId: string;
-  tournamentId: string;
-  player1Id: string;
-  player1Alias: string;
-  player2Id: string;
-  player2Alias: string;
-  score1: string;
-  score2: string;
-  timestamp: string;
-  recordedBy: string;
-}
-
-interface TournamentData {
-  tournamentId: number;
-  matchIds: string[];
-  matches: Match[];
-}
-
-// Utility functions
-function formatAddress(address: string): string {
-  if (address.length <= 18) {
-    return address;
-  }
-  return `${address.substring(0, 10)}...${address.substring(address.length - 8)}`;
-}
 
 // Router
 let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends' =
@@ -333,7 +306,7 @@ async function render() {
       return;
     }
     await connectGlobalWebSocket();
-    renderTournaments(app, authenticated);
+    renderTournamentsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   } else if (currentPage === 'settings') {
     // Protect settings page - redirect to login if not authenticated
     const authenticated = await isAuthenticated();
@@ -617,64 +590,6 @@ async function renderHome(app: HTMLElement) {
   setupNavigation();
 }
 
-// Tournaments page
-async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
-  const navBar = await renderNavBar('tournaments', authenticated);
-  app.innerHTML = `
-    <div class="min-h-screen bg-gray-50">
-      ${navBar}
-
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">${t('tournaments.title')}</h2>
-          <p class="text-gray-600">${t('tournaments.text')}</p>
-        </div>
-
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-          <label for="tournament-id" class="block text-sm font-medium text-gray-700 mb-2">
-            ${t('tournaments.input.label')}
-          </label>
-          <div class="flex gap-2">
-            <input
-              type="number"
-              id="tournament-id"
-              placeholder="${t('tournaments.input.placeholder')}"
-              class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 border"
-            />
-            <button
-              id="load-tournament"
-              class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-            >
-              ${t('tournaments.load.button')}
-            </button>
-          </div>
-        </div>
-
-        <div id="loading" class="hidden text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p class="mt-2 text-gray-600">Loading matches...</p>
-        </div>
-
-        <div id="error-message" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p class="text-red-800"></p>
-        </div>
-
-        <div id="matches-container" class="space-y-4">
-          <div class="text-center py-12 text-gray-500">
-            ${t('tournaments.bottom.text')}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Setup navigation
-  setupNavigation();
-
-  // Setup tournament loading
-  setupTournamentLoader();
-}
-
 // Setup navigation
 function setupNavigation() {
   // Desktop navigation buttons
@@ -813,126 +728,6 @@ function setupNavigation() {
 
   logoutBtn?.addEventListener('click', handleLogout);
   logoutBtnMobile?.addEventListener('click', handleLogout);
-}
-
-// Setup tournament loader
-function setupTournamentLoader() {
-  const loadBtn = document.getElementById('load-tournament');
-  const tournamentIdInput = document.getElementById('tournament-id') as HTMLInputElement;
-  const matchesContainer = document.getElementById('matches-container');
-  const loadingEl = document.getElementById('loading');
-  const errorMessageEl = document.getElementById('error-message');
-
-  if (!loadBtn || !tournamentIdInput || !matchesContainer || !loadingEl || !errorMessageEl) return;
-
-  const showLoading = () => {
-    loadingEl.classList.remove('hidden');
-    matchesContainer.innerHTML = '';
-    errorMessageEl.classList.add('hidden');
-  };
-
-  const hideLoading = () => {
-    loadingEl.classList.add('hidden');
-  };
-
-  const showError = (message: string) => {
-    errorMessageEl.querySelector('p')!.textContent = message;
-    errorMessageEl.classList.remove('hidden');
-    hideLoading();
-  };
-
-  const renderMatches = (data: TournamentData) => {
-    hideLoading();
-
-    if (data.matches.length === 0) {
-      matchesContainer.innerHTML = `
-        <div class="text-center py-12 text-gray-500">
-          No matches found for tournament ${data.tournamentId}
-        </div>
-      `;
-      return;
-    }
-
-    matchesContainer.innerHTML = `
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <h3 class="font-semibold text-blue-900">Tournament ID: ${data.tournamentId}</h3>
-        <p class="text-blue-700 text-sm">Total Matches: ${data.matches.length}</p>
-      </div>
-      ${data.matches
-        .map(
-          (match) => `
-        <div class="bg-white border rounded-lg p-6 hover:shadow-md transition">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <span class="text-xs text-gray-500">Match ID: ${match.matchId}</span>
-            </div>
-            <div class="text-xs text-gray-500">
-              ${new Date(Number(match.timestamp) * 1000).toLocaleString()}
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-4 items-center">
-            <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">${escapeHtml(match.player1Alias)}</div>
-              <div class="text-sm text-gray-500">ID: ${match.player1Id}</div>
-              <div class="text-3xl font-bold text-blue-600 mt-2">${match.score1}</div>
-            </div>
-
-            <div class="text-center">
-              <div class="text-gray-400 font-semibold">VS</div>
-            </div>
-
-            <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">${escapeHtml(match.player2Alias)}</div>
-              <div class="text-sm text-gray-500">ID: ${match.player2Id}</div>
-              <div class="text-3xl font-bold text-blue-600 mt-2">${match.score2}</div>
-            </div>
-          </div>
-
-          <div class="mt-4 pt-4 border-t text-xs text-gray-500">
-            <div>Recorded by: <span class="font-mono">${formatAddress(match.recordedBy)}</span></div>
-          </div>
-        </div>
-      `
-        )
-        .join('')}
-    `;
-  };
-
-  const loadTournament = async () => {
-    const tournamentId = tournamentIdInput.value.trim();
-
-    if (!tournamentId || isNaN(Number(tournamentId))) {
-      showError('Please enter a valid tournament ID');
-      return;
-    }
-
-    showLoading();
-
-    try {
-      const response = await fetch(`/api/tournaments/${tournamentId}/matches`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: TournamentData = await response.json();
-      renderMatches(data);
-    } catch (err) {
-      console.error('Error loading tournament:', err);
-      showError(
-        `Failed to load tournament matches: ${err instanceof Error ? err.message : 'Unknown error'}`
-      );
-    }
-  };
-
-  loadBtn.addEventListener('click', loadTournament);
-
-  tournamentIdInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      loadTournament();
-    }
-  });
 }
 
 // Initialize app

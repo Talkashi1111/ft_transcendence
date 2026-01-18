@@ -7,7 +7,7 @@ import type { Match } from '../types/game';
 import { toast } from '../utils/toast';
 import { showConfirmModal } from '../utils/modal';
 import { escapeHtml } from '../utils/sanitize';
-import { isAuthenticated } from '../utils/auth';
+import { isAuthenticated, getCurrentUser } from '../utils/auth';
 import { getWebSocketManager } from '../utils/websocket';
 import type { AvailableMatch } from '../utils/websocket';
 import { t } from '../i18n/i18n';
@@ -449,6 +449,8 @@ function setupPlayPageEvents(): void {
   let remoteGame: RemotePongGame | null = null;
   let tournamentManager: TournamentManager | null = null;
   let matchListUnsubscribe: (() => void) | null = null;
+  let loggedInUserAlias: string | null = null;
+  let loggedInUserId: number | null = null; // Track first player ID for tournament
 
   // Set up page cleanup function for when user navigates away
   pageCleanup = () => {
@@ -703,16 +705,24 @@ function setupPlayPageEvents(): void {
     if (tournamentPlayersList) {
       const players = tournamentManager.getTournament().players;
       tournamentPlayersList.innerHTML = players
-        .map(
-          (player) => `
-          <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-            <span class="font-medium text-gray-800">${escapeHtml(player.alias)}</span>
-            <button class="remove-player-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition" data-player-id="${player.id}">
+        .map((player) => {
+          const isLoggedInUser = loggedInUserId !== null && player.id === loggedInUserId;
+          return `
+          <div class="flex items-center justify-between p-3 ${isLoggedInUser ? 'bg-blue-50 border border-blue-200' : 'bg-purple-50'} rounded-lg">
+            <span class="font-medium text-gray-800">
+              ${escapeHtml(player.alias)}
+              ${isLoggedInUser ? `<span class="text-xs text-blue-600 ml-2">${t('play.local.tournament.registration.you')}</span>` : ''}
+            </span>
+            ${
+              isLoggedInUser
+                ? ''
+                : `<button class="remove-player-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition" data-player-id="${player.id}">
               ${t('play.local.tournament.registration.remove.button')}
-            </button>
+            </button>`
+            }
           </div>
-        `
-        )
+        `;
+        })
         .join('');
     }
   }
@@ -743,13 +753,13 @@ function setupPlayPageEvents(): void {
     return { valid: true };
   }
 
-  function startNextTournamentMatch(): void {
+  async function startNextTournamentMatch(): Promise<void> {
     if (!tournamentManager) return;
 
     const match = tournamentManager.getCurrentMatch();
     if (!match) {
       // Tournament is complete
-      showTournamentWinner();
+      await showTournamentWinner();
       return;
     }
 
@@ -792,13 +802,18 @@ function setupPlayPageEvents(): void {
     currentGame.setOnGameEnd((winner: string, player1Score: number, player2Score: number) => {
       // Determine winner ID based on name
       const winnerId = winner === match.player1.alias ? match.player1.id : match.player2.id;
-      handleMatchEnd(match.matchId, winnerId, player1Score, player2Score);
+      void handleMatchEnd(match.matchId, winnerId, player1Score, player2Score);
     });
 
     currentGame.start();
   }
 
-  function handleMatchEnd(matchId: number, winnerId: number, score1: number, score2: number): void {
+  async function handleMatchEnd(
+    matchId: number,
+    winnerId: number,
+    score1: number,
+    score2: number
+  ): Promise<void> {
     if (!tournamentManager) return;
 
     // Clean up the game
@@ -823,9 +838,9 @@ function setupPlayPageEvents(): void {
     // Check if tournament is complete
     const nextMatch = tournamentManager.getCurrentMatch();
     if (!nextMatch) {
-      showTournamentWinner();
+      await showTournamentWinner();
     } else {
-      startNextTournamentMatch();
+      await startNextTournamentMatch();
     }
   }
 
@@ -904,13 +919,13 @@ function setupPlayPageEvents(): void {
       <div class="bracket-match-box bracket-match-box--tbd" style="height: ${MATCH_BOX_HEIGHT}px;">
         <!-- Player 1 -->
         <div class="bracket-player-slot bracket-player-slot--top" style="height: ${PLAYER_SLOT_HEIGHT}px;">
-          <span class="bracket-player-name bracket-player-name--tbd">TBD</span>
+          <span class="bracket-player-name bracket-player-name--tbd">${t('play.local.tournament.bracket.tbd')}</span>
           <span class="bracket-player-score bracket-player-score--tbd">-</span>
         </div>
 
         <!-- Player 2 -->
         <div class="bracket-player-slot" style="height: ${PLAYER_SLOT_HEIGHT}px;">
-          <span class="bracket-player-name bracket-player-name--tbd">TBD</span>
+          <span class="bracket-player-name bracket-player-name--tbd">${t('play.local.tournament.bracket.tbd')}</span>
           <span class="bracket-player-score bracket-player-score--tbd">-</span>
         </div>
       </div>
@@ -978,7 +993,58 @@ function setupPlayPageEvents(): void {
     tournamentBracketDisplay.innerHTML = html;
   }
 
-  function showTournamentWinner(): void {
+  async function recordTournamentOnBlockchain(): Promise<{
+    success: boolean;
+    blockchainId?: string;
+    txHash?: string;
+    snowtraceUrl?: string;
+  }> {
+    if (!tournamentManager) return { success: false };
+
+    const tournament = tournamentManager.getTournament();
+    if (!tournament.winner) return { success: false };
+
+    // Check if user is authenticated
+    const authenticated = await isAuthenticated();
+    if (!authenticated) return { success: false };
+
+    // Build the request payload
+    const players = tournament.players.map((p) => p.alias);
+    const matches = tournament.matches
+      .filter((m) => m.status === 'finished')
+      .map((m) => ({
+        player1: m.player1.alias,
+        player2: m.player2.alias,
+        score1: m.player1Score,
+        score2: m.player2Score,
+        round: m.round || 1,
+      }));
+
+    try {
+      const response = await fetch('/api/tournaments/local', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ players, matches }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          blockchainId: data.blockchainId,
+          txHash: data.txHash,
+          snowtraceUrl: data.snowtraceUrl,
+        };
+      }
+    } catch (err) {
+      console.error('[Tournament] Failed to record on blockchain:', err);
+    }
+
+    return { success: false };
+  }
+
+  async function showTournamentWinner(): Promise<void> {
     if (!tournamentManager || !tournamentCurrentMatch) return;
 
     const bracket = tournamentManager.getBracket();
@@ -987,13 +1053,51 @@ function setupPlayPageEvents(): void {
     if (finalMatch?.winner) {
       const winner = finalMatch.winner;
 
+      // Check if user is logged in and try to record on blockchain
+      const authenticated = await isAuthenticated();
+      let blockchainHtml = '';
+
+      if (authenticated) {
+        // Show loading state
+        tournamentCurrentMatch.innerHTML = `
+          <div class="text-center">
+            <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
+            <p class="text-2xl mb-4">
+              ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
+            </p>
+            <p class="text-gray-400 mb-6">Recording tournament on blockchain...</p>
+          </div>
+        `;
+
+        const result = await recordTournamentOnBlockchain();
+        if (result.success) {
+          blockchainHtml = `
+            <div class="mt-4 p-4 bg-green-900/30 rounded-lg border border-green-600">
+              <p class="text-green-400 font-semibold mb-2">✅ Recorded on Blockchain</p>
+              <p class="text-sm text-gray-300">Tournament ID: #${result.blockchainId}</p>
+              <a href="${result.snowtraceUrl}" target="_blank" rel="noopener noreferrer"
+                 class="text-sm text-blue-400 hover:text-blue-300 underline">
+                View on Snowtrace →
+              </a>
+            </div>
+          `;
+        } else {
+          blockchainHtml = `
+            <div class="mt-4 p-4 bg-yellow-900/30 rounded-lg border border-yellow-600">
+              <p class="text-yellow-400 text-sm">⚠️ Could not record on blockchain</p>
+            </div>
+          `;
+        }
+      }
+
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center">
           <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
           <p class="text-2xl mb-6">
             ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
           </p>
-          <button id="newTournamentBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
+          ${blockchainHtml}
+          <button id="newTournamentBtn" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
             ${t('play.local.tournament.bracket.complete.startnew.button')}
           </button>
         </div>
@@ -1301,22 +1405,53 @@ function setupPlayPageEvents(): void {
   }
 
   // Event: Local Game button
-  localGameBtn?.addEventListener('click', () => {
+  localGameBtn?.addEventListener('click', async () => {
     showScreen(gameSetup!);
-    player1AliasInput.value = '';
     player2AliasInput.value = '';
-    player1AliasInput.focus();
+
+    // If logged in, use the user's alias for player 1
+    const user = await getCurrentUser();
+    if (user) {
+      loggedInUserAlias = user.alias;
+      player1AliasInput.value = user.alias;
+      player1AliasInput.disabled = true;
+      player1AliasInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+      player2AliasInput.focus();
+    } else {
+      loggedInUserAlias = null;
+      player1AliasInput.value = '';
+      player1AliasInput.disabled = false;
+      player1AliasInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      player1AliasInput.focus();
+    }
   });
 
   // Event: Local GameVersusBot button
-  gameVersusBotBtn?.addEventListener('click', () => {
+  gameVersusBotBtn?.addEventListener('click', async () => {
+    // If logged in, store the user's alias for bot game
+    const user = await getCurrentUser();
+    loggedInUserAlias = user?.alias || null;
     showScreen(gameBotSetup!);
   });
 
   // Event: Tournament button
-  tournamentBtn?.addEventListener('click', () => {
+  tournamentBtn?.addEventListener('click', async () => {
     // Create new tournament
     tournamentManager = new TournamentManager();
+
+    // If logged in, auto-add the user as the first player
+    const user = await getCurrentUser();
+    if (user) {
+      loggedInUserAlias = user.alias;
+      tournamentManager.addPlayer(user.alias);
+      // Store the ID of the first player (logged-in user)
+      const players = tournamentManager.getTournament().players;
+      loggedInUserId = players.length > 0 ? players[0].id : null;
+    } else {
+      loggedInUserAlias = null;
+      loggedInUserId = null;
+    }
+
     updateTournamentUI();
     showTournamentPhase('registration');
     showScreen(tournamentScreen!);
@@ -1599,7 +1734,8 @@ function setupPlayPageEvents(): void {
   // Event: Start game vs Bot
   startBotGameBtn?.addEventListener('click', () => {
     lastGameMode = 'bot';
-    const player1 = 'Player';
+    // Use logged-in user's alias if available, otherwise 'Player'
+    const player1 = loggedInUserAlias || 'Player';
 
     if (currentGame) {
       currentGame.destroy();

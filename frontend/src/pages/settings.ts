@@ -178,6 +178,78 @@ export async function renderSettingsPage(
           <div id="2fa-message" class="hidden mt-4 p-3 rounded-lg" role="alert"></div>
         </div>
 
+        <!-- Game Statistics Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">${t('settings.stats.title')}</h2>
+          <div id="stats-loading" class="text-center py-4">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600">${t('settings.stats.loading')}</p>
+          </div>
+          <div id="stats-error" class="hidden text-center py-4 text-red-600">
+            ${t('settings.stats.error')}
+          </div>
+          <div id="stats-content" class="hidden">
+            <!-- Overview Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <div id="stat-total" class="text-3xl font-bold text-gray-900">-</div>
+                <div class="text-sm text-gray-600">${t('settings.stats.total.games')}</div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-4 text-center">
+                <div id="stat-wins" class="text-3xl font-bold text-green-600">-</div>
+                <div class="text-sm text-gray-600">${t('settings.stats.wins')}</div>
+              </div>
+              <div class="bg-red-50 rounded-lg p-4 text-center">
+                <div id="stat-losses" class="text-3xl font-bold text-red-600">-</div>
+                <div class="text-sm text-gray-600">${t('settings.stats.losses')}</div>
+              </div>
+              <div class="bg-blue-50 rounded-lg p-4 text-center">
+                <div id="stat-winrate" class="text-3xl font-bold text-blue-600">-%</div>
+                <div class="text-sm text-gray-600">${t('settings.stats.winrate')}</div>
+              </div>
+            </div>
+
+            <!-- Tournament Stats -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+              <div class="bg-purple-50 rounded-lg p-4 text-center">
+                <div id="stat-tournaments-organized" class="text-2xl font-bold text-purple-600">-</div>
+                <div class="text-sm text-gray-600">${t('settings.stats.tournaments')} ${t('settings.stats.tournaments.organized')}</div>
+              </div>
+              <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                <div id="stat-tournaments-won" class="text-2xl font-bold text-yellow-600">-</div>
+                <div class="text-sm text-gray-600">${t('settings.stats.tournaments')} ${t('settings.stats.tournaments.won')}</div>
+              </div>
+            </div>
+
+            <!-- Stats by Mode -->
+            <h3 class="font-semibold text-gray-900 mb-3">${t('settings.stats.bymode')}</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div class="border rounded-lg p-3">
+                <div class="font-medium text-gray-900">${t('settings.stats.mode.tournament')}</div>
+                <div class="text-sm text-gray-600" id="stat-mode-tournament">-</div>
+              </div>
+              <div class="border rounded-lg p-3">
+                <div class="font-medium text-gray-900">${t('settings.stats.mode.local1v1')}</div>
+                <div class="text-sm text-gray-600" id="stat-mode-local1v1">-</div>
+              </div>
+              <div class="border rounded-lg p-3">
+                <div class="font-medium text-gray-900">${t('settings.stats.mode.vsbot')}</div>
+                <div class="text-sm text-gray-600" id="stat-mode-vsbot">-</div>
+              </div>
+              <div class="border rounded-lg p-3">
+                <div class="font-medium text-gray-900">${t('settings.stats.mode.remote1v1')}</div>
+                <div class="text-sm text-gray-600" id="stat-mode-remote1v1">-</div>
+              </div>
+            </div>
+
+            <!-- Recent Matches -->
+            <h3 class="font-semibold text-gray-900 mb-3">${t('settings.stats.recent')}</h3>
+            <div id="recent-matches" class="space-y-2">
+              <div class="text-center py-4 text-gray-500">${t('settings.stats.recent.empty')}</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Back to Home -->
         <div class="mt-6">
           <button id="back-home-btn" class="text-blue-600 hover:text-blue-700 font-medium">
@@ -192,6 +264,7 @@ export async function renderSettingsPage(
   setupAvatarHandler(user.id);
   setupAliasHandler();
   setup2FAHandlers();
+  loadUserStats();
 }
 
 function setupAvatarHandler(userId: string): void {
@@ -544,5 +617,119 @@ function setup2FAHandlers(): void {
       const event = new CustomEvent('navigate', { detail: { page: 'home' } });
       window.dispatchEvent(event);
     });
+  }
+}
+
+// Stats type definition
+interface UserStats {
+  totalGames: number;
+  totalWins: number;
+  totalLosses: number;
+  winRate: number;
+  byMode: {
+    tournament: { played: number; wins: number; losses: number };
+    local1v1: { played: number; wins: number; losses: number };
+    vsBot: { played: number; wins: number; losses: number };
+    remote1v1: { played: number; wins: number; losses: number };
+  };
+  tournamentsOrganized: number;
+  tournamentWins: number;
+  recentMatches: {
+    id: string;
+    mode: string;
+    player1Alias: string;
+    player2Alias: string;
+    score1: number;
+    score2: number;
+    won: boolean;
+    playedAt: string;
+  }[];
+}
+
+async function loadUserStats(): Promise<void> {
+  const loadingEl = document.getElementById('stats-loading');
+  const errorEl = document.getElementById('stats-error');
+  const contentEl = document.getElementById('stats-content');
+
+  if (!loadingEl || !errorEl || !contentEl) return;
+
+  try {
+    const response = await fetch('/api/users/me/stats');
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch stats');
+    }
+
+    const stats: UserStats = await response.json();
+
+    // Update overview stats
+    const totalEl = document.getElementById('stat-total');
+    const winsEl = document.getElementById('stat-wins');
+    const lossesEl = document.getElementById('stat-losses');
+    const winrateEl = document.getElementById('stat-winrate');
+
+    if (totalEl) totalEl.textContent = stats.totalGames.toString();
+    if (winsEl) winsEl.textContent = stats.totalWins.toString();
+    if (lossesEl) lossesEl.textContent = stats.totalLosses.toString();
+    if (winrateEl) winrateEl.textContent = `${stats.winRate}%`;
+
+    // Update tournament stats
+    const tournamentsOrganizedEl = document.getElementById('stat-tournaments-organized');
+    const tournamentsWonEl = document.getElementById('stat-tournaments-won');
+
+    if (tournamentsOrganizedEl)
+      tournamentsOrganizedEl.textContent = stats.tournamentsOrganized.toString();
+    if (tournamentsWonEl) tournamentsWonEl.textContent = stats.tournamentWins.toString();
+
+    // Update mode stats
+    const formatModeStats = (mode: { played: number; wins: number; losses: number }) =>
+      `${mode.played} (${mode.wins}W/${mode.losses}L)`;
+
+    const tournamentModeEl = document.getElementById('stat-mode-tournament');
+    const local1v1ModeEl = document.getElementById('stat-mode-local1v1');
+    const vsbotModeEl = document.getElementById('stat-mode-vsbot');
+    const remote1v1ModeEl = document.getElementById('stat-mode-remote1v1');
+
+    if (tournamentModeEl) tournamentModeEl.textContent = formatModeStats(stats.byMode.tournament);
+    if (local1v1ModeEl) local1v1ModeEl.textContent = formatModeStats(stats.byMode.local1v1);
+    if (vsbotModeEl) vsbotModeEl.textContent = formatModeStats(stats.byMode.vsBot);
+    if (remote1v1ModeEl) remote1v1ModeEl.textContent = formatModeStats(stats.byMode.remote1v1);
+
+    // Update recent matches
+    const recentMatchesEl = document.getElementById('recent-matches');
+    if (recentMatchesEl) {
+      if (stats.recentMatches.length === 0) {
+        recentMatchesEl.innerHTML = `<div class="text-center py-4 text-gray-500">${t('settings.stats.recent.empty')}</div>`;
+      } else {
+        recentMatchesEl.innerHTML = stats.recentMatches
+          .map(
+            (match) => `
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-3">
+              <span class="px-2 py-1 text-xs rounded ${match.won ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                ${match.won ? t('settings.stats.recent.won') : t('settings.stats.recent.lost')}
+              </span>
+              <span class="text-sm text-gray-900">
+                ${escapeHtml(match.player1Alias)} vs ${escapeHtml(match.player2Alias)}
+              </span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="font-medium text-gray-900">${match.score1} - ${match.score2}</span>
+              <span class="text-xs text-gray-500">${new Date(match.playedAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+        `
+          )
+          .join('');
+      }
+    }
+
+    // Show content
+    loadingEl.classList.add('hidden');
+    contentEl.classList.remove('hidden');
+  } catch (error) {
+    console.error('Failed to load stats:', error);
+    loadingEl.classList.add('hidden');
+    errorEl.classList.remove('hidden');
   }
 }

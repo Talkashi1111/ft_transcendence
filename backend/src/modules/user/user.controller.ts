@@ -7,6 +7,7 @@ import {
   findUserById,
   updateUserAlias,
   searchUsers,
+  getUserStats,
 } from './user.service.js';
 import {
   createUserSchema,
@@ -375,4 +376,22 @@ export async function searchUsersHandler(request: FastifyRequest, reply: Fastify
     users: usersWithStatus,
     nextCursor,
   });
+}
+
+/**
+ * Get user's game statistics
+ */
+export async function getMyStatsHandler(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id: userId } = request.user as { id: string; email: string };
+    const stats = await getUserStats(userId);
+    return reply.send(stats);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Failed to fetch user stats',
+    });
+  }
 }
