@@ -29,12 +29,12 @@ describe('Server start function', () => {
     expect(app.hasRoute({ method: 'GET', url: '/api/users' })).toBe(true);
     expect(app.hasRoute({ method: 'GET', url: '/api/users/me' })).toBe(true);
 
-    // Verify blockchain routes are registered
-    expect(app.hasRoute({ method: 'GET', url: '/api/tournaments/:tournamentId/matches' })).toBe(
+    // Verify blockchain/tournament routes are registered
+    expect(app.hasRoute({ method: 'POST', url: '/api/tournaments/local' })).toBe(true);
+    expect(app.hasRoute({ method: 'GET', url: '/api/tournaments/blockchain/:blockchainId' })).toBe(
       true
     );
-    expect(app.hasRoute({ method: 'POST', url: '/api/matches' })).toBe(true);
-    expect(app.hasRoute({ method: 'GET', url: '/api/matches/total' })).toBe(true);
+    expect(app.hasRoute({ method: 'GET', url: '/api/tournaments/blockchain/count' })).toBe(true);
 
     // Verify authenticate decorator is available
     expect(app.authenticate).toBeDefined();

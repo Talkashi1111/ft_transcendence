@@ -3,18 +3,50 @@ pragma solidity ^0.8.28;
 
 /**
  * @title TournamentScores
- * @dev Store and retrieve tournament match scores on the blockchain
- * @notice Only the contract owner can record matches to prevent unauthorized entries
+ * @dev Store and retrieve local tournament results on the blockchain
+ * @notice Only the contract owner can record tournaments to prevent unauthorized entries
+ *
+ * This contract stores complete tournament data including:
+ * - Organizer info (database user ID + alias at time of tournament)
+ * - All players (aliases)
+ * - All matches with scores and rounds
+ * - Winner information
+ *
+ * Data is immutable once recorded, providing tamper-proof verification.
  */
 contract TournamentScores {
+    /**
+     * @dev Represents a single match within a tournament
+     * @param player1 Alias of first player
+     * @param player2 Alias of second player
+     * @param score1 Score of first player (0-255, uint8 sufficient for pong)
+     * @param score2 Score of second player
+     * @param round Tournament round (1 = first round, 2 = semi-finals, 3 = finals, etc.)
+     */
     struct Match {
-        uint256 tournamentId;
-        uint256 player1Id;
-        string player1Alias;
-        uint256 player2Id;
-        string player2Alias;
-        uint256 score1;
-        uint256 score2;
+        string player1;
+        string player2;
+        uint8 score1;
+        uint8 score2;
+        uint8 round;
+    }
+
+    /**
+     * @dev Represents a complete tournament
+     * @param odUserId Organizer's database user ID as UUID string (preserved even if user is later deleted)
+     * @param organizer Organizer's alias at time of tournament
+     * @param players Array of all player aliases (first player is always the organizer)
+     * @param matches Array of all matches played
+     * @param winner Alias of tournament winner
+     * @param timestamp Block timestamp when tournament was recorded
+     * @param recordedBy Address that recorded the tournament (backend server)
+     */
+    struct Tournament {
+        string odUserId;
+        string organizer;
+        string[] players;
+        Match[] matches;
+        string winner;
         uint256 timestamp;
         address recordedBy;
     }
@@ -22,25 +54,20 @@ contract TournamentScores {
     // Owner of the contract (backend server)
     address public owner;
 
-    // Mapping from match ID to Match data
-    mapping(uint256 => Match) public matches;
+    // Mapping from tournament ID to Tournament data
+    mapping(uint256 => Tournament) private tournaments;
 
-    // Counter for match IDs (uint256 max is ~10^77, practically impossible to overflow)
-    uint256 public matchCount;
-
-    // Mapping from tournament ID to array of match IDs
-    mapping(uint256 => uint256[]) public tournamentMatches;
+    // Counter for tournament IDs
+    uint256 public tournamentCount;
 
     // Events
-    event MatchRecorded(
-        uint256 indexed matchId,
+    event TournamentRecorded(
         uint256 indexed tournamentId,
-        uint256 indexed player1Id,
-        uint256 player2Id,
-        string player1Alias,
-        string player2Alias,
-        uint256 score1,
-        uint256 score2,
+        string odUserId,
+        string organizer,
+        uint8 playerCount,
+        uint8 matchCount,
+        string winner,
         uint256 timestamp
     );
 
@@ -74,126 +101,202 @@ contract TournamentScores {
     }
 
     /**
-     * @dev Record a new match result
-     * @param tournamentId The tournament identifier
-     * @param player1Id ID of first player
-     * @param player1Alias Alias of first player
-     * @param player2Id ID of second player
-     * @param player2Alias Alias of second player
-     * @param score1 Score of first player
-     * @param score2 Score of second player
-     * @notice Only the owner (backend) can record matches
+     * @dev Record a complete tournament result in a single transaction
+     * @param odUserId Organizer's database user ID (UUID string)
+     * @param organizer Organizer's alias
+     * @param players Array of all player aliases (2-8 players)
+     * @param matchPlayers1 Array of player1 aliases for each match
+     * @param matchPlayers2 Array of player2 aliases for each match
+     * @param matchScores1 Array of player1 scores for each match
+     * @param matchScores2 Array of player2 scores for each match
+     * @param matchRounds Array of round numbers for each match
+     * @param winner Winner's alias
+     * @return tournamentId The ID of the recorded tournament
+     * @notice Only the owner (backend) can record tournaments
+     *
+     * Note: We use separate arrays for match data instead of Match[] because
+     * Solidity doesn't support passing arrays of structs from external calls easily.
      */
-    function recordMatch(
-        uint256 tournamentId,
-        uint256 player1Id,
-        string memory player1Alias,
-        uint256 player2Id,
-        string memory player2Alias,
-        uint256 score1,
-        uint256 score2
+    function recordTournament(
+        string memory odUserId,
+        string memory organizer,
+        string[] memory players,
+        string[] memory matchPlayers1,
+        string[] memory matchPlayers2,
+        uint8[] memory matchScores1,
+        uint8[] memory matchScores2,
+        uint8[] memory matchRounds,
+        string memory winner
     ) public onlyOwner returns (uint256) {
-        require(tournamentId > 0, "Invalid tournament ID");
-        require(player1Id > 0, "Invalid player1 ID");
-        require(player2Id > 0, "Invalid player2 ID");
-        require(player1Id != player2Id, "Players must be different");
-        require(
-            bytes(player1Alias).length > 0,
-            "Player1 alias cannot be empty"
-        );
-        require(
-            bytes(player2Alias).length > 0,
-            "Player2 alias cannot be empty"
-        );
-        require(bytes(player1Alias).length <= 50, "Player1 alias too long");
-        require(bytes(player2Alias).length <= 50, "Player2 alias too long");
+        // Validate inputs
+        require(bytes(odUserId).length == 36, "Invalid user ID (must be UUID)");
+        require(bytes(organizer).length > 0, "Organizer alias cannot be empty");
+        require(bytes(organizer).length <= 50, "Organizer alias too long");
+        require(players.length >= 2, "Minimum 2 players required");
+        require(players.length <= 8, "Maximum 8 players allowed");
+        require(bytes(winner).length > 0, "Winner alias cannot be empty");
+        require(bytes(winner).length <= 50, "Winner alias too long");
 
-        // Note: matchCount overflow is practically impossible (uint256 max = ~10^77)
-        // Would need to record 10^60 matches per second for universe lifetime
-        uint256 matchId = matchCount;
-        unchecked {
-            matchCount++; // See above: overflow is impossible; using unchecked for gas optimization
+        // Validate match arrays have same length
+        uint256 numMatches = matchPlayers1.length;
+        require(numMatches > 0, "At least one match required");
+        require(
+            matchPlayers2.length == numMatches &&
+            matchScores1.length == numMatches &&
+            matchScores2.length == numMatches &&
+            matchRounds.length == numMatches,
+            "Match arrays must have same length"
+        );
+
+        // Validate each player alias
+        for (uint256 i = 0; i < players.length; i++) {
+            require(bytes(players[i]).length > 0, "Player alias cannot be empty");
+            require(bytes(players[i]).length <= 50, "Player alias too long");
         }
 
-        matches[matchId] = Match({
-            tournamentId: tournamentId,
-            player1Id: player1Id,
-            player1Alias: player1Alias,
-            player2Id: player2Id,
-            player2Alias: player2Alias,
-            score1: score1,
-            score2: score2,
-            timestamp: block.timestamp,
-            recordedBy: msg.sender
-        });
+        // Create tournament ID
+        uint256 tournamentId = tournamentCount;
+        unchecked {
+            tournamentCount++;
+        }
 
-        tournamentMatches[tournamentId].push(matchId);
+        // Store tournament data
+        Tournament storage t = tournaments[tournamentId];
+        t.odUserId = odUserId;
+        t.organizer = organizer;
+        t.winner = winner;
+        t.timestamp = block.timestamp;
+        t.recordedBy = msg.sender;
 
-        emit MatchRecorded(
-            matchId,
+        // Copy players array
+        for (uint256 i = 0; i < players.length; i++) {
+            t.players.push(players[i]);
+        }
+
+        // Build and store matches
+        for (uint256 i = 0; i < numMatches; i++) {
+            require(bytes(matchPlayers1[i]).length > 0, "Match player1 alias cannot be empty");
+            require(bytes(matchPlayers2[i]).length > 0, "Match player2 alias cannot be empty");
+
+            t.matches.push(Match({
+                player1: matchPlayers1[i],
+                player2: matchPlayers2[i],
+                score1: matchScores1[i],
+                score2: matchScores2[i],
+                round: matchRounds[i]
+            }));
+        }
+
+        emit TournamentRecorded(
             tournamentId,
-            player1Id,
-            player2Id,
-            player1Alias,
-            player2Alias,
-            score1,
-            score2,
+            odUserId,
+            organizer,
+            uint8(players.length),
+            uint8(numMatches),
+            winner,
             block.timestamp
         );
 
-        return matchId;
+        return tournamentId;
     }
 
     /**
-     * @dev Get match details by match ID
-     * @param matchId The match identifier
+     * @dev Get tournament basic info
+     * @param tournamentId The tournament identifier
      */
-    function getMatch(
-        uint256 matchId
+    function getTournament(
+        uint256 tournamentId
     )
         public
         view
         returns (
-            uint256 tournamentId,
-            uint256 player1Id,
-            string memory player1Alias,
-            uint256 player2Id,
-            string memory player2Alias,
-            uint256 score1,
-            uint256 score2,
+            string memory odUserId,
+            string memory organizer,
+            string[] memory players,
+            string memory winner,
             uint256 timestamp,
             address recordedBy
         )
     {
-        require(matchId < matchCount, "Match does not exist");
+        require(tournamentId < tournamentCount, "Tournament does not exist");
 
-        Match memory m = matches[matchId];
+        Tournament storage t = tournaments[tournamentId];
         return (
-            m.tournamentId,
-            m.player1Id,
-            m.player1Alias,
-            m.player2Id,
-            m.player2Alias,
-            m.score1,
-            m.score2,
-            m.timestamp,
-            m.recordedBy
+            t.odUserId,
+            t.organizer,
+            t.players,
+            t.winner,
+            t.timestamp,
+            t.recordedBy
         );
     }
+
     /**
-     * @dev Get all match IDs for a tournament
+     * @dev Get all matches for a tournament
      * @param tournamentId The tournament identifier
+     * @return player1s Array of player1 aliases
+     * @return player2s Array of player2 aliases
+     * @return scores1 Array of player1 scores
+     * @return scores2 Array of player2 scores
+     * @return rounds Array of round numbers
      */
     function getTournamentMatches(
         uint256 tournamentId
-    ) public view returns (uint256[] memory) {
-        return tournamentMatches[tournamentId];
+    )
+        public
+        view
+        returns (
+            string[] memory player1s,
+            string[] memory player2s,
+            uint8[] memory scores1,
+            uint8[] memory scores2,
+            uint8[] memory rounds
+        )
+    {
+        require(tournamentId < tournamentCount, "Tournament does not exist");
+
+        Tournament storage t = tournaments[tournamentId];
+        uint256 numMatches = t.matches.length;
+
+        player1s = new string[](numMatches);
+        player2s = new string[](numMatches);
+        scores1 = new uint8[](numMatches);
+        scores2 = new uint8[](numMatches);
+        rounds = new uint8[](numMatches);
+
+        for (uint256 i = 0; i < numMatches; i++) {
+            player1s[i] = t.matches[i].player1;
+            player2s[i] = t.matches[i].player2;
+            scores1[i] = t.matches[i].score1;
+            scores2[i] = t.matches[i].score2;
+            rounds[i] = t.matches[i].round;
+        }
+
+        return (player1s, player2s, scores1, scores2, rounds);
     }
 
     /**
-     * @dev Get total number of matches recorded
+     * @dev Get total number of tournaments recorded
      */
-    function getTotalMatches() public view returns (uint256) {
-        return matchCount;
+    function getTournamentCount() public view returns (uint256) {
+        return tournamentCount;
+    }
+
+    /**
+     * @dev Get match count for a tournament
+     * @param tournamentId The tournament identifier
+     */
+    function getMatchCount(uint256 tournamentId) public view returns (uint256) {
+        require(tournamentId < tournamentCount, "Tournament does not exist");
+        return tournaments[tournamentId].matches.length;
+    }
+
+    /**
+     * @dev Get player count for a tournament
+     * @param tournamentId The tournament identifier
+     */
+    function getPlayerCount(uint256 tournamentId) public view returns (uint256) {
+        require(tournamentId < tournamentCount, "Tournament does not exist");
+        return tournaments[tournamentId].players.length;
     }
 }
