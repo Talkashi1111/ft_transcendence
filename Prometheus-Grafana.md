@@ -13,9 +13,27 @@ The goal of this minor module is to set up a comprehensive monitoring system usi
 This minor module aims to establish a robust monitoring infrastructure using Prometheus and Grafana , enabling real-time visibility into system metrics and proactive issue detection for improved system performance and reliability.
 
 # Summary and quick pick-up
-### 
-Prometheus is a monitoring tool that will scrapes data from three sources:
-- h
+
+In Greek mythology, Prometheus is a defiant Titan renowned for stealing fire from the gods and gifting it to humanity, an act that brought both progress to mankind and eternal punishment upon himself. His name means "forethought".  
+In IT, Prometheus is an open-source monitoring and alerting system that collects time-series metrics from applications and infrastructure, stores them efficiently, and enables querying and alerting based on those metrics. A metric is a quantitative measurement that represents the performance, behavior, or state of a system, application, or resource over time. In short, metric = labeled data.
+
+Prometheus collects from:
+- **Node Exporter** = Monitor the **Computer**.
+- **cAdvisor** = Monitor the **Docker Containers**.
+- **Your App Metrics** = Monitor the **Code**.  
+
+Grafana is the Unified Dashboard that centralizes all these different data streams.
+
+### Development
+`make monitor` will start monitoring containers. `make halt-monitor` will stop monitoring containers.  
+When monitoring services are running, raw metrics are accessible:
+- application: http://localhost:3000/metrics
+- node-exporter: htt
+- cadvisor
+- prometheus: http://localhost:
+- alertmanager
+- grafana.  
+
 
 
 # Initial Set Up

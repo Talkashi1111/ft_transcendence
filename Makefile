@@ -1,6 +1,8 @@
 # Default target - show help
 .DEFAULT_GOAL := help
 
+MONITORING_SERVICES := prometheus grafana alertmanager node-exporter cadvisor
+
 ## ============================================
 ## Docker targets (run on HOST machine)
 ## ============================================
@@ -12,10 +14,12 @@ up:        ## start dev stack
 	docker compose -f docker-compose.dev.yml exec --user node app bash
 
 .PHONY: monitor
-monitor:    ## start dev stack with monitoring services
-	docker compose -f docker-compose.dev.yml --profile monitoring up --no-start
-	docker compose -f docker-compose.dev.yml --profile monitoring start
-	docker compose -f docker-compose.dev.yml exec --user node app bash
+monitor:    ## start ONLY monitoring services (in background)
+	docker compose -f docker-compose.dev.yml up -d --no-recreate $(MONITORING_SERVICES)
+
+.PHONY: halt-monitor
+halt-monitor: ## stop ONLY monitoring services
+	docker compose -f docker-compose.dev.yml stop $(MONITORING_SERVICES)
 
 .PHONY: exec
 exec:      ## execute command in app container
