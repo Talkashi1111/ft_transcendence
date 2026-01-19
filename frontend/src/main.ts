@@ -10,43 +10,24 @@ import {
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
 import { renderSettingsPage } from './pages/settings';
+import { renderStatsPage } from './pages/stats';
 import { renderFriendsPage, cleanupFriendsPage } from './pages/friends';
+import { renderTournamentsPage, cleanupTournamentsPage } from './pages/tournaments';
 import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
 import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
 import { showConfirmModal } from './utils/modal';
 import { escapeHtml } from './utils/sanitize';
 
-// Types
-interface Match {
-  matchId: string;
-  tournamentId: string;
-  player1Id: string;
-  player1Alias: string;
-  player2Id: string;
-  player2Alias: string;
-  score1: string;
-  score2: string;
-  timestamp: string;
-  recordedBy: string;
-}
-
-interface TournamentData {
-  tournamentId: number;
-  matchIds: string[];
-  matches: Match[];
-}
-
-// Utility functions
-function formatAddress(address: string): string {
-  if (address.length <= 18) {
-    return address;
-  }
-  return `${address.substring(0, 10)}...${address.substring(address.length - 8)}`;
-}
-
 // Router
-let currentPage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends' =
-  'home';
+let currentPage:
+  | 'home'
+  | 'login'
+  | 'register'
+  | 'play'
+  | 'tournaments'
+  | 'settings'
+  | 'stats'
+  | 'friends' = 'home';
 
 // Notification state (updated via WebSocket and REST)
 let unreadNotificationCount = 0;
@@ -230,7 +211,7 @@ async function connectGlobalWebSocket(): Promise<void> {
 }
 
 async function navigate(
-  page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends'
+  page: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'stats' | 'friends'
 ) {
   // Check if leaving an active game - show confirmation
   if (currentPage === 'play' && hasActiveRemoteGame()) {
@@ -283,6 +264,8 @@ window.addEventListener('popstate', async (event) => {
     cleanupPlayPage();
   } else if (currentPage === 'friends') {
     cleanupFriendsPage();
+  } else if (currentPage === 'tournaments') {
+    cleanupTournamentsPage();
   }
 
   if (event.state && event.state.page) {
@@ -291,7 +274,42 @@ window.addEventListener('popstate', async (event) => {
     // Default to home if no state
     currentPage = 'home';
   }
-  render();
+
+  // Render the page first
+  await render();
+
+  // NOTE: For play sub-screens, we only support BACK navigation (to mode selection).
+  // Forward navigation would require re-running async setup logic (fetching user data,
+  // creating tournament managers, establishing WebSocket connections) which is complex
+  // and error-prone. So we intentionally don't restore play sub-screens on forward.
+
+  // Use requestAnimationFrame + setTimeout for tournament detail restoration
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      // Restore tournament detail views (these can be safely restored from state)
+      if (event.state?.myTournamentDetail && event.state?.tournament) {
+        // Restore My Tournaments detail view
+        const listEl = document.getElementById('my-tournaments-list');
+        const detailEl = document.getElementById('my-tournaments-detail');
+        const loadingEl = document.getElementById('my-tournaments-loading');
+        if (listEl && detailEl && loadingEl) {
+          loadingEl.classList.add('hidden');
+          listEl.classList.add('hidden');
+          detailEl.classList.remove('hidden');
+        }
+      } else if (event.state?.globalTournamentDetail && event.state?.tournament) {
+        // Restore Global Tournaments detail view
+        const listEl = document.getElementById('global-tournaments-list');
+        const detailEl = document.getElementById('global-tournaments-detail');
+        const loadingEl = document.getElementById('global-tournaments-loading');
+        if (listEl && detailEl && loadingEl) {
+          loadingEl.classList.add('hidden');
+          listEl.classList.add('hidden');
+          detailEl.classList.remove('hidden');
+        }
+      }
+    }, 50);
+  });
 });
 
 // Render function
@@ -333,7 +351,7 @@ async function render() {
       return;
     }
     await connectGlobalWebSocket();
-    renderTournaments(app, authenticated);
+    renderTournamentsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   } else if (currentPage === 'settings') {
     // Protect settings page - redirect to login if not authenticated
     const authenticated = await isAuthenticated();
@@ -343,6 +361,15 @@ async function render() {
     }
     await connectGlobalWebSocket();
     renderSettingsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
+  } else if (currentPage === 'stats') {
+    // Protect stats page - redirect to login if not authenticated
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      navigate('login');
+      return;
+    }
+    await connectGlobalWebSocket();
+    renderStatsPage(app, (page) => renderNavBar(page, authenticated), setupNavigation);
   } else if (currentPage === 'friends') {
     // Protect friends page - redirect to login if not authenticated
     const authenticated = await isAuthenticated();
@@ -357,7 +384,15 @@ async function render() {
 
 // Navigation bar component
 async function renderNavBar(
-  activePage: 'home' | 'login' | 'register' | 'play' | 'tournaments' | 'settings' | 'friends',
+  activePage:
+    | 'home'
+    | 'login'
+    | 'register'
+    | 'play'
+    | 'tournaments'
+    | 'settings'
+    | 'stats'
+    | 'friends',
   authenticated?: boolean
 ): Promise<string> {
   const isAuth = authenticated ?? (await isAuthenticated());
@@ -470,6 +505,9 @@ async function renderNavBar(
               <button id="nav-friends" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 ${t('nav.friends')}
               </button>
+              <button id="nav-stats" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'stats' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+                ${t('nav.stats')}
+              </button>
               <button id="nav-settings" class="px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
                 ${t('nav.settings')}
               </button>
@@ -547,6 +585,9 @@ async function renderNavBar(
             <button id="nav-friends-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'friends' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               ${t('mobile.friends')}
             </button>
+            <button id="nav-stats-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'stats' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
+              ${t('mobile.stats')}
+            </button>
             <button id="nav-settings-mobile" class="block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activePage === 'settings' ? 'text-white bg-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}">
               ${t('mobile.settings')}
             </button>
@@ -617,64 +658,6 @@ async function renderHome(app: HTMLElement) {
   setupNavigation();
 }
 
-// Tournaments page
-async function renderTournaments(app: HTMLElement, authenticated?: boolean) {
-  const navBar = await renderNavBar('tournaments', authenticated);
-  app.innerHTML = `
-    <div class="min-h-screen bg-gray-50">
-      ${navBar}
-
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">${t('tournaments.title')}</h2>
-          <p class="text-gray-600">${t('tournaments.text')}</p>
-        </div>
-
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-          <label for="tournament-id" class="block text-sm font-medium text-gray-700 mb-2">
-            ${t('tournaments.input.label')}
-          </label>
-          <div class="flex gap-2">
-            <input
-              type="number"
-              id="tournament-id"
-              placeholder="${t('tournaments.input.placeholder')}"
-              class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 border"
-            />
-            <button
-              id="load-tournament"
-              class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-            >
-              ${t('tournaments.load.button')}
-            </button>
-          </div>
-        </div>
-
-        <div id="loading" class="hidden text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p class="mt-2 text-gray-600">Loading matches...</p>
-        </div>
-
-        <div id="error-message" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p class="text-red-800"></p>
-        </div>
-
-        <div id="matches-container" class="space-y-4">
-          <div class="text-center py-12 text-gray-500">
-            ${t('tournaments.bottom.text')}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Setup navigation
-  setupNavigation();
-
-  // Setup tournament loading
-  setupTournamentLoader();
-}
-
 // Setup navigation
 function setupNavigation() {
   // Desktop navigation buttons
@@ -682,6 +665,7 @@ function setupNavigation() {
   const playBtn = document.getElementById('nav-play');
   const tournamentsBtn = document.getElementById('nav-tournaments');
   const friendsBtn = document.getElementById('nav-friends');
+  const statsBtn = document.getElementById('nav-stats');
   const settingsBtn = document.getElementById('nav-settings');
   const loginBtn = document.getElementById('nav-login');
   const registerBtn = document.getElementById('nav-register');
@@ -704,6 +688,7 @@ function setupNavigation() {
   const playBtnMobile = document.getElementById('nav-play-mobile');
   const tournamentsBtnMobile = document.getElementById('nav-tournaments-mobile');
   const friendsBtnMobile = document.getElementById('nav-friends-mobile');
+  const statsBtnMobile = document.getElementById('nav-stats-mobile');
   const settingsBtnMobile = document.getElementById('nav-settings-mobile');
   const loginBtnMobile = document.getElementById('nav-login-mobile');
   const registerBtnMobile = document.getElementById('nav-register-mobile');
@@ -738,6 +723,7 @@ function setupNavigation() {
   playBtn?.addEventListener('click', () => navigate('play'));
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
   friendsBtn?.addEventListener('click', () => navigate('friends'));
+  statsBtn?.addEventListener('click', () => navigate('stats'));
   settingsBtn?.addEventListener('click', () => navigate('settings'));
   loginBtn?.addEventListener('click', () => navigate('login'));
   registerBtn?.addEventListener('click', () => navigate('register'));
@@ -758,6 +744,10 @@ function setupNavigation() {
   friendsBtnMobile?.addEventListener('click', () => {
     closeMobileMenu();
     navigate('friends');
+  });
+  statsBtnMobile?.addEventListener('click', () => {
+    closeMobileMenu();
+    navigate('stats');
   });
   settingsBtnMobile?.addEventListener('click', () => {
     closeMobileMenu();
@@ -815,126 +805,6 @@ function setupNavigation() {
   logoutBtnMobile?.addEventListener('click', handleLogout);
 }
 
-// Setup tournament loader
-function setupTournamentLoader() {
-  const loadBtn = document.getElementById('load-tournament');
-  const tournamentIdInput = document.getElementById('tournament-id') as HTMLInputElement;
-  const matchesContainer = document.getElementById('matches-container');
-  const loadingEl = document.getElementById('loading');
-  const errorMessageEl = document.getElementById('error-message');
-
-  if (!loadBtn || !tournamentIdInput || !matchesContainer || !loadingEl || !errorMessageEl) return;
-
-  const showLoading = () => {
-    loadingEl.classList.remove('hidden');
-    matchesContainer.innerHTML = '';
-    errorMessageEl.classList.add('hidden');
-  };
-
-  const hideLoading = () => {
-    loadingEl.classList.add('hidden');
-  };
-
-  const showError = (message: string) => {
-    errorMessageEl.querySelector('p')!.textContent = message;
-    errorMessageEl.classList.remove('hidden');
-    hideLoading();
-  };
-
-  const renderMatches = (data: TournamentData) => {
-    hideLoading();
-
-    if (data.matches.length === 0) {
-      matchesContainer.innerHTML = `
-        <div class="text-center py-12 text-gray-500">
-          No matches found for tournament ${data.tournamentId}
-        </div>
-      `;
-      return;
-    }
-
-    matchesContainer.innerHTML = `
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <h3 class="font-semibold text-blue-900">Tournament ID: ${data.tournamentId}</h3>
-        <p class="text-blue-700 text-sm">Total Matches: ${data.matches.length}</p>
-      </div>
-      ${data.matches
-        .map(
-          (match) => `
-        <div class="bg-white border rounded-lg p-6 hover:shadow-md transition">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <span class="text-xs text-gray-500">Match ID: ${match.matchId}</span>
-            </div>
-            <div class="text-xs text-gray-500">
-              ${new Date(Number(match.timestamp) * 1000).toLocaleString()}
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-4 items-center">
-            <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">${escapeHtml(match.player1Alias)}</div>
-              <div class="text-sm text-gray-500">ID: ${match.player1Id}</div>
-              <div class="text-3xl font-bold text-blue-600 mt-2">${match.score1}</div>
-            </div>
-
-            <div class="text-center">
-              <div class="text-gray-400 font-semibold">VS</div>
-            </div>
-
-            <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">${escapeHtml(match.player2Alias)}</div>
-              <div class="text-sm text-gray-500">ID: ${match.player2Id}</div>
-              <div class="text-3xl font-bold text-blue-600 mt-2">${match.score2}</div>
-            </div>
-          </div>
-
-          <div class="mt-4 pt-4 border-t text-xs text-gray-500">
-            <div>Recorded by: <span class="font-mono">${formatAddress(match.recordedBy)}</span></div>
-          </div>
-        </div>
-      `
-        )
-        .join('')}
-    `;
-  };
-
-  const loadTournament = async () => {
-    const tournamentId = tournamentIdInput.value.trim();
-
-    if (!tournamentId || isNaN(Number(tournamentId))) {
-      showError('Please enter a valid tournament ID');
-      return;
-    }
-
-    showLoading();
-
-    try {
-      const response = await fetch(`/api/tournaments/${tournamentId}/matches`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: TournamentData = await response.json();
-      renderMatches(data);
-    } catch (err) {
-      console.error('Error loading tournament:', err);
-      showError(
-        `Failed to load tournament matches: ${err instanceof Error ? err.message : 'Unknown error'}`
-      );
-    }
-  };
-
-  loadBtn.addEventListener('click', loadTournament);
-
-  tournamentIdInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      loadTournament();
-    }
-  });
-}
-
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   // Determine initial page from URL
@@ -973,7 +843,154 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }) as EventListener);
 
-  onLangChange(render);
+  // Handle language change - re-render but preserve sub-screen state and form values
+  onLangChange(async () => {
+    // Save current state before re-render
+    const savedState = window.history.state;
+    const savedPage = currentPage;
+
+    // Save form field values before re-render
+    const savedFormValues: Record<string, { value: string; disabled: boolean }> = {};
+    const formFieldIds = ['player1-alias', 'player2-alias', 'tournament-player-alias'];
+    formFieldIds.forEach((id) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (el) {
+        savedFormValues[id] = { value: el.value, disabled: el.disabled };
+      }
+    });
+
+    // Save tournament players list if present (uses div elements, not li)
+    const tournamentPlayersList = document.getElementById('tournament-players-list');
+    const savedTournamentPlayers: { alias: string; isLoggedInUser: boolean }[] = [];
+    if (tournamentPlayersList) {
+      tournamentPlayersList.querySelectorAll('div.flex').forEach((div) => {
+        const nameSpan = div.querySelector('span.font-medium');
+        if (nameSpan) {
+          // Check if this is the logged-in user (has blue background)
+          const isLoggedInUser = div.classList.contains('bg-blue-50');
+          // Get the alias text (first text node, before "(You)" span)
+          let alias = '';
+          nameSpan.childNodes.forEach((node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              alias += node.textContent?.trim() || '';
+            }
+          });
+          if (alias) {
+            savedTournamentPlayers.push({ alias, isLoggedInUser });
+          }
+        }
+      });
+    }
+
+    await render();
+
+    // Wait for DOM to be ready, then restore sub-screen state
+    requestAnimationFrame(() => {
+      setTimeout(async () => {
+        // Restore play sub-screen if on play page
+        if (savedState?.playScreen && savedPage === 'play') {
+          const screenId = savedState.playScreen;
+          const screen = document.getElementById(screenId);
+          if (screen) {
+            const screens = [
+              'mode-selection',
+              'game-setup',
+              'bot-game-setup',
+              'game-screen',
+              'result-screen',
+              'tournament-screen',
+              'remote-waiting-screen',
+              'join-match-screen',
+              'remote-game-screen',
+            ];
+            screens.forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.classList.add('hidden');
+            });
+            screen.classList.remove('hidden');
+
+            // Restore form field values
+            formFieldIds.forEach((id) => {
+              const el = document.getElementById(id) as HTMLInputElement | null;
+              if (el && savedFormValues[id]) {
+                el.value = savedFormValues[id].value;
+                el.disabled = savedFormValues[id].disabled;
+                if (savedFormValues[id].disabled) {
+                  el.classList.add('bg-gray-100', 'cursor-not-allowed');
+                }
+              }
+            });
+
+            // Restore tournament players by clicking the add button programmatically
+            if (savedTournamentPlayers.length > 0 && screenId === 'tournament-screen') {
+              const aliasInput = document.getElementById(
+                'tournament-player-alias'
+              ) as HTMLInputElement;
+              const addBtn = document.getElementById(
+                'add-tournament-player-btn'
+              ) as HTMLButtonElement;
+
+              if (aliasInput && addBtn) {
+                // Add each player by simulating the add flow
+                for (const player of savedTournamentPlayers) {
+                  if (player.isLoggedInUser) {
+                    // For logged-in user, we need to trigger the click on tournament button
+                    // which will auto-add them. Let's simulate this differently.
+                    continue; // Skip for now, will be handled by click simulation
+                  }
+                  aliasInput.value = player.alias;
+                  addBtn.click();
+                }
+
+                // If there was a logged-in user, we need to simulate the tournament button click
+                // to initialize tournamentManager and add the logged-in user
+                const hasLoggedInUser = savedTournamentPlayers.some((p) => p.isLoggedInUser);
+                if (hasLoggedInUser) {
+                  // The tournament button click initializes everything properly
+                  const tournamentBtn = document.getElementById('tournament-btn');
+                  if (tournamentBtn) {
+                    // Store the non-logged-in players to add after
+                    const otherPlayers = savedTournamentPlayers.filter((p) => !p.isLoggedInUser);
+                    tournamentBtn.click();
+
+                    // Wait a bit for async user fetch, then add other players
+                    setTimeout(() => {
+                      otherPlayers.forEach((player) => {
+                        aliasInput.value = player.alias;
+                        addBtn.click();
+                      });
+                      aliasInput.value = '';
+                    }, 100);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Restore tournament detail views
+        if (savedState?.myTournamentDetail && savedPage === 'tournaments') {
+          const listEl = document.getElementById('my-tournaments-list');
+          const detailEl = document.getElementById('my-tournaments-detail');
+          const loadingEl = document.getElementById('my-tournaments-loading');
+          if (listEl && detailEl && loadingEl) {
+            loadingEl.classList.add('hidden');
+            listEl.classList.add('hidden');
+            detailEl.classList.remove('hidden');
+          }
+        } else if (savedState?.globalTournamentDetail && savedPage === 'tournaments') {
+          const listEl = document.getElementById('global-tournaments-list');
+          const detailEl = document.getElementById('global-tournaments-detail');
+          const loadingEl = document.getElementById('global-tournaments-loading');
+          if (listEl && detailEl && loadingEl) {
+            loadingEl.classList.add('hidden');
+            listEl.classList.add('hidden');
+            detailEl.classList.remove('hidden');
+          }
+        }
+      }, 50);
+    });
+  });
 
   render();
 });

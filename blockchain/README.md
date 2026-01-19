@@ -1,6 +1,6 @@
 # Tournament Scores Blockchain Module
 
-This is a Hardhat 3 project for the ft_transcendence blockchain module. It stores tournament match scores on the Avalanche Fuji testnet.
+This is a Hardhat 3 project for the ft_transcendence blockchain module. It stores tournament results on the Avalanche Fuji testnet.
 
 ## 🚀 Quick Start
 
@@ -8,53 +8,63 @@ This is a Hardhat 3 project for the ft_transcendence blockchain module. It store
 
 Your deployed contract is live on Avalanche Fuji testnet! View it here:
 
-**Contract Address:** [View on Snowtrace](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D)
+**Contract Address:** [0x778ec2935D737462Af7860b6a31fD988E0b01067](https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067)
 
 **What you can see:**
 
 - 📜 **Contract Code** - Verified Solidity source code with comments
-- 📊 **Transactions** - All match recordings in real-time
+- 📊 **Transactions** - All tournament recordings in real-time
 - 💰 **Balance** - Contract's AVAX balance
-- 📝 **Events** - `MatchRecorded` events with player data
-- 🔍 **Read Contract** - Query match details, tournament stats, owner address
-- ✍️ **Write Contract** - Record new matches (owner only)
+- 📝 **Events** - `TournamentRecorded` events with player data
+- 🔍 **Read Contract** - Query tournament details, match data, player counts
+- ✍️ **Write Contract** - Record new tournaments (owner only)
 
 **Example URLs:**
 
 ```
-Contract Overview:  https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D
-Recent Transactions: https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D#txs
-Contract Code:      https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D#code
+Contract Overview:  https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067
+Recent Transactions: https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067#txs
+Contract Code:      https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067#code
 ```
 
 ### Test the Contract (Backend Integration)
 
-Inside the devcontainer, interact with the deployed contract:
+The backend automatically interacts with the deployed contract via the API:
 
 ```bash
-# Check contract status on Fuji testnet
-cd /app/blockchain
-npx hardhat run scripts/check-fuji.ts --network fuji
+# Record a tournament via API (requires authentication)
+curl -X POST http://localhost:3000/api/tournaments/local \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "players": ["Alice", "Bob", "Charlie", "David"],
+    "matches": [
+      {"player1": "Alice", "player2": "Bob", "score1": 5, "score2": 3, "round": 1},
+      {"player1": "Charlie", "player2": "David", "score1": 4, "score2": 5, "round": 1},
+      {"player1": "Alice", "player2": "David", "score1": 6, "score2": 4, "round": 2}
+    ]
+  }'
 
-# Record a test match (requires AVAX in your wallet)
-npx hardhat run scripts/interact-fuji.ts --network fuji
+# Verify tournament on blockchain
+curl http://localhost:3000/api/tournaments/blockchain/1 -b cookies.txt
 ```
 
-After running, check [Snowtrace](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D#txs) to see your transaction!
+After running, check [Snowtrace](https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067#txs) to see your transaction!
 
 ## Features
 
-- **Smart Contract**: `TournamentScores.sol` - Stores match results with player IDs and aliases
+- **Smart Contract**: `TournamentScores.sol` - Stores complete tournament results with all matches
 - **Network**: Avalanche Fuji C-Chain testnet
-- **Security**: Owner-only access control for recording matches
+- **Security**: Owner-only access control for recording tournaments
 - **Testing**: Comprehensive test suite with Solidity and TypeScript tests
+- **Single Transaction**: Records entire tournament (players, matches, winner) in one tx
 
 ## Security Features
 
 ### Owner Access Control
 
-- Only the contract owner (backend server) can record matches
-- Prevents unauthorized match submissions from arbitrary addresses
+- Only the contract owner (backend server) can record tournaments
+- Prevents unauthorized tournament submissions from arbitrary addresses
 - Owner can transfer ownership to a new address if needed
 
 ### Overflow Protection
@@ -66,9 +76,11 @@ After running, check [Snowtrace](https://testnet.snowtrace.io/address/0xc673e538
 
 ### Input Validation
 
-- Tournament ID must be greater than 0
-- Player IDs must be greater than 0 and different from each other
-- Aliases must not be empty and maximum 50 characters
+- Organizer's database UUID must be valid (36 characters)
+- Player count must be 2-8
+- Match count must be at least 1
+- Player aliases must not be empty and maximum 50 characters
+- Scores are uint8 (0-255), suitable for pong scores
 - All validations use `require()` statements with descriptive error messages
 
 ## Usage
@@ -174,25 +186,32 @@ You can then view your verified contract at: `https://testnet.snowtrace.io/addre
 
 **View Transactions:**
 
-Every time the backend records a match, you'll see a new transaction:
+Every time the backend records a tournament, you'll see a new transaction:
 
-1. Go to [your contract on Snowtrace](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D)
-2. Click **"Transactions"** tab to see all match recordings
+1. Go to [your contract on Snowtrace](https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067)
+2. Click **"Transactions"** tab to see all tournament recordings
 3. Click any transaction hash to see details:
    - Gas used
    - Transaction fee (in AVAX)
-   - Input data (encoded match details)
+   - Input data (encoded tournament details) - click "Decode input data"
    - Logs/Events (decoded player data)
-4. Click **"Events"** tab to see `MatchRecorded` events with readable player names and scores
+4. Click **"Events"** tab to see `TournamentRecorded` events with tournament IDs and winners
 
 ### Architecture Notes
 
 **Owner Model:**
 
 - The deploying address becomes the contract owner
-- Only the owner can record matches (prevents unauthorized submissions)
+- Only the owner can record tournaments (prevents unauthorized submissions)
 - The backend server should use the same private key that deployed the contract
 - Players never interact with the blockchain directly - backend handles all transactions
+
+**Tournament-Centric Design:**
+
+- Each tournament is recorded in a single transaction (gas efficient)
+- Contains: organizer UUID, player aliases, all matches, winner
+- Immutable once recorded - provides tamper-proof verification
+- Auto-increment tournament IDs on blockchain (separate from database IDs)
 
 ## Environment Variables
 
@@ -232,3 +251,10 @@ RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
 
 - **[Avalanche Fuji Faucet](https://build.avax.network/console/primary-network/faucet)** - Get free test AVAX tokens
 - **[Snowtrace (Fuji)](https://testnet.snowtrace.io/)** - Avalanche testnet blockchain explorer
+
+## Contract Version History
+
+| Version         | Address                                                                                                                       | Description                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| v2 (current)    | [0x778ec2935D737462Af7860b6a31fD988E0b01067](https://testnet.snowtrace.io/address/0x778ec2935D737462Af7860b6a31fD988E0b01067) | Tournament-centric design. Single tx per tournament with all matches. |
+| v1 (deprecated) | [0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D](https://testnet.snowtrace.io/address/0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D) | Match-centric design. One tx per match with numeric player IDs.       |

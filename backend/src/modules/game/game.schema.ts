@@ -14,6 +14,17 @@ export const joinMatchSchema = z.object({
 
 export type JoinMatchInput = z.infer<typeof joinMatchSchema>;
 
+// Local match result schema (for recording completed local games)
+export const localMatchResultSchema = z.object({
+  mode: z.enum(['LOCAL_1V1', 'VS_BOT']),
+  player1Alias: z.string().min(1).max(20),
+  player2Alias: z.string().min(1).max(20), // Guest name or "Bot (Lvl X)"
+  score1: z.number().int().min(0),
+  score2: z.number().int().min(0),
+});
+
+export type LocalMatchResultInput = z.infer<typeof localMatchResultSchema>;
+
 // Player input schema (for REST polling alternative)
 export const playerInputSchema = z.object({
   direction: z.enum(['up', 'down', 'none']),

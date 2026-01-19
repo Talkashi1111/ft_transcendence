@@ -33,9 +33,12 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  sentFriendRequests     Friendship[]   @relation("SentRequests")
-  receivedFriendRequests Friendship[]   @relation("ReceivedRequests")
+  sentFriendRequests     Friendship[]      @relation("SentRequests")
+  receivedFriendRequests Friendship[]      @relation("ReceivedRequests")
   notifications          Notification[]
+  localTournaments       LocalTournament[]
+  matchesAsPlayer1       MatchHistory[]    @relation("Player1Matches")
+  matchesAsPlayer2       MatchHistory[]    @relation("Player2Matches")
 }
 
 // Friend relationship between two users
@@ -78,4 +81,83 @@ enum FriendshipStatus {
 enum NotificationType {
   FRIEND_REQUEST  // Someone sent you a friend request
   FRIEND_ACCEPTED // Your friend request was accepted
+}
+
+// ============================================
+// Local Tournament & Match History
+// ============================================
+
+// A local tournament organized by a logged-in user
+model LocalTournament {
+  id              String   @id @default(uuid())
+
+  // Organizer info
+  organizerId     String           // User who organized (foreign key)
+  organizerAlias  String           // Alias at time of tournament (preserved if user changes alias)
+
+  // Tournament data
+  playerCount     Int              // Number of players (2-8)
+  winner          String           // Winner's alias
+
+  // Blockchain verification
+  blockchainId    Int?             // Contract's tournamentId (null until confirmed)
+  txHash          String?          // Transaction hash for Snowtrace verification
+
+  // Timestamps
+  playedAt        DateTime         @default(now())  // When tournament was played
+  recordedAt      DateTime?        // When blockchain tx was confirmed
+
+  // Relations
+  organizer       User             @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  matches         MatchHistory[]
+
+  @@index([organizerId])
+  @@index([playedAt])
+}
+
+// Match history - used for both tournament matches and standalone games
+model MatchHistory {
+  id              String    @id @default(uuid())
+
+  // Game mode
+  mode            GameMode          // TOURNAMENT, LOCAL_1V1, VS_BOT, REMOTE_1V1
+
+  // Tournament reference (only for mode = TOURNAMENT)
+  tournamentId    String?           // Null for standalone games
+
+  // Player 1 (always the logged-in user)
+  player1Id       String            // User ID (required - must be logged in)
+  player1Alias    String            // Alias at time of match
+
+  // Player 2 (opponent)
+  player2Id       String?           // User ID if logged in (null for bot/guest)
+  player2Alias    String            // Alias, guest name, or "Bot (Easy)"/"Bot (Hard)"
+
+  // Scores
+  score1          Int               // Player 1's score
+  score2          Int               // Player 2's score
+
+  // Tournament-specific (null for standalone games)
+  round           Int?              // Round number (1 = first round, 2 = semis, 3 = finals)
+  matchOrder      Int?              // Order within tournament (0, 1, 2...)
+
+  // Timestamp
+  playedAt        DateTime @default(now())
+
+  // Relations
+  tournament      LocalTournament?  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player1         User              @relation("Player1Matches", fields: [player1Id], references: [id], onDelete: Cascade)
+  player2         User?             @relation("Player2Matches", fields: [player2Id], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+  @@index([player1Id])
+  @@index([player2Id])
+  @@index([playedAt])
+}
+
+enum GameMode {
+  TOURNAMENT  // Part of a local tournament
+  LOCAL_1V1   // Local 1v1 (same device)
+  VS_BOT      // Against AI
+  REMOTE_1V1  // Online multiplayer
 }

@@ -3,7 +3,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-const CONTRACT_ADDRESS = '0xc673e53845eb89Ab38166F8ACbAc92e0EB7a973D';
+const CONTRACT_ADDRESS = '0x778ec2935D737462Af7860b6a31fD988E0b01067';
 const CONTRACT_NAME = 'TournamentScores';
 const COMPILER_VERSION = 'v0.8.28+commit.7893614a';
 const OPTIMIZATION_USED = '1'; // Try with optimization

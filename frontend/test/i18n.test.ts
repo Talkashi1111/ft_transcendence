@@ -38,7 +38,7 @@ type RuleTagInner = {
   name: string;
   groups: string[];
   kind: 'tagInner';
-  tag: 'button' | 'label';
+  tag: 'button' | 'label' | 'span';
   ignoreIfNoText: boolean;
 };
 
@@ -138,6 +138,14 @@ const RULES: Rule[] = [
     groups: ['tags'],
     kind: 'tagInner',
     tag: 'label',
+    ignoreIfNoText: true,
+  },
+  {
+    id: 'span',
+    name: '<span> inner text must use t()',
+    groups: ['tags'],
+    kind: 'tagInner',
+    tag: 'span',
     ignoreIfNoText: true,
   },
 
@@ -278,6 +286,62 @@ function listRulesText(): string {
 // -----------------------
 // Finders
 // -----------------------
+
+/**
+ * Checks if inner content needs translation, ignoring numbers-only and icons.
+ */
+function needsTranslation(innerNoTags: string): boolean {
+  // Ignore empty or whitespace-only
+  if (!innerNoTags) return false;
+
+  // Ignore common icon-only patterns (SVG icons, ×, &times;, etc.)
+  const looksLikeOnlyTimes = innerNoTags === '×' || innerNoTags === '&times;';
+  if (looksLikeOnlyTimes) return false;
+
+  // Ignore numbers-only content (like "0", "123", etc.)
+  if (/^[\d\s.,]+$/.test(innerNoTags)) return false;
+
+  // Check if has actual letters (not just symbols/punctuation)
+  const hasLetters = /[A-Za-z\u00C0-\u024F\u4E00-\u9FFF\u3040-\u30FF]/.test(innerNoTags);
+  return hasLetters;
+}
+
+/**
+ * Find tags with hardcoded text inside string literals within template expressions.
+ * This catches patterns like: ${condition ? '<span>HardcodedText</span>' : ''}
+ * But NOT patterns like: '<span>${escapeHtml(dynamic)}</span>' where content is dynamic.
+ */
+function findTagsInStringLiterals(code: string, tag: string): Hit[] {
+  const hits: Hit[] = [];
+
+  // Match single-quoted strings containing HTML tags (handles double quotes inside for attributes)
+  // Pattern: '...<tag>...</tag>...'
+  const singleQuotedHtml = /'([^']*<[^']*>[^']*<\/[^']*>[^']*)'/g;
+
+  let sm: RegExpExecArray | null;
+  while ((sm = singleQuotedHtml.exec(code))) {
+    const stringContent = sm[1];
+    // Now look for the specific tag within this string literal
+    const tagRe = new RegExp(`<${tag}\\b[^>]*>([^<]*)<\\/${tag}>`, 'gi');
+    let tm: RegExpExecArray | null;
+    while ((tm = tagRe.exec(stringContent))) {
+      const inner = tm[1].trim();
+      if (isIgnored(tm[0])) continue;
+      if (!inner) continue;
+
+      // Skip if inner content has template interpolation (dynamic content)
+      if (/\$\{[^}]+\}/.test(inner)) continue;
+
+      // Check if inner needs translation
+      if (needsTranslation(inner) && !hasTCall(inner)) {
+        hits.push({ index: sm.index, snippet: compact(tm[0]) });
+      }
+    }
+  }
+
+  return hits;
+}
+
 function findTagInnerViolations(code: string, tag: string, ignoreIfNoText: boolean): Hit[] {
   const hits: Hit[] = [];
   const re = new RegExp(`<${tag}\\b[\\s\\S]*?>[\\s\\S]*?<\\/${tag}>`, 'gi');
@@ -299,25 +363,24 @@ function findTagInnerViolations(code: string, tag: string, ignoreIfNoText: boole
         .replace(/\s+/g, ' ')
         .trim();
 
-      // Ignore common icon-only patterns (SVG icons, ×, &times;, etc.)
-      const hasLettersOrDigits = /[A-Za-z0-9\u00C0-\u024F\u4E00-\u9FFF\u3040-\u30FF]/.test(
-        innerNoTags
-      );
-      const looksLikeOnlyTimes = innerNoTags === '×' || innerNoTags === '&times;';
-
-      if (!hasLettersOrDigits || looksLikeOnlyTimes) {
-        // icon-only button (no real text) → don't require t() in inner text
+      if (!needsTranslation(innerNoTags)) {
+        // icon-only or number-only content → don't require t() in inner text
         continue;
       }
     }
 
     // Allow variable-driven content like: ${escapeHtml(cancelText)}
+    // BUT still check for hardcoded tags inside string literals within those expressions
     if (/\$\{[^}]+\}/.test(inner) && !/t\s*\(/.test(inner)) {
       continue;
     }
 
     if (!hasTCall(inner)) hits.push({ index: m.index, snippet: compact(block) });
   }
+
+  // Also find tags inside string literals (catches ternary patterns like: ${cond ? '<tag>Text</tag>' : ''})
+  const stringLiteralHits = findTagsInStringLiterals(code, tag);
+  hits.push(...stringLiteralHits);
 
   return hits;
 }
@@ -500,15 +563,24 @@ describe('i18n usage enforcement (runtime toggles via env)', () => {
     }
 
     if (violations.length) {
+      // Deduplicate violations by file+line+snippet
+      const seen = new Set<string>();
+      const uniqueViolations = violations.filter((v) => {
+        const key = `${v.file}:${v.line}:${v.snippet}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       const msg =
-        `Found ${violations.length} i18n usage violations:\n\n` +
-        violations
+        `Found ${uniqueViolations.length} i18n usage violations:\n\n` +
+        uniqueViolations
           .slice(0, 200)
           .map(
             (v) => `- ${v.file}:${v.line}\n` + `  [${v.ruleId}] ${v.ruleName}\n` + `  ${v.snippet}`
           )
           .join('\n\n') +
-        (violations.length > 200 ? `\n\n…and ${violations.length - 200} more` : '');
+        (uniqueViolations.length > 200 ? `\n\n…and ${uniqueViolations.length - 200} more` : '');
 
       throw new Error(msg);
     }

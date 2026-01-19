@@ -499,9 +499,9 @@ function renderSearchResults(): string {
           </div>
           ${
             u.isFriend
-              ? '<span class="text-sm text-green-600">✓ Friends</span>'
+              ? `<span class="text-sm text-green-600">${t('friends.search.results.status.friends')}</span>`
               : u.isPending
-                ? '<span class="text-sm text-yellow-600">Pending</span>'
+                ? `<span class="text-sm text-yellow-600">${t('friends.search.results.status.pending')}</span>`
                 : `<button data-add-friend="${u.id}" class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition">${t('friends.search.results.add.friend.button')}</button>`
           }
         </div>

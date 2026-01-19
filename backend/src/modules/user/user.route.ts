@@ -7,6 +7,7 @@ import {
   logoutHandler,
   updateAliasHandler,
   searchUsersHandler,
+  getMyStatsHandler,
 } from './user.controller.js';
 import {
   createUserJsonSchema,
@@ -16,6 +17,7 @@ import {
   userMeResponseJsonSchema,
   loginResponseJsonSchema,
   usersResponseJsonSchema,
+  userStatsJsonSchema,
 } from './user.schema.js';
 
 async function userRoutes(server: FastifyInstance) {
@@ -163,6 +165,23 @@ async function userRoutes(server: FastifyInstance) {
       },
     },
     searchUsersHandler
+  );
+
+  // Get user game statistics
+  server.get(
+    '/me/stats',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        description: 'Get current user game statistics',
+        tags: ['Users'],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: userStatsJsonSchema,
+        },
+      },
+    },
+    getMyStatsHandler
   );
 }
 

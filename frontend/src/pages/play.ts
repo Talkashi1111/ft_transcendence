@@ -7,7 +7,7 @@ import type { Match } from '../types/game';
 import { toast } from '../utils/toast';
 import { showConfirmModal } from '../utils/modal';
 import { escapeHtml } from '../utils/sanitize';
-import { isAuthenticated } from '../utils/auth';
+import { isAuthenticated, getCurrentUser } from '../utils/auth';
 import { getWebSocketManager } from '../utils/websocket';
 import type { AvailableMatch } from '../utils/websocket';
 import { t } from '../i18n/i18n';
@@ -19,6 +19,112 @@ const GAME_END_DELAY_MS = 2000; // Delay before showing result screen after game
 // Store cleanup function for page navigation
 let pageCleanup: (() => void) | null = null;
 let isInActiveRemoteGame = false;
+
+// Module-level tournament state for popstate handler
+let moduleTournamentManager: TournamentManager | null = null;
+let moduleCurrentGame: PongGame | null = null;
+
+// Function to update module-level refs (called from setupPlayPageEvents)
+export function setModuleTournamentManager(tm: TournamentManager | null): void {
+  moduleTournamentManager = tm;
+}
+
+export function setModuleCurrentGame(game: PongGame | null): void {
+  moduleCurrentGame = game;
+}
+
+// Module-level popstate handler for tournament back confirmation
+let tournamentPopstateRegistered = false;
+
+async function handleTournamentPopstate(event: PopStateEvent): Promise<void> {
+  // Only handle if tournament is in progress
+  if (moduleTournamentManager && moduleTournamentManager.getTournament().status === 'in-progress') {
+    // Prevent main.ts from handling this event
+    event.stopImmediatePropagation();
+
+    // User pressed back while tournament is in progress
+    // Push the state back to prevent navigation
+    window.history.pushState(
+      { page: 'play', playScreen: 'tournament-bracket' },
+      '',
+      window.location.href
+    );
+
+    // Show confirmation modal
+    const confirmed = await showConfirmModal({
+      title: 'Leave Tournament?',
+      message:
+        'The tournament is in progress. Are you sure you want to leave? All progress will be lost.',
+      confirmText: 'Leave Tournament',
+      cancelText: 'Stay',
+      isDangerous: true,
+    });
+
+    if (confirmed) {
+      // Clean up any running game
+      if (moduleCurrentGame) {
+        moduleCurrentGame.destroy();
+        moduleCurrentGame = null;
+      }
+
+      // Reset tournament
+      moduleTournamentManager = null;
+
+      // Re-enable language selectors
+      setLanguageSelectorsEnabledGlobal(true);
+
+      // Hide all play sub-screens and show mode selection
+      const modeSelection = document.getElementById('mode-selection');
+      const tournamentScreen = document.getElementById('tournament-screen');
+      const gameScreen = document.getElementById('game-screen');
+      if (gameScreen) gameScreen.classList.add('hidden');
+      if (tournamentScreen) tournamentScreen.classList.add('hidden');
+      if (modeSelection) modeSelection.classList.remove('hidden');
+
+      // Replace current state so back goes to previous page
+      window.history.replaceState(
+        { page: 'play', playScreen: 'mode-selection' },
+        '',
+        window.location.href
+      );
+      toast.info('Tournament ended');
+    }
+  }
+}
+
+// Register the handler once at module load (capture phase to run before main.ts)
+function ensureTournamentPopstateHandler(): void {
+  if (!tournamentPopstateRegistered) {
+    window.addEventListener('popstate', handleTournamentPopstate, true);
+    tournamentPopstateRegistered = true;
+  }
+}
+
+// Call immediately when module loads
+ensureTournamentPopstateHandler();
+
+/**
+ * Helper to enable/disable language selectors (module-level for use in popstate handler)
+ */
+function setLanguageSelectorsEnabledGlobal(enabled: boolean): void {
+  const selectors = [
+    document.getElementById('nav-lang'),
+    document.getElementById('nav-lang-mobile'),
+  ];
+  selectors.forEach((el) => {
+    if (el) {
+      if (enabled) {
+        (el as HTMLSelectElement).disabled = false;
+        el.classList.remove('opacity-50', 'cursor-not-allowed');
+        el.title = '';
+      } else {
+        (el as HTMLSelectElement).disabled = true;
+        el.classList.add('opacity-50', 'cursor-not-allowed');
+        el.title = 'Language change disabled during game';
+      }
+    }
+  });
+}
 
 /**
  * Check if user is in an active remote game
@@ -449,9 +555,21 @@ function setupPlayPageEvents(): void {
   let remoteGame: RemotePongGame | null = null;
   let tournamentManager: TournamentManager | null = null;
   let matchListUnsubscribe: (() => void) | null = null;
+  let loggedInUserAlias: string | null = null;
+  let loggedInUserId: number | null = null; // Track first player ID for tournament
+
+  // Helper to sync local tournamentManager to module level for popstate handler
+  function syncTournamentToModule(): void {
+    setModuleTournamentManager(tournamentManager);
+    // Also sync current game for cleanup
+    setModuleCurrentGame(currentGame);
+  }
 
   // Set up page cleanup function for when user navigates away
   pageCleanup = () => {
+    // Clear module-level refs
+    setModuleTournamentManager(null);
+    setModuleCurrentGame(null);
     // If in active remote game, leave the match properly
     if (remoteGame) {
       // This calls stop() which sends match:leave, then disconnects
@@ -561,6 +679,38 @@ function setupPlayPageEvents(): void {
   // Check for active match and rejoin if needed
   checkForActiveMatch();
 
+  /**
+   * Record a completed local match to the database (only for logged-in users)
+   */
+  async function recordLocalMatch(
+    mode: 'LOCAL_1V1' | 'VS_BOT',
+    player1Alias: string,
+    player2Alias: string,
+    score1: number,
+    score2: number
+  ): Promise<void> {
+    // Only record if user is logged in
+    const authenticated = await isAuthenticated();
+    if (!authenticated) return;
+
+    try {
+      await fetch('/api/game/local-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          mode,
+          player1Alias,
+          player2Alias,
+          score1,
+          score2,
+        }),
+      });
+    } catch (err) {
+      console.error('[Play] Failed to record local match:', err);
+    }
+  }
+
   // Helper functions for error display
   function showInlineError(element: HTMLElement | null, message: string): void {
     if (element) {
@@ -576,7 +726,23 @@ function setupPlayPageEvents(): void {
     }
   }
 
-  function showScreen(screen: HTMLElement): void {
+  // Get current screen ID for history state
+  function getScreenId(screen: HTMLElement | null): string | null {
+    if (!screen) return null;
+    if (screen === modeSelection) return 'mode-selection';
+    if (screen === gameSetup) return 'game-setup';
+    if (screen === gameBotSetup) return 'bot-game-setup';
+    if (screen === gameScreen) return 'game-screen';
+    if (screen === resultScreen) return 'result-screen';
+    if (screen === tournamentScreen) return 'tournament-screen';
+    if (screen === remoteWaitingScreen) return 'remote-waiting-screen';
+    if (screen === joinMatchScreen) return 'join-match-screen';
+    if (screen === remoteGameScreen) return 'remote-game-screen';
+    return null;
+  }
+
+  // Show a screen and optionally push history state
+  function showScreen(screen: HTMLElement, pushHistory = false): void {
     modeSelection?.classList.add('hidden');
     gameSetup?.classList.add('hidden');
     gameBotSetup?.classList.add('hidden');
@@ -594,7 +760,26 @@ function setupPlayPageEvents(): void {
     } else {
       stopMatchListSubscription();
     }
+
+    // Push history state for setup screens (not for game/result screens)
+    if (
+      pushHistory &&
+      screen !== modeSelection &&
+      screen !== gameScreen &&
+      screen !== resultScreen
+    ) {
+      const screenId = getScreenId(screen);
+      if (screenId) {
+        window.history.pushState({ page: 'play', playScreen: screenId }, '', window.location.href);
+      }
+    }
   }
+
+  // NOTE: Browser back navigation for play sub-screens is handled via history.pushState
+  // and the back buttons using history.back(). Forward navigation is intentionally NOT
+  // supported because setup screens require async operations (user fetch, WebSocket
+  // connections, tournament manager creation) that can't be reliably restored.
+  // Tournament back button confirmation is handled by module-level popstate handler.
 
   async function startMatchListSubscription(): Promise<void> {
     stopMatchListSubscription(); // Clear any existing subscription
@@ -703,16 +888,24 @@ function setupPlayPageEvents(): void {
     if (tournamentPlayersList) {
       const players = tournamentManager.getTournament().players;
       tournamentPlayersList.innerHTML = players
-        .map(
-          (player) => `
-          <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-            <span class="font-medium text-gray-800">${escapeHtml(player.alias)}</span>
-            <button class="remove-player-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition" data-player-id="${player.id}">
+        .map((player) => {
+          const isLoggedInUser = loggedInUserId !== null && player.id === loggedInUserId;
+          return `
+          <div class="flex items-center justify-between p-3 ${isLoggedInUser ? 'bg-blue-50 border border-blue-200' : 'bg-purple-50'} rounded-lg">
+            <span class="font-medium text-gray-800">
+              ${escapeHtml(player.alias)}
+              ${isLoggedInUser ? `<span class="text-xs text-blue-600 ml-2">${t('play.local.tournament.registration.you')}</span>` : ''}
+            </span>
+            ${
+              isLoggedInUser
+                ? ''
+                : `<button class="remove-player-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition" data-player-id="${player.id}">
               ${t('play.local.tournament.registration.remove.button')}
-            </button>
+            </button>`
+            }
           </div>
-        `
-        )
+        `;
+        })
         .join('');
     }
   }
@@ -743,13 +936,13 @@ function setupPlayPageEvents(): void {
     return { valid: true };
   }
 
-  function startNextTournamentMatch(): void {
+  async function startNextTournamentMatch(): Promise<void> {
     if (!tournamentManager) return;
 
     const match = tournamentManager.getCurrentMatch();
     if (!match) {
       // Tournament is complete
-      showTournamentWinner();
+      await showTournamentWinner();
       return;
     }
 
@@ -780,6 +973,9 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
 
+    // Disable language selectors during game
+    setLanguageSelectorsEnabled(false);
+
     // Hide tournament UI, show game canvas
     if (tournamentBracket) tournamentBracket.classList.add('hidden');
     if (gameScreen) gameScreen.classList.remove('hidden');
@@ -792,13 +988,18 @@ function setupPlayPageEvents(): void {
     currentGame.setOnGameEnd((winner: string, player1Score: number, player2Score: number) => {
       // Determine winner ID based on name
       const winnerId = winner === match.player1.alias ? match.player1.id : match.player2.id;
-      handleMatchEnd(match.matchId, winnerId, player1Score, player2Score);
+      void handleMatchEnd(match.matchId, winnerId, player1Score, player2Score);
     });
 
     currentGame.start();
   }
 
-  function handleMatchEnd(matchId: number, winnerId: number, score1: number, score2: number): void {
+  async function handleMatchEnd(
+    matchId: number,
+    winnerId: number,
+    score1: number,
+    score2: number
+  ): Promise<void> {
     if (!tournamentManager) return;
 
     // Clean up the game
@@ -806,6 +1007,9 @@ function setupPlayPageEvents(): void {
       currentGame.destroy();
       currentGame = null;
     }
+
+    // Re-enable language selectors between matches
+    setLanguageSelectorsEnabled(true);
 
     // Record the result
     tournamentManager.recordMatchResult(matchId, winnerId, score1, score2);
@@ -823,9 +1027,9 @@ function setupPlayPageEvents(): void {
     // Check if tournament is complete
     const nextMatch = tournamentManager.getCurrentMatch();
     if (!nextMatch) {
-      showTournamentWinner();
+      await showTournamentWinner();
     } else {
-      startNextTournamentMatch();
+      await startNextTournamentMatch();
     }
   }
 
@@ -904,13 +1108,13 @@ function setupPlayPageEvents(): void {
       <div class="bracket-match-box bracket-match-box--tbd" style="height: ${MATCH_BOX_HEIGHT}px;">
         <!-- Player 1 -->
         <div class="bracket-player-slot bracket-player-slot--top" style="height: ${PLAYER_SLOT_HEIGHT}px;">
-          <span class="bracket-player-name bracket-player-name--tbd">TBD</span>
+          <span class="bracket-player-name bracket-player-name--tbd">${t('play.local.tournament.bracket.tbd')}</span>
           <span class="bracket-player-score bracket-player-score--tbd">-</span>
         </div>
 
         <!-- Player 2 -->
         <div class="bracket-player-slot" style="height: ${PLAYER_SLOT_HEIGHT}px;">
-          <span class="bracket-player-name bracket-player-name--tbd">TBD</span>
+          <span class="bracket-player-name bracket-player-name--tbd">${t('play.local.tournament.bracket.tbd')}</span>
           <span class="bracket-player-score bracket-player-score--tbd">-</span>
         </div>
       </div>
@@ -978,7 +1182,58 @@ function setupPlayPageEvents(): void {
     tournamentBracketDisplay.innerHTML = html;
   }
 
-  function showTournamentWinner(): void {
+  async function recordTournamentOnBlockchain(): Promise<{
+    success: boolean;
+    blockchainId?: string;
+    txHash?: string;
+    snowtraceUrl?: string;
+  }> {
+    if (!tournamentManager) return { success: false };
+
+    const tournament = tournamentManager.getTournament();
+    if (!tournament.winner) return { success: false };
+
+    // Check if user is authenticated
+    const authenticated = await isAuthenticated();
+    if (!authenticated) return { success: false };
+
+    // Build the request payload
+    const players = tournament.players.map((p) => p.alias);
+    const matches = tournament.matches
+      .filter((m) => m.status === 'finished')
+      .map((m) => ({
+        player1: m.player1.alias,
+        player2: m.player2.alias,
+        score1: m.player1Score,
+        score2: m.player2Score,
+        round: m.round || 1,
+      }));
+
+    try {
+      const response = await fetch('/api/tournaments/local', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ players, matches }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          blockchainId: data.blockchainId,
+          txHash: data.txHash,
+          snowtraceUrl: data.snowtraceUrl,
+        };
+      }
+    } catch (err) {
+      console.error('[Tournament] Failed to record on blockchain:', err);
+    }
+
+    return { success: false };
+  }
+
+  async function showTournamentWinner(): Promise<void> {
     if (!tournamentManager || !tournamentCurrentMatch) return;
 
     const bracket = tournamentManager.getBracket();
@@ -987,13 +1242,51 @@ function setupPlayPageEvents(): void {
     if (finalMatch?.winner) {
       const winner = finalMatch.winner;
 
+      // Check if user is logged in and try to record on blockchain
+      const authenticated = await isAuthenticated();
+      let blockchainHtml = '';
+
+      if (authenticated) {
+        // Show loading state
+        tournamentCurrentMatch.innerHTML = `
+          <div class="text-center">
+            <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
+            <p class="text-2xl mb-4">
+              ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
+            </p>
+            <p class="text-gray-400 mb-6">Recording tournament on blockchain...</p>
+          </div>
+        `;
+
+        const result = await recordTournamentOnBlockchain();
+        if (result.success) {
+          blockchainHtml = `
+            <div class="mt-4 p-4 bg-green-900/30 rounded-lg border border-green-600">
+              <p class="text-green-400 font-semibold mb-2">✅ Recorded on Blockchain</p>
+              <p class="text-sm text-gray-300">Tournament ID: #${result.blockchainId}</p>
+              <a href="${result.snowtraceUrl}" target="_blank" rel="noopener noreferrer"
+                 class="text-sm text-blue-400 hover:text-blue-300 underline">
+                View on Snowtrace →
+              </a>
+            </div>
+          `;
+        } else {
+          blockchainHtml = `
+            <div class="mt-4 p-4 bg-yellow-900/30 rounded-lg border border-yellow-600">
+              <p class="text-yellow-400 text-sm">⚠️ Could not record on blockchain</p>
+            </div>
+          `;
+        }
+      }
+
       tournamentCurrentMatch.innerHTML = `
         <div class="text-center">
           <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
           <p class="text-2xl mb-6">
             ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
           </p>
-          <button id="newTournamentBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
+          ${blockchainHtml}
+          <button id="newTournamentBtn" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
             ${t('play.local.tournament.bracket.complete.startnew.button')}
           </button>
         </div>
@@ -1001,7 +1294,7 @@ function setupPlayPageEvents(): void {
     }
   }
 
-  function resetTournament(): void {
+  async function resetTournament(): Promise<void> {
     // Clean up any running game
     if (currentGame) {
       currentGame.destroy();
@@ -1009,6 +1302,21 @@ function setupPlayPageEvents(): void {
     }
 
     tournamentManager = new TournamentManager();
+    syncTournamentToModule();
+
+    // If logged in, auto-add the user as the first player (same as tournamentBtn click)
+    const user = await getCurrentUser();
+    if (user) {
+      loggedInUserAlias = user.alias;
+      tournamentManager.addPlayer(user.alias);
+      // Store the ID of the first player (logged-in user)
+      const players = tournamentManager.getTournament().players;
+      loggedInUserId = players.length > 0 ? players[0].id : null;
+    } else {
+      loggedInUserAlias = null;
+      loggedInUserId = null;
+    }
+
     showTournamentPhase('registration');
     updateTournamentUI();
   }
@@ -1079,6 +1387,7 @@ function setupPlayPageEvents(): void {
           toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          window.history.replaceState({ page: 'play' }, '', window.location.href);
         },
         onOpponentDisconnected: (timeout) => {
           if (remoteConnectionStatus) {
@@ -1100,6 +1409,7 @@ function setupPlayPageEvents(): void {
           toast.error(message);
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          window.history.replaceState({ page: 'play' }, '', window.location.href);
         },
         onConnectionStateChange: (state) => {
           if (remoteConnectionStatus) {
@@ -1113,8 +1423,15 @@ function setupPlayPageEvents(): void {
             }
           }
         },
-        onMatchJoined: (_matchId, _opponentName, playerNumber) => {
-          toast.success(t('friends.rejoin.match.toast.success', { playerNumber }));
+        onMatchJoined: (_matchId, opponentName, playerNumber) => {
+          // This is a rejoin - show appropriate toast
+          if (opponentName) {
+            toast.success(
+              t('friends.opponent.join.match.toast.success', { opponent: opponentName })
+            );
+          } else {
+            toast.success(t('friends.rejoin.match.toast.success', { playerNumber }));
+          }
         },
       });
 
@@ -1123,8 +1440,9 @@ function setupPlayPageEvents(): void {
       await remoteGame.connect(match.id);
       remoteGame.start();
 
-      // Mark as in active remote game
+      // Mark as in active remote game and disable language selectors
       isInActiveRemoteGame = true;
+      setLanguageSelectorsEnabled(false);
     } catch (err) {
       console.error('[Play] Error checking for active match:', err);
       // Silently fail - user can still create new matches
@@ -1208,7 +1526,7 @@ function setupPlayPageEvents(): void {
       const matchId = matchData.match?.id || matchData.id;
 
       // Always show game screen - the canvas will show status
-      showScreen(remoteGameScreen!);
+      showScreen(remoteGameScreen!, true);
 
       // Show match ID in status area
       if (remoteConnectionStatus) {
@@ -1227,6 +1545,7 @@ function setupPlayPageEvents(): void {
           toast.warning(t('friends.left.match.toast.warning'));
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          window.history.replaceState({ page: 'play' }, '', window.location.href);
         },
         onOpponentDisconnected: (timeout) => {
           if (remoteConnectionStatus) {
@@ -1248,6 +1567,7 @@ function setupPlayPageEvents(): void {
           toast.error(message);
           cleanupRemoteGame();
           showScreen(modeSelection!);
+          window.history.replaceState({ page: 'play' }, '', window.location.href);
         },
         onConnectionStateChange: (state) => {
           if (remoteConnectionStatus) {
@@ -1261,8 +1581,9 @@ function setupPlayPageEvents(): void {
             }
           }
         },
-        onMatchJoined: (_matchId, _opponent, playerNumber) => {
-          toast.success(t('friends.join.match.toast.success', { playerNumber }));
+        onMatchJoined: () => {
+          // Don't show toast here - for new matches, wait for opponent_joined event
+          // This callback just confirms we've joined the match
         },
       });
 
@@ -1271,8 +1592,9 @@ function setupPlayPageEvents(): void {
       await remoteGame.connect(matchId);
       remoteGame.start();
 
-      // Mark as in active remote game
+      // Mark as in active remote game and disable language selectors
       isInActiveRemoteGame = true;
+      setLanguageSelectorsEnabled(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start game';
       toast.error(message);
@@ -1298,28 +1620,67 @@ function setupPlayPageEvents(): void {
     // Only reset WebSocket manager when truly cleaning up, not when starting a new game
     // The WebSocket connection will be reused for the new game
     isInActiveRemoteGame = false;
+    // Re-enable language selectors
+    setLanguageSelectorsEnabled(true);
+  }
+
+  // Helper to enable/disable language selectors during games
+  function setLanguageSelectorsEnabled(enabled: boolean): void {
+    setLanguageSelectorsEnabledGlobal(enabled);
   }
 
   // Event: Local Game button
-  localGameBtn?.addEventListener('click', () => {
-    showScreen(gameSetup!);
-    player1AliasInput.value = '';
+  localGameBtn?.addEventListener('click', async () => {
+    showScreen(gameSetup!, true);
     player2AliasInput.value = '';
-    player1AliasInput.focus();
+
+    // If logged in, use the user's alias for player 1
+    const user = await getCurrentUser();
+    if (user) {
+      loggedInUserAlias = user.alias;
+      player1AliasInput.value = user.alias;
+      player1AliasInput.disabled = true;
+      player1AliasInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+      player2AliasInput.focus();
+    } else {
+      loggedInUserAlias = null;
+      player1AliasInput.value = '';
+      player1AliasInput.disabled = false;
+      player1AliasInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      player1AliasInput.focus();
+    }
   });
 
   // Event: Local GameVersusBot button
-  gameVersusBotBtn?.addEventListener('click', () => {
-    showScreen(gameBotSetup!);
+  gameVersusBotBtn?.addEventListener('click', async () => {
+    // If logged in, store the user's alias for bot game
+    const user = await getCurrentUser();
+    loggedInUserAlias = user?.alias || null;
+    showScreen(gameBotSetup!, true);
   });
 
   // Event: Tournament button
-  tournamentBtn?.addEventListener('click', () => {
+  tournamentBtn?.addEventListener('click', async () => {
     // Create new tournament
     tournamentManager = new TournamentManager();
+    syncTournamentToModule();
+
+    // If logged in, auto-add the user as the first player
+    const user = await getCurrentUser();
+    if (user) {
+      loggedInUserAlias = user.alias;
+      tournamentManager.addPlayer(user.alias);
+      // Store the ID of the first player (logged-in user)
+      const players = tournamentManager.getTournament().players;
+      loggedInUserId = players.length > 0 ? players[0].id : null;
+    } else {
+      loggedInUserAlias = null;
+      loggedInUserId = null;
+    }
+
     updateTournamentUI();
     showTournamentPhase('registration');
-    showScreen(tournamentScreen!);
+    showScreen(tournamentScreen!, true);
     tournamentPlayerAliasInput?.focus();
   });
 
@@ -1339,7 +1700,7 @@ function setupPlayPageEvents(): void {
 
   // Event: Join Match button (shows join screen)
   remoteJoinBtn?.addEventListener('click', async () => {
-    showScreen(joinMatchScreen!);
+    showScreen(joinMatchScreen!, true);
     matchIdInput.value = '';
     hideInlineError(joinMatchError);
 
@@ -1361,7 +1722,7 @@ function setupPlayPageEvents(): void {
 
   // Event: Cancel Join
   cancelJoinBtn?.addEventListener('click', () => {
-    showScreen(modeSelection!);
+    window.history.back();
   });
 
   // Event: Refresh available matches
@@ -1385,6 +1746,8 @@ function setupPlayPageEvents(): void {
   cancelRemoteBtn?.addEventListener('click', async () => {
     cleanupRemoteGame();
     showScreen(modeSelection!);
+    // Update history state so language change doesn't restore the old screen
+    window.history.replaceState({ page: 'play' }, '', window.location.href);
   });
 
   // Event: Leave remote game
@@ -1400,6 +1763,8 @@ function setupPlayPageEvents(): void {
     if (confirmed) {
       cleanupRemoteGame();
       showScreen(modeSelection!);
+      // Update history state so language change doesn't restore the old screen
+      window.history.replaceState({ page: 'play' }, '', window.location.href);
     }
   });
 
@@ -1452,7 +1817,17 @@ function setupPlayPageEvents(): void {
     if (!tournamentManager) return;
 
     if (tournamentManager.startTournament()) {
+      // Sync to module level after status change to 'in-progress'
+      syncTournamentToModule();
       showTournamentPhase('bracket');
+      // Disable language selectors during tournament
+      setLanguageSelectorsEnabled(false);
+      // Push history state for bracket phase to enable back button confirmation
+      window.history.pushState(
+        { page: 'play', playScreen: 'tournament-bracket' },
+        '',
+        window.location.href
+      );
       renderTournamentBracket(); // Show full bracket with TBD
       startNextTournamentMatch();
       toast.success(t('friends.start.tournament.toast.success'));
@@ -1463,12 +1838,12 @@ function setupPlayPageEvents(): void {
 
   // Event: Back to mode selection (from local game setup)
   backToModeBtn?.addEventListener('click', () => {
-    showScreen(modeSelection!);
+    window.history.back();
   });
 
   // Event: Back to mode selection (from bot game setup)
   backToModeFromBotBtn?.addEventListener('click', () => {
-    showScreen(modeSelection!);
+    window.history.back();
   });
 
   backFromTournamentBtn?.addEventListener('click', () => {
@@ -1478,8 +1853,9 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
 
-    showScreen(modeSelection!);
+    window.history.back();
     tournamentManager = null;
+    syncTournamentToModule();
   });
 
   // Event: End Tournament button
@@ -1499,9 +1875,15 @@ function setupPlayPageEvents(): void {
         currentGame = null;
       }
 
+      // Re-enable language selectors
+      setLanguageSelectorsEnabled(true);
+
       // Reset tournament
       showScreen(modeSelection!);
+      // Update history state so language change doesn't restore the old screen
+      window.history.replaceState({ page: 'play' }, '', window.location.href);
       tournamentManager = null;
+      syncTournamentToModule();
       toast.info('Tournament ended');
     }
   });
@@ -1551,11 +1933,17 @@ function setupPlayPageEvents(): void {
     currentGame = new PongGame(canvas, player1, player2);
 
     currentGame.setOnGameEnd((winner, score1, score2) => {
+      // Record completed match for logged-in user
+      void recordLocalMatch('LOCAL_1V1', player1, player2, score1, score2);
+
       // Show result screen after a short delay to let players see final game state
       setTimeout(() => {
         showResultScreen(winner, player1, player2, score1, score2);
       }, GAME_END_DELAY_MS);
     });
+
+    // Disable language selectors during game
+    setLanguageSelectorsEnabled(false);
 
     showScreen(gameScreen!);
     currentGame.start();
@@ -1599,7 +1987,9 @@ function setupPlayPageEvents(): void {
   // Event: Start game vs Bot
   startBotGameBtn?.addEventListener('click', () => {
     lastGameMode = 'bot';
-    const player1 = 'Player';
+    // Use logged-in user's alias if available, otherwise 'Player'
+    const player1 = loggedInUserAlias || 'Player';
+    const botName = `Bot (Lvl ${selectedBotLevel})`;
 
     if (currentGame) {
       currentGame.destroy();
@@ -1608,10 +1998,16 @@ function setupPlayPageEvents(): void {
     currentGame = new BotPongGame(canvas, player1, selectedBotLevel);
 
     currentGame.setOnGameEnd((winner, score1, score2) => {
+      // Record completed match for logged-in user
+      void recordLocalMatch('VS_BOT', player1, botName, score1, score2);
+
       setTimeout(() => {
-        showResultScreen(winner, player1, `Bot (Lvl ${selectedBotLevel})`, score1, score2);
+        showResultScreen(winner, player1, botName, score1, score2);
       }, GAME_END_DELAY_MS);
     });
+
+    // Disable language selectors during game
+    setLanguageSelectorsEnabled(false);
 
     showScreen(gameScreen!);
     currentGame.start();
@@ -1625,13 +2021,17 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
 
-    // If we're in a tournament, go back to tournament bracket
+    // If we're in a tournament, go back to tournament bracket (keep language selectors disabled)
     if (tournamentManager && tournamentManager.getTournament().status === 'in-progress') {
       if (tournamentBracket) tournamentBracket.classList.remove('hidden');
       if (gameScreen) gameScreen.classList.add('hidden');
       showScreen(tournamentScreen!);
     } else {
+      // Re-enable language selectors only when not in tournament
+      setLanguageSelectorsEnabled(true);
       showScreen(modeSelection!);
+      // Update history state so language change doesn't restore the old screen
+      window.history.replaceState({ page: 'play' }, '', window.location.href);
     }
   });
 
@@ -1652,6 +2052,8 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
     showScreen(modeSelection!);
+    // Update history state so language change doesn't restore the old screen
+    window.history.replaceState({ page: 'play' }, '', window.location.href);
   });
 
   // Event delegation for dynamically created buttons in tournament
@@ -1693,6 +2095,9 @@ function setupPlayPageEvents(): void {
     score2: number,
     isRemoteGame: boolean = false
   ): void {
+    // Re-enable language selectors when game ends
+    setLanguageSelectorsEnabled(true);
+
     if (winnerNameEl) winnerNameEl.textContent = t('play.gameover.winner', { winner });
     if (resultPlayer1El) resultPlayer1El.textContent = player1;
     if (resultScore1El) resultScore1El.textContent = score1.toString();

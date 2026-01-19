@@ -1,65 +1,130 @@
 import { FastifyInstance } from 'fastify';
-import { Type } from '@sinclair/typebox';
 import {
-  TournamentMatchesResponseSchema,
-  RecordMatchRequestSchema,
-  RecordMatchResponseSchema,
-  TotalMatchesResponseSchema,
+  RecordTournamentRequestSchema,
+  RecordTournamentResponseSchema,
+  TournamentResponseSchema,
+  TournamentCountResponseSchema,
+  GetTournamentParamsSchema,
+  ErrorResponseSchema,
+  UserTournamentsResponseSchema,
+  GlobalTournamentsResponseSchema,
 } from './blockchain.schema.js';
 import {
-  getTournamentMatchesHandler,
-  recordMatchHandler,
-  getTotalMatchesHandler,
+  recordTournamentHandler,
+  getTournamentFromBlockchainHandler,
+  getTournamentCountHandler,
+  getUserTournamentsHandler,
+  getGlobalTournamentsHandler,
 } from './blockchain.controller.js';
 
 async function blockchainRoutes(server: FastifyInstance) {
-  // Get all matches for a tournament
-  server.get(
-    '/tournaments/:tournamentId/matches',
-    {
-      schema: {
-        tags: ['blockchain'],
-        summary: 'Get all matches for a tournament',
-        params: Type.Object({
-          tournamentId: Type.String(),
-        }),
-        response: {
-          200: TournamentMatchesResponseSchema,
-        },
-      },
-    },
-    getTournamentMatchesHandler
-  );
-
-  // Record a new match
+  // Record a completed local tournament (requires authentication)
   server.post(
-    '/matches',
+    '/tournaments/local',
     {
+      onRequest: [server.authenticate],
       schema: {
-        tags: ['blockchain'],
-        summary: 'Record a new match on the blockchain',
-        body: RecordMatchRequestSchema,
+        tags: ['tournaments'],
+        summary: 'Record a completed local tournament on the blockchain',
+        description:
+          'Records tournament results to database and blockchain. Requires authentication.',
+        security: [{ bearerAuth: [] }],
+        body: RecordTournamentRequestSchema,
         response: {
-          200: RecordMatchResponseSchema,
+          201: RecordTournamentResponseSchema,
+          401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
         },
       },
     },
-    recordMatchHandler
+    recordTournamentHandler as never
   );
 
-  // Get total number of matches
+  // Get tournament from blockchain for verification (requires authentication)
   server.get(
-    '/matches/total',
+    '/tournaments/blockchain/:blockchainId',
     {
+      onRequest: [server.authenticate],
       schema: {
-        tags: ['blockchain'],
-        summary: 'Get total number of matches recorded',
+        tags: ['tournaments'],
+        summary: 'Get tournament data from blockchain for verification',
+        description: 'Fetches tournament data directly from the blockchain smart contract.',
+        security: [{ bearerAuth: [] }],
+        params: GetTournamentParamsSchema,
         response: {
-          200: TotalMatchesResponseSchema,
+          200: TournamentResponseSchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
         },
       },
     },
-    getTotalMatchesHandler
+    getTournamentFromBlockchainHandler as never
+  );
+
+  // Get total tournament count from blockchain (requires authentication)
+  server.get(
+    '/tournaments/blockchain/count',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        tags: ['tournaments'],
+        summary: 'Get total number of tournaments on blockchain',
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: TournamentCountResponseSchema,
+          401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
+        },
+      },
+    },
+    getTournamentCountHandler as never
+  );
+
+  // Get user's tournament history (requires authentication)
+  server.get(
+    '/tournaments/me',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        tags: ['tournaments'],
+        summary: "Get current user's tournament history",
+        description: 'Returns all tournaments organized by the authenticated user.',
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: UserTournamentsResponseSchema,
+          401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
+        },
+      },
+    },
+    getUserTournamentsHandler as never
+  );
+
+  // Get recent global tournaments (requires authentication)
+  server.get(
+    '/tournaments/recent',
+    {
+      onRequest: [server.authenticate],
+      schema: {
+        tags: ['tournaments'],
+        summary: 'Get recent global tournament history',
+        description: 'Returns recent tournaments from all users.',
+        security: [{ bearerAuth: [] }],
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'string', pattern: '^[0-9]+$', default: '20' },
+          },
+        },
+        response: {
+          200: GlobalTournamentsResponseSchema,
+          401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
+        },
+      },
+    },
+    getGlobalTournamentsHandler as never
   );
 }
 
