@@ -142,6 +142,19 @@
   "friends.notifications.status": "No notifications.",
   "friends.notifications.innertext": "You're all caught up!",
 
+  "friends.notifications.search.loading.more": "Loading...",
+
+  "oauth.hostnotallowed.error": "OAuth failed: This host is not allowed. Contact administrator.",
+  "oauth.statemismatch.error": "OAuth failed: Session expired or invalid. Please try again.",
+  "oauth.missingcode.error": "OAuth failed: Authorization was cancelled or denied.",
+  "oauth.tokenfailed.error": "OAuth failed: Could not complete authentication with Google.",
+  "oauth.callbackfailed.error": "OAuth failed: An error occurred during login. Please try again.",
+  "oauth.loginfailed.showerror": "OAuth login failed. Please try again.",
+  "oauth.fillallfields.showerror": "Please fill in all fields.",
+
+  "login.loggingin.button": "Logging in...",
+  "login.failed.error.message": "Login failed. Please try again.",
+
   "friends.sort.remove.button": "Remove",
   "friends.pending.requests.accept.button": "Accept",
   "friends.pending.requests.decline.button": "Decline",
