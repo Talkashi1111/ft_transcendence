@@ -134,6 +134,14 @@ export async function searchUsers(
  * Calculates wins/losses across all game modes
  */
 export async function getUserStats(userId: string): Promise<UserStats> {
+  // Get user's alias first (needed for tournament match filtering)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { alias: true },
+  });
+
+  const userAlias = user?.alias ?? '';
+
   // Get all matches where user is player1 or player2
   const matches = await prisma.matchHistory.findMany({
     where: {
@@ -153,23 +161,27 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     },
   });
 
+  // Filter matches: For tournament matches, user must actually appear as a player (by alias)
+  // This is needed because organizers record all tournament matches, but only play in some
+  const filteredMatches = matches.filter((match) => {
+    if (match.mode === 'TOURNAMENT') {
+      // For tournament matches, check if user's alias is one of the players
+      return match.player1Alias === userAlias || match.player2Alias === userAlias;
+    }
+    // For non-tournament matches, include all (player1Id/player2Id check is sufficient)
+    return true;
+  });
+
   // Get tournament counts
   const tournamentsOrganized = await prisma.localTournament.count({
     where: { organizerId: userId },
   });
 
-  // Get user's alias for tournament win counting
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { alias: true },
-  });
-
   // Count tournament wins where user's alias matches winner
-  // Note: We check all aliases the user has used (stored in tournaments)
   const tournamentWins = await prisma.localTournament.count({
     where: {
       organizerId: userId,
-      winner: user?.alias ?? '',
+      winner: userAlias,
     },
   });
 
@@ -185,8 +197,11 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   let totalLosses = 0;
 
   // Calculate stats for each match
-  for (const match of matches) {
-    const isPlayer1 = match.player1Id === userId;
+  for (const match of filteredMatches) {
+    // For tournament matches, use alias to determine which player is the user
+    // For other modes, use player1Id (organizer is always player1)
+    const isPlayer1 =
+      match.mode === 'TOURNAMENT' ? match.player1Alias === userAlias : match.player1Id === userId;
     const myScore = isPlayer1 ? match.score1 : match.score2;
     const opponentScore = isPlayer1 ? match.score2 : match.score1;
     const won = myScore > opponentScore;
@@ -215,8 +230,10 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
 
   // Get recent matches (last 10)
-  const recentMatches = matches.slice(0, 10).map((match) => {
-    const isPlayer1 = match.player1Id === userId;
+  const recentMatches = filteredMatches.slice(0, 10).map((match) => {
+    // For tournament matches, use alias to determine which player is the user
+    const isPlayer1 =
+      match.mode === 'TOURNAMENT' ? match.player1Alias === userAlias : match.player1Id === userId;
     const myScore = isPlayer1 ? match.score1 : match.score2;
     const opponentScore = isPlayer1 ? match.score2 : match.score1;
 

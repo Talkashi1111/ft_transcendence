@@ -1,6 +1,22 @@
 import { t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
 
+// Store popstate handlers for cleanup
+let myTournamentsPopstateHandler: ((e: PopStateEvent) => void) | null = null;
+let globalTournamentsPopstateHandler: ((e: PopStateEvent) => void) | null = null;
+
+// Cleanup function to be called when navigating away
+export function cleanupTournamentsPage(): void {
+  if (myTournamentsPopstateHandler) {
+    window.removeEventListener('popstate', myTournamentsPopstateHandler, true);
+    myTournamentsPopstateHandler = null;
+  }
+  if (globalTournamentsPopstateHandler) {
+    window.removeEventListener('popstate', globalTournamentsPopstateHandler, true);
+    globalTournamentsPopstateHandler = null;
+  }
+}
+
 // Types
 interface TournamentData {
   blockchainId: string;
@@ -302,7 +318,11 @@ async function loadUserTournaments() {
   };
 
   // Handle browser back/forward buttons
-  const handlePopState = (e: PopStateEvent) => {
+  // Remove previous handler if exists
+  if (myTournamentsPopstateHandler) {
+    window.removeEventListener('popstate', myTournamentsPopstateHandler, true);
+  }
+  myTournamentsPopstateHandler = (e: PopStateEvent) => {
     if (e.state?.myTournamentDetail) {
       // This is a tournament detail state - stop other handlers
       e.stopImmediatePropagation();
@@ -316,7 +336,7 @@ async function loadUserTournaments() {
     }
   };
   // Use capture phase to run before global handler
-  window.addEventListener('popstate', handlePopState, true);
+  window.addEventListener('popstate', myTournamentsPopstateHandler, true);
 
   // Render detail view content (used by showDetail and popstate)
   const renderDetail = (tournament: UserTournament) => {
@@ -507,7 +527,11 @@ async function loadGlobalTournaments() {
   };
 
   // Handle browser back/forward buttons
-  const handlePopState = (e: PopStateEvent) => {
+  // Remove previous handler if exists
+  if (globalTournamentsPopstateHandler) {
+    window.removeEventListener('popstate', globalTournamentsPopstateHandler, true);
+  }
+  globalTournamentsPopstateHandler = (e: PopStateEvent) => {
     if (e.state?.globalTournamentDetail) {
       // This is a tournament detail state - stop other handlers
       e.stopImmediatePropagation();
@@ -521,7 +545,7 @@ async function loadGlobalTournaments() {
     }
   };
   // Use capture phase to run before global handler
-  window.addEventListener('popstate', handlePopState, true);
+  window.addEventListener('popstate', globalTournamentsPopstateHandler, true);
 
   // Render detail view content (used by showDetail and popstate)
   const renderDetail = (tournament: UserTournament) => {
