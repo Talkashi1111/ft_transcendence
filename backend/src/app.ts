@@ -19,6 +19,7 @@ import gameRoutes from './modules/game/game.route.js';
 import friendsRoutes from './modules/friends/friends.route.js';
 import notificationsRoutes from './modules/notifications/notifications.route.js';
 import { registerGameWebSocket } from './modules/game/game.gateway.js';
+import { createLogstashTeeStream } from './logging/logstash-tee-stream.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -64,8 +65,20 @@ declare module '@fastify/jwt' {
  * Build and configure the Fastify application
  */
 export async function buildApp(): Promise<FastifyInstance> {
+  const logstashEnabled = process.env.LOGSTASH_ENABLED === 'true';
+
+  const loggerOptions = logstashEnabled
+    ? {
+        level: 'info',
+        stream: createLogstashTeeStream({
+          host: process.env.LOGSTASH_HOST ?? 'logstash',
+          port: Number(process.env.LOGSTASH_PORT ?? '5000'),
+        }),
+      }
+    : { level: 'info' };
+
   const server = fastify({
-    logger: { level: 'info' },
+    logger: loggerOptions,
   });
 
   // Register Swagger

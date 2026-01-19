@@ -120,6 +120,18 @@ all: format lint test build ## run format, lint, test, and build
 	@echo "========================================"
 	@echo ""
 
+.PHONY: elk-up
+elk-up: ## Lauches ELK in background 
+	docker compose -p ft_transcendence -f docker-compose.dev.yml --profile elk up -d elasticsearch logstash kibana
+
+.PHONY: dev-elk 
+dev-elk: elk-up ## launches ELK, initiate enviornment var for the tee and THEN make dev
+	LOGSTASH_ENABLED=true LOGSTASH_HOST=logstash LOGSTASH_PORT=5000 $(MAKE) dev
+
+.PHONY: dev-elk-down 
+dev-elk-down: ## Stops the ELK containers
+	docker compose -p ft_transcendence -f docker-compose.dev.yml --profile elk stop elasticsearch logstash kibana
+
 ## ============================================
 ## Blockchain targets (run INSIDE devcontainer)
 ## ============================================
