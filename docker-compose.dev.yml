@@ -24,6 +24,9 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.external-url=http://localhost:9090' # Set external URL for proper link generation (for Alertmanager for discord webhook)
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
@@ -32,10 +35,13 @@ services:
       - '9090:9090'
     networks:
       - transcendence
+    profiles: ["monitoring"] # Acts as a tag to include/exclude monitoring services/containers when starting with docker-compose
 
   alertmanager:
     image: prom/alertmanager:latest
     container_name: alertmanager
+    env_file:
+      - ./backend/.env
     volumes:
       - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - alertmanager-data:/alertmanager
@@ -46,21 +52,25 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
+    profiles: ["monitoring"]
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
       - '3001:3000'
+    env_file:
+      - ./backend/.env
     environment:
       - GF_INSTALL_PLUGINS=frser-sqlite-datasource
 
-      - GF_SECURITY_ADMIN_USER={GRAFANA_USER:-admin} # If GRAFANA_USER is not set, default to 'admin'
-      - GF_SECURITY_ADMIN_PASSWORD={GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin} # If GRAFANA_USER is not set, default to 'admin'
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
 
       - GF_AUTH_ANONYMOUS_ENABLED=false # Disable anonymous access
-      - GF_USERS_ALLOW_SIGN_UP=false # Disable sign up
+      - GF_USERS_ALLOW_SIGN_UP=false # Disable sign up. Only admin can create users.
 
+      - GF_SECURITY_DISABLE_GRAVATAR=true # Disable Gravatar to enhance privacy. Gravatar fetches user images from external servers.
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -70,7 +80,8 @@ services:
       - transcendence
     depends_on:
       - prometheus
-
+    profiles: ["monitoring"]
+    
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
@@ -87,6 +98,7 @@ services:
       - '9100:9100'
     networks:
       - transcendence
+    profiles: ["monitoring"]
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -101,6 +113,8 @@ services:
       - /dev/disk/:/dev/disk:ro
     networks:
       - transcendence
+    profiles: ["monitoring"]
+
 
 volumes:
   sqlite-data:

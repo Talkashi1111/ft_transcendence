@@ -11,6 +11,12 @@ up:        ## start dev stack
 	docker compose -f docker-compose.dev.yml start
 	docker compose -f docker-compose.dev.yml exec --user node app bash
 
+.PHONY: monitor
+monitor:    ## start dev stack with monitoring services
+	docker compose -f docker-compose.dev.yml --profile monitoring up --no-start
+	docker compose -f docker-compose.dev.yml --profile monitoring start
+	docker compose -f docker-compose.dev.yml exec --user node app bash
+
 .PHONY: exec
 exec:      ## execute command in app container
 	docker compose -f docker-compose.dev.yml exec --user node app bash
@@ -18,6 +24,10 @@ exec:      ## execute command in app container
 .PHONY: halt
 halt:      ## stop dev stack
 	docker compose -f docker-compose.dev.yml stop
+
+.PHONY: halt-monitor
+halt-monitor: ## stop monitoring services
+	docker compose -f docker-compose.dev.yml --profile monitoring stop
 
 .PHONY: rebuild
 rebuild:   ## rebuild dev stack

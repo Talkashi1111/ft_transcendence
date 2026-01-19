@@ -88,6 +88,9 @@ data/
 .env.production.local
 .env.local
 
+# Discord webhook to keep secret
+./prometheus/alertmanager.yml
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

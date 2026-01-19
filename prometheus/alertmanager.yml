@@ -8,15 +8,25 @@ route:
   repeat_interval: 1h # Time to wait before resending a notification about a resolved alert
   receiver: 'discord_webhook' # Default receiver
   routes:
-    - matchers:
-        - env = "dev" # Match alerts from the development environment
-      receiver: 'dev-null' # Drop or silence dev alerts
+    - matchers: # Since the alert matches the 'env' and 'alertname' labels defined in prometheus.yml, Alertmanager ignores the default receiver and sends it to 'dev-null'
+        - env = "dev"
+        - alertname = "InstanceDown"
+      receiver: 'dev-null'
 
 receivers:
   - name: 'discord_webhook'
     discord_configs:
-      - webhook_url: ''
+      - webhook_url: "https://discord.com/api/webhooks/1462028238271287368/E2Pmp-LyfH_zJ-z62OUm9QEZ3Vc03rpVcQO1wFFl4INRl7igHJBic5Wnt-dZRXeguimr"
         send_resolved: true # Notify when alerts are resolved
+        # Customizing the message format
+        title: '{{ .CommonLabels.alertname }} ({{ .Status | toUpper }})'
+        message: >-
+          {{ range .Alerts }}
+          **Summary:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Severity:** {{ .Labels.severity }}
+          --------------------------------
+          {{ end }}
 
   - name: 'dev-null' # Receiver to drop alerts in development
     webhook_configs:

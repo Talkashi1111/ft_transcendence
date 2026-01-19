@@ -1,7 +1,7 @@
 global:
   scrape_interval: 5s # Check for new data every 5 seconds
   external_labels:
-    env: dev
+    env: dev # Attaches an 'env' label with value 'dev' to all metrics and alerts
   evaluation_interval: 15s # Check alert rules every 15s
 
 rule_files:
@@ -10,7 +10,7 @@ rule_files:
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: ['alertmanager:9093']
+        - targets: ['alertmanager:9093'] # Connects to the Alertmanager service
 
 scrape_configs:
   - job_name: 'ft_transcendence_backend'

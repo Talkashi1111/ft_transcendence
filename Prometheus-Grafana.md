@@ -1,5 +1,3 @@
-https://prometheus.io/docs/introduction/overview/
-
 # Subject requirements
 
 **Minor module**: Monitoring system.  
@@ -13,6 +11,12 @@ The goal of this minor module is to set up a comprehensive monitoring system usi
 - Implement secure authentication and access control mechanisms for Grafana to protect sensitive monitoring data.
 
 This minor module aims to establish a robust monitoring infrastructure using Prometheus and Grafana , enabling real-time visibility into system metrics and proactive issue detection for improved system performance and reliability.
+
+# Summary and quick pick-up
+### 
+Prometheus is a monitoring tool that will scrapes data from three sources:
+- h
+
 
 # Initial Set Up
 
@@ -66,81 +70,18 @@ scrape_configs:
     static_configs:
       - targets: ['app:3000'] # Connects to the 'app' service on port 3000
 ```
-### `job-name`
-A job represents one monitoring task: scrape these targets using this configuration.
-All targets listed under the same job_name are assumed to expose the same type of metrics and are scraped in the same way.
-job_name becomes a label automatically added to every metric scraped from those targets.
-
-#### How Prometheus uses `job-name`
-
-##### 1. Metric labeling
-
-Every scraped metric will include:
-
-```text
-job="ft_transcendence_backend"
-```
-
-Example metric:
-
-```text
-http_requests_total{job="ft_transcendence_backend", instance="app:3000"}
-```
-
-This is critical for:
-* Filtering
-* Aggregation
-* Alerting
-
-##### 2. Querying (PromQL)
-
-You can query metrics for this job specifically:
-
-```promql
-rate(http_requests_total{job="ft_transcendence_backend"}[1m])
-```
-
-##### 3. Alerting
-
-Alert rules typically reference `job`:
-
-```yaml
-expr: up{job="ft_transcendence_backend"} == 0
-```
-
-##### 4. UI organization
-
-In the Prometheus web UI:
-
-* Targets are grouped by `job`
-* Failures are reported per job
-
-#### Naming conventions (best practices)
-
-* Use **descriptive, stable names**
-* Usually represent a **service or component**
-* Avoid environment-specific values unless intentional
-
-### In short
 
 `job_name` is:
-
 * A **group name for scrape targets**
 * A **mandatory label added to all metrics**
 * A **key dimension for querying, alerting, and debugging**
-
-If you want, I can also explain how `job` differs from `instance`, which is a very common point of confusion in Prometheus setups.
-
-
-### `targets: ['app:3000']`
-Because we will run Prometheus in Docker, it can see your other containers by their service name. It will look for the app container (defined in your docker-compose) on port 3000.
 
 ## 4. Update your `docker-compose.yml` and restart your infrastructure
 
 ```YAML
 ...
 
-prometheus:
+  prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
@@ -167,7 +108,7 @@ prometheus:
 
 - Prometheus: Mounts the config file you just created (./prometheus.yml) so it knows what to scrape.
 - Grafana: We map it to port 3001 (3001:3000) if your backend is already using port 3000.
-- Networks: Both are attached to transcendence so they can talk to your app container.
+- Networks: Both are attached to transcendence network so they can talk to your app container.
 
 ### (Re)start the services
 
@@ -205,7 +146,7 @@ This is the endpoint we created in backend/src/app.ts by registering the fastify
 
 #### - The collector: http://localhost:9090/
 
-What it is: Prometheus (The Database). http://localhost:9090/ serves the Prometheus built-in Web UI. Service: The prometheus container defined in docker-compose.dev.yml. Role: It is the "brain" that stores history.  
+What it is: Prometheus (The Database). http://localhost:9090/ serves the Prometheus built-in Web UI. Service: The prometheus container defined in docker-compose.dev.yml. Role: It is the "brain" that stores metrics history.  
 How it works:
 - It reads your prometheus.yml configuration file.
 - It connects to app:3000/metrics every 5 seconds.
@@ -251,272 +192,7 @@ Looking at raw text is not very useful. Instead of building charts from scratch,
 - Click **Import**.
 
 Et voilà! You should see charts now visualizing metrics of your app.  
-Note: We configured Prometheus to scrape data  from the app every 5 seconds (scrape_interval: 5s). If you set Grafana (that scraps from prometheus) faster than that (like 1s), it would just show the same data point 5 times in a row.
-
-## The default dashboard and its charts
-This dashboard visualizes the internal health of your **Node.js** backend (`app` service).
-
-### 1. Process CPU Usage
-This shows how much of a CPU core your backend is using.  
-Node.js is single-threaded. If this hits **100%**, your backend is completely frozen processing a calculation and cannot answer new requests. In a healthy web server, this should stay very low (< 5-10%) unless you are doing heavy data processing (like resizing an avatar).
-
-### 2. Event Loop Lag
-
-* **What it is:** The delay between when Node.js *wants* to execute a function and when it *actually* can.
-* **Why it matters:** Node.js handles thousands of requests by quickly switching tasks (the "Event Loop"). If one task takes too long (e.g., a massive `while` loop), the loop "lags" and delays everyone else.
-* **Healthy values:** You want this near **0ms**. If it spikes (e.g., > 100ms), your server feels "sluggish" to users.
-
-### 3. Process Restart Time
-
-* **What it is:** This usually displays the timestamp of when your backend last started.
-* **Use case:** It helps you spot **crashes**. If you see this graph jump to the current time unexpectedly, it means your backend crashed and restarted (or Nodemon restarted it because you saved a file).
-
-### 4. Process Memory Usage (RSS - Resident Set Size)
-
-* **What it is:** The **total** physical RAM your backend is taking up from the computer (OS perspective).
-* **Includes:** The Code itself + V8 Engine + Variables (Heap) + External libraries (C++ bindings).
-
-### 5. Active Handles / Requests
-
-**What it is:**
-* **Requests:** Number of HTTP clients currently waiting for a response.
-* **Handles:** "Open things" that the OS is managing for Node.js (open sockets, open files, timers).
-
-
-**Why do you have 4 when no one is connected?**
-Even "idle", a server needs handles to stay alive. The 4 handles are likely:
-1. **Port 3000:** The server "listening" for new connections.
-2. **Database Connection:** Prisma keeping a connection open to SQLite/File.
-3. **Metrics Endpoint:** The `fastify-metrics` plugin internally maintaining state.
-4. **Prometheus Scraper:** Prometheus connects every 5 seconds; sometimes the socket stays "active" (Keep-Alive) briefly between scrapes.
-
-### 6. Heap Total / Used / Available (Detail)
-
-These 3 charts zoom in on the **JavaScript memory** (managed by the V8 engine), which is part of the "Process Memory" above.
-
-* **Heap Total:** How much memory V8 has *reserved* from the OS.
-* **Heap Used:** How much memory your actual variables/objects are *currently occupying*.
-* **Heap Available:** How much space is left before V8 needs to ask the OS for more (or crash if it hits the limit).
-* **The "Sawtooth" Pattern:** You will often see the "Used" line go up slowly and then drop sharply. This is **Garbage Collection (GC)** working correctly—cleaning up unused variables. If it goes up and *never* drops, you have a **Memory Leak**.
-
-# Stuff
-
-## prom-client
-
-**prom-client** is the standard, official Node.js library used to generate Prometheus metrics.
-
-Think of it as the **"Engine"** that powers your monitoring.
-
-### 1. What does it do?
-
-It provides the JavaScript classes you need to create metrics. It handles all the complex logic of:
-
-* Counting numbers safely.
-* Calculating averages (histograms).
-* Formatting the data into the weird text format that Prometheus understands.
-
-### 2. Relationship with `fastify-metrics`
-
-You are currently using `fastify-metrics`.
-
-* **prom-client** = The low-level library (The Engine).
-* **fastify-metrics** = A high-level plugin (The Car) that wraps `prom-client` and automatically connects it to Fastify's router.
-
-When you install `fastify-metrics`, it installs `prom-client` automatically in the background.
-
-### 3. The 4 Main Tools (Metric Types)
-
-`prom-client` gives you four tools to measure things. You will need these for your **Custom Metrics**:
-
-| Tool | Name | Behavior | Example Use Case |
-| --- | --- | --- | --- |
-| 🔢 | **Counter** | Only goes UP. Resets on restart. | Total requests, Total errors. |
-| 🌡️ | **Gauge** | Goes UP and DOWN. | Active users, Memory usage, Temperature. |
-| 📊 | **Histogram** | Buckets values (e.g., "0-10ms", "10-100ms"). | Request duration, Response size. |
-| 📝 | **Summary** | Similar to Histogram but calculates quantiles (95th %). | (Rarely used now, Histograms are preferred). |
-
-### Example Code
-
-If you want to create a custom metric (like "Connected Users"), you import the class directly from `prom-client`:
-
-```typescript
-import { Gauge } from 'prom-client';
-
-const activeUsers = new Gauge({
-  name: 'app_active_users_total',
-  help: 'Current number of users connected via WebSocket'
-});
-
-// Logic
-activeUsers.inc(); // +1
-activeUsers.dec(); // -1
-activeUsers.set(10); // = 10
-
-```
-
-## Multi-dimensional Data Model
-
-This sounds complicated, but it just means **"Data with Labels"**.
-
-* **1-Dimensional Data (Simple):**
-Imagine a simple counter. You just have one number.
-`http_requests_total = 50`
-*You know you had 50 requests, but you don't know if they were GET, POST, successful, or errors.*
-* **Multi-Dimensional Data (Prometheus):**
-Prometheus adds "dimensions" (labels) to that single metric name using key/value pairs.
-```text
-http_requests_total{method="GET", status="200"} = 30
-http_requests_total{method="POST", status="200"} = 15
-http_requests_total{method="POST", status="500"} = 5
-```
-Now you have "dimensions." You can ask: "Give me all errors" (filter by `status="500"`) or "Give me all POST requests" (filter by `method="POST"`).
-
-## Is PromQL like MySQL?
-
-**No, they are very different.**
-
-* **MySQL (SQL):** Used for **Relational Data** (tables, rows, user accounts, game history). You ask questions like: *"Find the user with ID 5"* or *"Count all games played by talkashi1111"*.
-* **PromQL:** Used for **Math over Time**. You don't select "rows." You select "streams of numbers" and do math on them.
-
-**Example:**
-
-* **MySQL:** `SELECT * FROM users WHERE id = 1;` (Give me this specific record).
-* **PromQL:** `rate(http_requests_total[5m])` (Calculate the average number of requests per second over the last 5 minutes).
-
-## Time Series (French: *Séries Temporelles*)
-
-**Translation:**
-In French, "Time Series" is translated as **"Série Temporelle"** (or sometimes "Série Chronologique").
-
-**Explanation:**
-A time series is simply a list of values recorded at specific points in time. Think of it like a heart rate monitor or a stock price chart.
-
-* **Not Time Series (your Database):**
-Your User database stores the *current* state.
-*User: Gentian, Level: 5.* (If you level up to 6, the 5 is gone forever).
-* **Time Series (Prometheus):**
-Prometheus remembers the history.
-* 10:00 AM -> Level 5
-* 10:05 AM -> Level 5
-* 10:10 AM -> Level 6
-
-Because it remembers the value at every "time" step, you can draw a line chart to see *when* you leveled up. That line on the chart is the "Time Series."
-
-Here are the answers to your questions about PromQL and Prometheus storage.
-
-## How to do a query with PromQL?
-
-You can write and test PromQL queries in two main places:
-
-1. **Prometheus UI** (Best for testing): Go to [http://localhost:9090/query]
-2. **Grafana Explore** (Best for visualizing): Go to [http://localhost:3001/explore]
-
-Here is the "Grammar" of a PromQL query, using your project as an example:
-
-#### A. The Simplest Query (Select Everything)
-
-Just type the **Metric Name**. This returns the current value for every instance found.
-
-* **Query:** `process_cpu_user_seconds_total`
-* **Result:** `1.45` (Your backend has used 1.45 seconds of CPU since it started).
-
-#### B. Filtering with Labels `{}`
-
-If you want to be specific (e.g., only POST requests), you add "labels" inside curly braces.
-
-* **Query:** `http_request_duration_seconds_count{method="POST"}`
-* **Result:** Returns the count only for POST requests.
-
-#### C. Looking at the Past `[]` (Range Vector)
-
-If you want to see "what happened in the last 5 minutes," you add a time range in brackets.
-
-* **Query:** `http_request_duration_seconds_count[5m]`
-* **Result:** Returns a *list* of values recorded over the last 5 minutes.
-* *Note: You cannot graph this directly; you usually use it with a function (see D).*
-
-#### D. Using Functions (The "Math")
-
-This is where PromQL becomes powerful. The most common function is `rate()`, which calculates "per second."
-
-* **Query:** `rate(http_request_duration_seconds_count[1m])`
-* **Meaning:** "Look at the count over the last 1 minute and calculate how many requests represent per second."
-* **Result:** `0.5` (Means you are getting 1 request every 2 seconds).
-
-### Example
-Query: `http_request_duration_seconds_count`
-
-First result: `http_request_duration_seconds_count{instance="app:3000", job="ft_transcendence_backend", method="GET", route="/metrics", status_code="200"} 18`
-
-#### 1. The Metric Name: `http_request_duration_seconds_count`
-
-* **What it measures:** The **total count** of HTTP requests completed.
-* **Context:** Even though the name says "duration," the suffix `_count` specifically means "how many times did this happen?" (It is part of a Histogram metric that tracks both how long things take and how often they happen).
-
-#### 2. The Labels (The "Who, What, Where")
-
-* **`instance="app:3000"`**: **Who** handled it? Your backend container (`app`) on port 3000.
-* **`job="ft_transcendence_backend"`**: **Who** asked for it? This is the job name we defined in `prometheus.yml`.
-* **`method="GET"`**: **How** was it asked? It was a standard read request (GET).
-* **`route="/metrics"`**: **What** was requested? The `/metrics` endpoint.
-* **`status_code="200"`**: **Result?** Success (200 OK).
-
-#### 3. The Value: `18`
-
-* **Meaning:** This specific event has happened **18 times** since the server started.
-
-#### 4. The "In Plain English" Summary
-
-> *"Your backend (`app:3000`) has successfully replied to a GET request for the `/metrics` page **18 times**."*
-
-### 💡 Why is this number increasing?
-
-This is **Prometheus scraping itself!**
-Remember, we configured Prometheus to visit `http://app:3000/metrics` every **5 seconds**.
-
-* Every 5 seconds, Prometheus visits that route.
-* The backend counts +1 request.
-* So, this number will go up by roughly 12 every minute (60s / 5s = 12), plus any times you visit it manually in your browser.
-
-## Where is the data stored?
-
-Prometheus stores its Time Series data locally **on the disk** (it does not use a SQL database). It uses a custom highly efficient format.
-
-**However, in your specific Docker setup, there is a catch.**
-
-Based on the `docker-compose.dev.yml` configuration we created, the data is currently stored **inside the container**.
-
-* **Location:** `/prometheus` (inside the Docker container).
-* **Persistence:** **Ephemeral (Temporary)**.
-
-⚠️ **Important Warning:**
-Because we did not map a "volume" for the data in your `docker-compose.dev.yml`, **if you delete the container (`docker-compose down`), all your historical data will be lost.**
-
-#### How to fix this (Make data persistent)
-
-If you want your metric history to survive after you restart or remove containers, you need to update your `docker-compose.dev.yml` to save the data to a Docker Volume.
-
-**Add this to your `prometheus` service:**
-
-```yaml
-  prometheus:
-    # ... existing config ...
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus  # <--- ADD THIS LINE
-
-```
-
-**And define the volume at the bottom of the file:**
-
-```yaml
-volumes:
-  sqlite-data:
-  # ... existing volumes ...
-  prometheus_data:  # <--- ADD THIS LINE
-```
-
-Now, the data will be stored in a Docker Volume named `prometheus_data` on your host machine, safe from container deletions.
+Note: We configured Prometheus to scrape data  from the app every 5 seconds (scrape_interval: 5s). If you set Grafana (that scrapes from prometheus) faster than that (like 1s), it would just show the same data point 5 times in a row.
 
 # Data exporters and integration
 
@@ -631,9 +307,7 @@ By default, `node-exporter` looks at `/proc` and `/sys` (which would be the *con
 **Result:** A containerized program that can tell you exactly how hot your physical CPU is running!
 
 ## cAdvisor
-**cAdvisor** (short for **C**ontainer **Advisor**) is an open-source tool created by **Google**.
-
-It is an **Exporter** specifically designed to monitor **Docker Containers**.
+**cAdvisor** (short for **C**ontainer **Advisor**) is an open-source tool created by **Google**. It is an **Exporter** specifically designed to monitor **Docker Containers**.
 
 ### The "Missing Piece" of Your Puzzle
 
@@ -675,7 +349,7 @@ If you want to validate the "Infrastructure Monitoring" requirement thoroughly, 
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     ports:
-      - "8081:8080" # 8080 may taken by caddy in the prod
+      - "8081:8080" # 8080 might be used by caddy in production
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -752,8 +426,6 @@ Run this command from your **host machine** to rebuild the Grafana container wit
 docker compose -f docker-compose.dev.yml up -d --build grafana
 ```
 
-*(Wait about 30 seconds for the plugin to install and Grafana to start).*
-
 ### Step 3: Configure the Data Source
 
 1. Open Grafana: [http://localhost:3001](https://www.google.com/search?q=http://localhost:3001)
@@ -766,114 +438,6 @@ docker compose -f docker-compose.dev.yml up -d --build grafana
 * *Success:* "Data source is working".
 * *Error:* "file is encrypted or is not a database": Check the filename.
 * *Error:* "permission denied": This is a common Docker issue. Try running `chmod 644` on the db file or running the container as root (temporarily) to test.
-
-### Step 4: Create Your Own Dashboard
-
-Now you can build a custom "Game Stats" dashboard:
-
-1. **Create New Dashboard** > **Add Visualization**.
-2. Select **SQLite** as the data source.
-3. Write a SQL Query.
-* **Example (Count Users):**
-```sql
-SELECT count(*) as value, 'Users' as metric FROM User
-```
-* **Example (Pending Friend Requests):**
-```sql
-SELECT count(*) as value, 'Pending Requests' as metric FROM Friendship WHERE status = 'PENDING'
-```
-
-4. Choose a visualization (Stat, Bar Chart, etc.) and Apply.
-
-This allows you to create a **Business Dashboard** that shows the actual activity in your `ft_transcendence` project!
-
-# Provisioning
-When you rebuild a container, the data that was inside is lost and thus your setup; the data source connections, your beautiful custom dashboards and you (or your colleagues that want to see your magnificient dashboards) will have to reconfigure all of it. But you can automate this! Grafana has a feature called Provisioning that lets you define data sources and dashboards in YAML files. Since these are files, you can push them to Git.  
-When your colleagues start the project, Grafana will read these files and automatically set everything up for them.
-
-Here is how to do it (it takes 3 steps):
-
-### Step 1: Export Your Dashboard
-
-1. Go to your Dashboard in Grafana.
-2. Click the **Share** button (top right, usually looks like a "Share" icon).
-3. Go to the **Export** tab.
-4. Toggle **"Export for sharing externally"** (this removes hardcoded IDs).
-5. Click **Save to file**.
-6. **Move this JSON file** into your project folder. Let's create a structure like this:
-```
-transcendence/
-└── grafana/
-    └── dashboards/
-        └── my-dashboard.json  <-- Put your JSON file here
-
-```
-
-
-
-### Step 2: Create Configuration Files
-
-Create a `provisioning` folder inside your `grafana` folder:
-`transcendence/grafana/provisioning/`
-
-**A. Create `datasources.yaml**`
-File: `grafana/provisioning/datasources/datasources.yaml`
-
-```yaml
-apiVersion: 1
-
-datasources:
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus:9090
-    isDefault: true
-    editable: false # Prevents accidental changes in UI
-
-```
-
-**B. Create `dashboards.yaml**`
-File: `grafana/provisioning/dashboards/dashboards.yaml`
-
-```yaml
-apiVersion: 1
-
-providers:
-  - name: 'Default'
-    orgId: 1
-    folder: ''
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
-    options:
-      path: /etc/grafana/dashboards # Where we will mount the JSON files
-
-```
-
-### Step 3: Update `docker-compose.dev.yml`
-
-We need to mount these new configuration folders into the Grafana container.
-
-Update your `grafana` service volumes:
-
-```yaml
-  grafana:
-    # ... existing config ...
-    volumes:
-      - grafana-storage:/var/lib/grafana
-      - sqlite-data:/var/lib/grafana/db-mount
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/etc/grafana/dashboards
-
-```
-
-### Summary
-
-When you use `volumes: - ./local/path:/container/path` in `docker-compose.dev.yml`, Docker creates a bind mount that overlays a host directory onto a directory inside the container. This overlay hides any existing files in the container at that path and makes the host’s files immediately visible inside the container, even without using a `COPY` instruction in the Dockerfile.
-
-When `docker compose up` is executed, the container starts and Docker activates the bind mounts. Grafana then initializes by reading its provisioning directory from the mounted path. It detects the data source configuration and automatically connects to Prometheus, then reads the dashboard provisioning instructions to locate dashboard JSON files. Grafana loads these dashboards from the mounted directory, imports them into its internal database, and starts fully configured and ready to use.  
-
-By committing the Grafana provisioning files, a colleague can pull the repository, run docker compose up, and have Grafana automatically configure data sources and import dashboards, resulting in a ready-to-use setup with no manual steps. 🚀
 
 
 # Custom Metric and Dashboard
@@ -908,7 +472,7 @@ new Gauge({
 ```
 That's it! No need to manually inc() or dec() inside the functions. The collect() magic handles it.
 
-### Example 2: Creating the metric `transcendence_active_remote_games_total`
+### Example 2: Creating the metric `transcendence_active_remote_matches_total`
 
 For matches, we will distinguish between "1v1" and "Tournament" games using a **Label** in `backend/src/modules/game/match-manager.ts**`
 
@@ -924,8 +488,8 @@ import { Gauge } from 'prom-client';
 // ... imports
 
 // --- ADD THIS ---
-const activeGamesGauge = new Gauge({
-  name: 'transcendence_active_games_total',
+const activeMatchesGauge = new Gauge({
+  name: 'transcendence_active_remote_matches_total',
   help: 'Number of active matches currently running',
   labelNames: ['mode'], // We will label them as '1v1' or 'tournament'
 });
@@ -951,7 +515,7 @@ Locate the `createMatch` method. Add the increment line right before `return mat
     console.log(`[MatchManager] Match ${matchId} created by ${username}`);
 
     // --- ADD THIS ---
-    activeGamesGauge.inc({ mode: mode }); // +1 for this specific mode
+    activeMatchesGauge.inc({ mode: mode }); // +1 for this specific mode
     // ----------------
 
     this.notifyMatchListUpdate();
@@ -976,7 +540,7 @@ Locate the `cleanupMatch` method. Add the decrement line right before `this.matc
     }
 
     // --- ADD THIS ---
-    activeGamesGauge.dec({ mode: match.mode }); // -1
+    activeMatchesGauge.dec({ mode: match.mode }); // -1
     // ----------------
 
     // Remove match
@@ -988,11 +552,7 @@ Locate the `cleanupMatch` method. Add the decrement line right before `this.matc
 
 #### 4. Verify It Works
 
-1. **Restart your backend container**:
-```bash
-docker compose -f docker-compose.dev.yml up -d --build app
-```
-
+1. **Restart your application**
 2. **Open two browser tabs** and log in to your app (this connects the WebSockets).
 3. **Start a game** in one tab.
 4. **Check the raw metrics**:
@@ -1082,81 +642,86 @@ Prometheus creates a **separate time-series database entry** for every unique la
 **What to do instead?**
 If you want to track "Who visited what?", use a standard console.log in your backend. If ELK is setup, Kibana is the perfect tool to visualize "User X visited Page Y".
 
-# Alert
+# Provisioning
+When you rebuild a container, the data that was inside is lost and thus your setup; the data source connections, your beautiful custom dashboards and you (or your colleagues that want to see your magnificient dashboards) will have to reconfigure all of it. But you can automate this! Grafana has a feature called Provisioning that lets you define data sources and dashboards in YAML files. Since these are files, you can push them to Git.  
+When your colleagues start the project, Grafana will read these files and automatically set everything up for them.
 
-This is a classic debate in the DevOps world. Both systems are powerful, but they are built for different philosophies.
+Here is how to do it (it takes 3 steps):
 
-Here is the breakdown of the differences and why the "harder" Prometheus way is often the standard for infrastructure monitoring.
+### Step 1: Export Your Dashboard
 
-### 1. The Architecture Difference
+1. Go to your Dashboard in Grafana.
+2. Click the **Share** button (top right, usually looks like a "Share" icon).
+3. Go to the **Export** tab. Click **Export as code**
+4. **Download file**.
+5. **Move this JSON file** into your project folder. Let's create a structure like this:
+```
+transcendence/
+└── grafana/
+    └── dashboards/
+        └── my-dashboard.json  <-- Put your JSON file here
+```
 
-#### The "Prometheus Way" (Decoupled)
+### Step 2: Create Configuration Files
 
-* **How it works:** Prometheus evaluates the rules **internally**. It checks its own memory every 15 seconds. If a rule breaks, it fires an event to **Alertmanager**. Alertmanager then handles the email/Discord notification.
-* **Flow:** `Metric (RAM)` → `Prometheus (Rule Check)` → `Alertmanager (Routing)` → `Discord`.
+Create a `provisioning` folder inside your `grafana` folder:
+`transcendence/grafana/provisioning/`
 
-#### The "Grafana Way" (Unified)
+**A. Create `datasources.yaml`**
+File: `grafana/provisioning/datasources/datasources.yaml`
 
-* **How it works:** Grafana acts as an external client. It sends a **query over the network** to Prometheus (or SQL, or Logs) every 1 minute. It pulls the data, looks at it, and decides if it should alert.
-* **Flow:** `Grafana` → *Network Request* → `Prometheus` → *Data Reply* → `Grafana (Check)` → `Discord`.
+```yaml
+apiVersion: 1
 
-### 2. Comparison Table
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false # Prevents accidental changes in UI
 
-| Feature | Prometheus + Alertmanager | Grafana Unified Alerting |
-| --- | --- | --- |
-| **Configuration** | **YAML Files.** (Infrastructure as Code). No UI editor. | **GUI.** Click and drag in the browser. |
-| **Performance** | **Instant.** Checks data in-memory where it lives. Extremely efficient. | **Slower.** Must send network requests to query data. Heavy alerting can slow down your dashboards. |
-| **Reliability** | **High.** If Grafana crashes, Prometheus still wakes you up. | **Lower.** If Grafana (the visualization tool) crashes, you lose your monitoring. |
-| **Data Sources** | **Prometheus Only.** | **Everything.** Can mix SQL, Logs, and Metrics in one alert. |
-| **Complexity** | High (Requires 2 containers & YAML). | Low (Built-in). |
+```
 
-### 3. Why would we use Prometheus? (The "Why")
+**B. Create `dashboards.yaml`**
+File: `grafana/provisioning/dashboards/dashboards.yaml`
 
-You are right that Grafana is easier. So why is Prometheus the industry standard for the alerting layer?
+```yaml
+apiVersion: 1
 
-#### A. The "Emergency Room" Principle
+providers:
+  - name: 'Default'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/dashboards # Where we will mount the JSON files
 
-Imagine a hospital.
+```
 
-* **Prometheus** is the heart monitor machine beep-beep-ing next to the patient.
-* **Grafana** is the doctor's iPad showing the history of the heart rate.
+### Step 3: Update `docker-compose.dev.yml`
 
-If the iPad runs out of battery (Grafana crashes), **you still want the heart monitor to beep (Prometheus).** By decoupling alerting from visualization, you ensure that even if your beautiful dashboard goes offline, your critical alerts still fire.
+We need to mount these new configuration folders into the Grafana container.
 
-#### B. Network Independence
+Update your `grafana` service volumes:
 
-Prometheus rules live *with* the data.
+```yaml
+  grafana:
+    # ... existing config ...
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - sqlite-data:/var/lib/grafana/db-mount
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
 
-* If your internal network gets congested or the connection between Grafana and Prometheus drops, **Grafana alerts will fail** (or fire "No Data" false alarms).
-* **Prometheus alerts will keep working** because they don't need to talk to anyone to check the rule; they only need to talk out when there is a problem.
+```
 
-#### C. Requirements & "Strict" DevOps
+### Summary
 
-For your specific project:
+When you use `volumes: - ./local/path:/container/path` in `docker-compose.dev.yml`, Docker creates a bind mount that overlays a host directory onto a directory inside the container. This overlay hides any existing files in the container at that path and makes the host’s files immediately visible inside the container, even without using a `COPY` instruction in the Dockerfile.
 
-* **Requirement:** *"Set up alerting rules in Prometheus"*
-* **Evaluator Logic:** If you open Prometheus (`localhost:9090/alerts`) and the list is empty because you did everything in Grafana, a strict evaluator can mark this as **Incomplete**.
+When `docker compose up` is executed, the container starts and Docker activates the bind mounts. Grafana then initializes by reading its provisioning directory from the mounted path. It detects the data source configuration and automatically connects to Prometheus, then reads the dashboard provisioning instructions to locate dashboard JSON files. Grafana loads these dashboards from the mounted directory, imports them into its internal database, and starts fully configured and ready to use.  
 
-### Recommendation for Your Project
-
-Since you want to validate the module properly:
-
-1. **Write the Rules in Prometheus (`alert_rules.yml`):** This satisfies the core requirement strictly. You can show the evaluator the "FIRING" state in the Prometheus UI.
-2. **(Optional) Add Alertmanager:** If you want to actually *receive* the Discord message while keeping the "Prometheus architecture," add the `alertmanager` container.
-
-## Alertmanager
-Alertmanager is a component of the Prometheus ecosystem that handles alerts sent by client applications such as the Prometheus server.
-
-Its primary responsibilities are:
-
-1.  **Deduplication**: If multiple Prometheus instances send the same alert, Alertmanager groups them so you don't get spammed.
-2.  **Grouping**: It groups similar alerts into a single notification (e.g., if 10 services go down at once, you get one email listing all 10, rather than 10 separate emails).
-3.  **Routing**: It decides where to send the alerts based on their labels (e.g., "Critical" alerts go to PagerDuty, "Warning" alerts go to Slack/Email).
-4.  **Silencing**: It allows you to temporarily mute alerts for a given time (useful during scheduled maintenance).
-5.  **Inhibition**: It can suppress notifications for certain alerts if other alerts are already firing (e.g., if the entire cluster is down, don't alert for every single unreachable service).
-
-### How it fits in your project
-In your current setup (based on your alert_rules.yml), Prometheus is configured to **detect** the conditions (like `HighGameTraffic` or `InstanceDown`) and "fire" the alert.
-
-Currently, you **do not** have Alertmanager in your docker-compose.dev.yml stack. This means Prometheus will show the alerts in its UI (at `http://localhost:9090/alerts`), but it has nowhere to *send* them (like email, Slack, or Discord). To receive actual external notifications, you would need to add the Alertmanager service to your compose file and configure Prometheus to talk to it.
-
+By committing the Grafana provisioning files, a colleague can pull the repository, run docker compose up, and have Grafana automatically configure data sources and import dashboards, resulting in a ready-to-use setup with no manual steps. 🚀
