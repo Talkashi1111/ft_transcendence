@@ -76,6 +76,11 @@ function applyNavTranslationsInPlace(): void {
   if (langSelect) langSelect.value = getLang();
 }
 
+function setTextById(id: string, key: string): void {
+  const el = document.getElementById(id);
+  if (el) el.textContent = t(key);
+}
+
 // Utility functions
 function formatAddress(address: string): string {
   if (address.length <= 18) {
@@ -459,6 +464,9 @@ async function renderNavBar(
                     `
                   : ''
               }
+              <span class="text-sm text-gray-500">
+                ${escapeHtml(currentPage)}
+              </span>
             </div>
           </div>
           <!-- Mobile menu button -->
@@ -643,7 +651,7 @@ async function renderHome(app: HTMLElement) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-2xl mx-auto">
           <div class="bg-white rounded-lg shadow-lg p-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">${t('home.welcome')}</h2>
+            <h2 class="text-3xl font-bold text-gray-900 mb-6" id="home-welcome">${t('home.welcome')}</h2>
 
             <div class="flex justify-center">
               <img
@@ -1033,8 +1041,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   await syncLangFromAccount();
 
   onLangChange(() => {
-    if (currentPage !== 'play') {
+    if (currentPage !== 'play' && currentPage !== 'home') {
       render();
+      return;
+    }
+
+    console.log(currentPage);
+
+    if (currentPage === 'home') {
+      setTextById('home-welcome', 'home.welcome');
+      applyNavTranslationsInPlace();
       return;
     }
 

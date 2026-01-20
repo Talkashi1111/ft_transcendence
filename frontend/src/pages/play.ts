@@ -54,7 +54,7 @@ export function applyPlayInGameTranslations(): void {
   if (
     lastPlayScreenId !== 'game-screen' &&
     lastPlayScreenId !== 'result-screen' &&
-    lastPlayScreenId === 'remote-game-screen'
+    lastPlayScreenId !== 'remote-game-screen'
   )
     return;
 
@@ -596,6 +596,7 @@ function setupPlayPageEvents(): void {
     joinMatchScreen?.classList.add('hidden');
     remoteGameScreen?.classList.add('hidden');
     lastPlayScreenId = screen.id;
+    console.log('[Play] Screen:', lastPlayScreenId);
     screen.classList.remove('hidden');
 
     // Subscribe to match list updates when join screen is visible
@@ -1075,7 +1076,7 @@ function setupPlayPageEvents(): void {
         remoteConnectionStatus.textContent = `Match ID: ${match.id.slice(0, 8)}...`;
       }
 
-      toast.info('Rejoining your active match...');
+      toast.info(t('play.rejoining.active.match'));
 
       // Create remote game and reconnect
       remoteGame = new RemotePongGame(remotePongCanvas, {
@@ -1083,7 +1084,7 @@ function setupPlayPageEvents(): void {
           handleRemoteGameEnd(winner, score1, score2);
         },
         onOpponentJoined: (opponentName) => {
-          toast.success(t('friends.join.match.toast.success', { opponentName }));
+          toast.success(t('play.remote.opponent.join.match.toast.success', { opponentName }));
         },
         onOpponentLeft: () => {
           toast.warning(t('friends.left.match.toast.warning'));
@@ -1126,7 +1127,7 @@ function setupPlayPageEvents(): void {
           }
         },
         onMatchJoined: (_matchId, _opponentName, playerNumber) => {
-          toast.success(t('friends.rejoin.match.toast.success', { playerNumber }));
+          toast.success(t('play.remote.join.match.toast.success', { playerNumber }));
         },
       });
 
@@ -1276,7 +1277,7 @@ function setupPlayPageEvents(): void {
           }
         },
         onMatchJoined: (_matchId, _opponent, playerNumber) => {
-          toast.success(t('friends.join.match.toast.success', { playerNumber }));
+          toast.success(t('play.remote.join.match.toast.success', { playerNumber }));
         },
       });
 
@@ -1471,9 +1472,9 @@ function setupPlayPageEvents(): void {
       showTournamentPhase('bracket');
       renderTournamentBracket(); // Show full bracket with TBD
       startNextTournamentMatch();
-      toast.success(t('friends.start.tournament.toast.success'));
+      toast.success(t('play.local.tournament.started'));
     } else {
-      toast.error(t('friends.start.tournament.toast.error'));
+      toast.error(t('play.local.tournament.toast.error'));
     }
   });
 
@@ -1518,7 +1519,7 @@ function setupPlayPageEvents(): void {
       // Reset tournament
       showScreen(modeSelection!);
       tournamentManager = null;
-      toast.info('Tournament ended');
+      toast.info(t('play.local.tournament.ended'));
     }
   });
 
