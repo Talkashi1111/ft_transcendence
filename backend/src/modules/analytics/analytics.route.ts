@@ -1,17 +1,21 @@
 import { FastifyInstance } from 'fastify';
-import { Counter } from 'prom-client';
+import { Counter, register } from 'prom-client';
 
 // 1. Define the Metric (Global variable)
-const pageViewCounter = new Counter({
-  name: 'transcendence_page_views_total',
-  help: 'Total number of page views by authenticated users',
-  labelNames: ['page'], // We will label counts by page name (e.g., 'home', 'play')
-});
+const COUNTER_NAME = 'transcendence_page_views_total';
+
+const pageViewCounter =
+  (register.getSingleMetric(COUNTER_NAME) as Counter) ||
+  new Counter({
+    name: COUNTER_NAME,
+    help: 'Total number of page views by authenticated users',
+    labelNames: ['page'],
+  });
 
 // Initialize all known pages to 0 so they appear in Grafana immediately
-const knownPages = ['home', 'play', 'tournaments', 'settings', 'friends'];
-knownPages.forEach(page => {
-  // .labels(...) creates the time series with value 0
+const knownPages = ['home', 'play', 'tournaments', 'settings', 'friends', 'stats'];
+
+knownPages.forEach((page) => {
   pageViewCounter.labels(page).inc(0);
 });
 

@@ -12,29 +12,30 @@ The goal of this minor module is to set up a comprehensive monitoring system usi
 
 This minor module aims to establish a robust monitoring infrastructure using Prometheus and Grafana , enabling real-time visibility into system metrics and proactive issue detection for improved system performance and reliability.
 
-# Summary and quick pick-up
-
-In Greek mythology, Prometheus is a defiant Titan renowned for stealing fire from the gods and gifting it to humanity, an act that brought both progress to mankind and eternal punishment upon himself. His name means "forethought".  
-In IT, Prometheus is an open-source monitoring and alerting system that collects time-series metrics from applications and infrastructure, stores them efficiently, and enables querying and alerting based on those metrics. A metric is a quantitative measurement that represents the performance, behavior, or state of a system, application, or resource over time. In short, metric = labeled data.
+# Quick pick-up
 
 Prometheus collects from:
+
 - **Node Exporter** = Monitor the **Computer**.
 - **cAdvisor** = Monitor the **Docker Containers**.
-- **Your App Metrics** = Monitor the **Code**.  
+- **Your App Metrics** = Monitor the **Code**.
 
 Grafana is the Unified Dashboard that centralizes all these different data streams.
 
-### Development
-`make monitor` will start monitoring containers. `make halt-monitor` will stop monitoring containers.  
-When monitoring services are running, raw metrics are accessible:
-- application: http://localhost:3000/metrics
-- node-exporter: htt
-- cadvisor
-- prometheus: http://localhost:
-- alertmanager
-- grafana.  
+### Developement
 
+Commands to run ON THE HOST (NOT INSIDE A CONTAINER):  
+`make monitor` will start the monitoring containers (does not start the application container).  
+`make halt-monitor` will stop the monitoring containers.
 
+Access grafana with http://localhost:3001. Log in with the Grafana Access of your .env file. At the top of the page, click "Dashboards", you should see a list of 4 dashboards. "Transcendence Overview" is the custom dashboard. The other ones are imported (pre-made).
+
+#### To test alerts:
+
+- Create the file `./prometheus/alertmanager.yml` (copy `./prometheus/alertmanager.example.yml`)
+- Enter your discord webhook next to `webhook_url` in `alertmanager.yml`
+- Restart alertmanager container.
+- Trigger an alert: Play two remote matches at the same time. You should receive an alert on your discord channel.
 
 # Initial Set Up
 
@@ -90,9 +91,10 @@ scrape_configs:
 ```
 
 `job_name` is:
-* A **group name for scrape targets**
-* A **mandatory label added to all metrics**
-* A **key dimension for querying, alerting, and debugging**
+
+- A **group name for scrape targets**
+- A **mandatory label added to all metrics**
+- A **key dimension for querying, alerting, and debugging**
 
 ## 4. Update your `docker-compose.yml` and restart your infrastructure
 
@@ -160,41 +162,44 @@ With your app running, open these three URLs in your browser:
 #### - The source: http://localhost:3000/metrics
 
 What it is: The Exporter (Raw Data). Service: Your Node.js Backend (app).  
-This is the endpoint we created in backend/src/app.ts by registering the fastify-metrics plugin. It translates your server's internal state (memory usage, request counts) into a text format that Prometheus can read.  Humans rarely read this. This page exists solely so Prometheus can visit it every 5 seconds to "scrape" (copy) the data.
+This is the endpoint we created in backend/src/app.ts by registering the fastify-metrics plugin. It translates your server's internal state (memory usage, request counts) into a text format that Prometheus can read. Humans rarely read this. This page exists solely so Prometheus can visit it every 5 seconds to "scrape" (copy) the data.
 
 #### - The collector: http://localhost:9090/
 
 What it is: Prometheus (The Database). http://localhost:9090/ serves the Prometheus built-in Web UI. Service: The prometheus container defined in docker-compose.dev.yml. Role: It is the "brain" that stores metrics history.  
 How it works:
+
 - It reads your prometheus.yml configuration file.
 - It connects to app:3000/metrics every 5 seconds.
 - It saves that data with a timestamp.
-Why visit this? To debug. If your graphs are empty, you check here to see if the "Target" (app) is UP or DOWN. You can also write raw "PromQL" queries here to test them.
+  Why visit this? To debug. If your graphs are empty, you check here to see if the "Target" (app) is UP or DOWN. You can also write raw "PromQL" queries here to test them.
 
 #### - The visualizer: http://localhost:3001
 
 What it is: Grafana (The Dashboard). Service: The grafana container defined in docker-compose.dev.yml. Role: It makes the data beautiful and understandable.  
 How it works:
+
 - It does not touch your backend directly.
 - It connects to Prometheus (internally at http://prometheus:9090).
 - It asks Prometheus: "Give me the CPU usage for the last hour."
 - It draws the line chart you see.
 
 ### Summary of the Flow:
+
 - Backend (:3000) says: "I am using 50MB of RAM right now."
 - Prometheus (:9090) asks every 5s: "How much RAM?" -> Saves "50MB at 10:00:05".
 - Grafana (:3001) asks Prometheus: "Draw me a graph of RAM usage."
 
-## 6. Connect Grafana to Prometheus 
+## 6. Connect Grafana to Prometheus
+
 - **Open Grafana** on [http://localhost:3001].
 - Click the **Menu** (hamburger icon) in the top-left.
 - Expand **Connections**.
 - Click **Data source**. Then **Add data source**.
 - Select **Prometheus** from the list.
 - Crucial Step: In the Prometheus server URL field, enter exactly this: `http://prometheus:9090`
-(Note: We use prometheus as the hostname because inside the Docker network, Grafana sees the container by its service name, not localhost).
+  (Note: We use prometheus as the hostname because inside the Docker network, Grafana sees the container by its service name, not localhost).
 - Save & test. You should see a green checkmark saying "Successfully queried the Prometheus API".
-
 
 ## 7. Import a Pre-made Dashboard
 
@@ -210,7 +215,7 @@ Looking at raw text is not very useful. Instead of building charts from scratch,
 - Click **Import**.
 
 Et voilà! You should see charts now visualizing metrics of your app.  
-Note: We configured Prometheus to scrape data  from the app every 5 seconds (scrape_interval: 5s). If you set Grafana (that scrapes from prometheus) faster than that (like 1s), it would just show the same data point 5 times in a row.
+Note: We configured Prometheus to scrape data from the app every 5 seconds (scrape_interval: 5s). If you set Grafana (that scrapes from prometheus) faster than that (like 1s), it would just show the same data point 5 times in a row.
 
 # Data exporters and integration
 
@@ -220,12 +225,13 @@ The difference between **Integration** and **Exporters** is simply: **"Who is ge
 
 ### Summary Comparison
 
-| Feature | Integration (Instrumentation) | Exporter |
-| --- | --- | --- |
-| **Target** | Your own code (White Box) | Third-party software (Black Box) |
-| **Who serves data?** | The App itself | A separate "Translator" process |
-| **Complexity** | Requires coding knowledge | Requires configuration (Docker) |
-| **Example** | `fastify-metrics` in your backend | `node_exporter` for Linux, `mysqld_exporter` |
+| Feature              | Integration (Instrumentation)     | Exporter                                     |
+| -------------------- | --------------------------------- | -------------------------------------------- |
+| **Target**           | Your own code (White Box)         | Third-party software (Black Box)             |
+| **Who serves data?** | The App itself                    | A separate "Translator" process              |
+| **Complexity**       | Requires coding knowledge         | Requires configuration (Docker)              |
+| **Example**          | `fastify-metrics` in your backend | `node_exporter` for Linux, `mysqld_exporter` |
+
 <br/>
 
 ## 1. Integration (Direct Instrumentation)
@@ -234,9 +240,9 @@ The difference between **Integration** and **Exporters** is simply: **"Who is ge
 
 This is used when **you own the source code**. You modify your application code to "speak" the Prometheus language natively.
 
-* **How it works:** You import a library (like `fastify-metrics` for Node.js, or the official Python client) directly into your project. Inside your code, you write instructions like `request_counter.inc()`.
-* **The Result:** Your application itself opens a port (e.g., `/metrics`) and serves the data.
-* **Context:** Used for your custom APIs, background workers, or any software you are building yourself.
+- **How it works:** You import a library (like `fastify-metrics` for Node.js, or the official Python client) directly into your project. Inside your code, you write instructions like `request_counter.inc()`.
+- **The Result:** Your application itself opens a port (e.g., `/metrics`) and serves the data.
+- **Context:** Used for your custom APIs, background workers, or any software you are building yourself.
 
 ## 2. Exporters
 
@@ -244,17 +250,19 @@ This is used when **you own the source code**. You modify your application code 
 
 This is used for **software you did not write** (Third-party software). You cannot open the source code of the Linux Kernel, PostgreSQL, or NGINX and add your own variables to it.
 
-* **How it works:** You run a small, separate program called an **Exporter** right next to the target.
-1. The Exporter asks the target (e.g., Database): *"How many connections do you have?"* (using the database's own internal API).
+- **How it works:** You run a small, separate program called an **Exporter** right next to the target.
+
+1. The Exporter asks the target (e.g., Database): _"How many connections do you have?"_ (using the database's own internal API).
 2. The Database replies in its own format.
 3. The Exporter **translates** that answer into Prometheus text format.
 4. Prometheus scrapes the Exporter, not the Database directly.
 
-* **Context:** Used for Operating Systems (Node Exporter), Databases (Postgres Exporter), Hardware, or Cloud APIs.
+- **Context:** Used for Operating Systems (Node Exporter), Databases (Postgres Exporter), Hardware, or Cloud APIs.
 
 ### Example Set up
 
 Add to `docker-compose.dev.yml`:
+
 ```YAML
 # ... other services ...
 
@@ -277,6 +285,7 @@ Add to `docker-compose.dev.yml`:
 ```
 
 Update `prometheus.yml`:
+
 ```YAML
 scrape_configs:
   - job_name: 'ft_transcendence_backend'
@@ -288,6 +297,7 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 ```
+
 <br>
 
 **Node Exporter monitors outside the container.**
@@ -295,26 +305,30 @@ Normally, a Docker container is isolated—it lives in its own little bubble and
 
 However, node-exporter is designed to monitor the Host Machine (the actual server or laptop running Docker). To do this from inside a container, we have to "poke holes" in the container's isolation using volumes.
 
-These volume mappings are the key. We are mounting the host's critical system directories *into* the container so `node-exporter` can read them.
+These volume mappings are the key. We are mounting the host's critical system directories _into_ the container so `node-exporter` can read them.
 
 **`/proc:/host/proc:ro`**:
-* **Host (`/proc`)**: This is a special virtual folder in Linux. It contains direct information from the **Kernel** (CPU info, memory stats, running processes).
-* **Container (`/host/proc`)**: We map it to `/host/proc` inside the container.
-* **`:ro`**: Read-Only. We don't want the container to *change* our system settings, only *read* them.
+
+- **Host (`/proc`)**: This is a special virtual folder in Linux. It contains direct information from the **Kernel** (CPU info, memory stats, running processes).
+- **Container (`/host/proc`)**: We map it to `/host/proc` inside the container.
+- **`:ro`**: Read-Only. We don't want the container to _change_ our system settings, only _read_ them.
 
 **`/sys:/host/sys:ro`**:
-* Similar to `/proc`, but for hardware info (disk stats, network devices, power management).
+
+- Similar to `/proc`, but for hardware info (disk stats, network devices, power management).
 
 **`/:/rootfs:ro`**:
-* This maps your **entire hard drive** (root `/`) to `/rootfs` inside the container. This allows the exporter to measure disk usage (e.g., "How much space is left on the main disk?").
 
-By default, `node-exporter` looks at `/proc` and `/sys` (which would be the *container's* fake system folders). We need to tell it: *"Don't look at your own folders. Look at the host folders we just mounted."*
-* **`--path.procfs=/host/proc`**: "Hey exporter, when you want CPU stats, look in `/host/proc` (which is actually the real computer's `/proc`)."
-* **`--path.sysfs=/host/sys`**: "Same for hardware stats."
-* **`--collector.filesystem.mount-points-exclude...`**:
-* This is a regex filter.
-* It tells the exporter: *"Ignore these specific weird folders."*
-* Since we mounted the whole hard drive, we don't want it to count the virtual folders (like `/sys` or `/proc`) as "Disk Space" because they aren't real disks. This prevents duplicate or garbage data in your graphs.
+- This maps your **entire hard drive** (root `/`) to `/rootfs` inside the container. This allows the exporter to measure disk usage (e.g., "How much space is left on the main disk?").
+
+By default, `node-exporter` looks at `/proc` and `/sys` (which would be the _container's_ fake system folders). We need to tell it: _"Don't look at your own folders. Look at the host folders we just mounted."_
+
+- **`--path.procfs=/host/proc`**: "Hey exporter, when you want CPU stats, look in `/host/proc` (which is actually the real computer's `/proc`)."
+- **`--path.sysfs=/host/sys`**: "Same for hardware stats."
+- **`--collector.filesystem.mount-points-exclude...`**:
+- This is a regex filter.
+- It tells the exporter: _"Ignore these specific weird folders."_
+- Since we mounted the whole hard drive, we don't want it to count the virtual folders (like `/sys` or `/proc`) as "Disk Space" because they aren't real disks. This prevents duplicate or garbage data in your graphs.
 
 ### Summary
 
@@ -325,6 +339,7 @@ By default, `node-exporter` looks at `/proc` and `/sys` (which would be the *con
 **Result:** A containerized program that can tell you exactly how hot your physical CPU is running!
 
 ## cAdvisor
+
 **cAdvisor** (short for **C**ontainer **Advisor**) is an open-source tool created by **Google**. It is an **Exporter** specifically designed to monitor **Docker Containers**.
 
 ### The "Missing Piece" of Your Puzzle
@@ -332,29 +347,28 @@ By default, `node-exporter` looks at `/proc` and `/sys` (which would be the *con
 To understand why you might need it, let's look at the layers of monitoring you currently have:
 
 1. **Node Exporter:** Monitors the **Host Machine** (Hardware).
-* *Question it answers:* "Is my laptop's CPU at 100%?"
-* *Blind spot:* It doesn't know *which* program is using the CPU. It just sees the total.
 
+- _Question it answers:_ "Is my laptop's CPU at 100%?"
+- _Blind spot:_ It doesn't know _which_ program is using the CPU. It just sees the total.
 
 2. **Fastify Metrics (Integration):** Monitors your **Application Logic**.
-* *Question it answers:* "How many HTTP requests am I handling?"
-* *Blind spot:* It doesn't know how much RAM the container is actually using compared to its limit.
 
+- _Question it answers:_ "How many HTTP requests am I handling?"
+- _Blind spot:_ It doesn't know how much RAM the container is actually using compared to its limit.
 
 3. **cAdvisor:** Monitors the **Containers**.
-* *Question it answers:* "Is the `grafana` container using more RAM than the `backend` container?"
-* *Role:* It talks to the Docker Daemon to get stats for **every running container** individually.
 
-
+- _Question it answers:_ "Is the `grafana` container using more RAM than the `backend` container?"
+- _Role:_ It talks to the Docker Daemon to get stats for **every running container** individually.
 
 ### What Metrics Does It Give?
 
 If you add cAdvisor, you can visualize:
 
-* **CPU Usage per Container:** "The backend is using 50% CPU, but the Database is idle."
-* **Memory Usage:** "The Grafana container is leaking memory."
-* **Network I/O:** "Which container is downloading so much data?"
-* **Dropped Packets:** Useful for debugging network issues between containers.
+- **CPU Usage per Container:** "The backend is using 50% CPU, but the Database is idle."
+- **Memory Usage:** "The Grafana container is leaking memory."
+- **Network I/O:** "Which container is downloading so much data?"
+- **Dropped Packets:** Useful for debugging network issues between containers.
 
 ### How to Add It (Optional but Recommended)
 
@@ -363,45 +377,47 @@ If you want to validate the "Infrastructure Monitoring" requirement thoroughly, 
 **Add this to your `docker-compose.dev.yml`:**
 
 ```yaml
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
-    ports:
-      - "8081:8080" # 8080 might be used by caddy in production
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    networks:
-      - transcendence
+cadvisor:
+  image: gcr.io/cadvisor/cadvisor:latest
+  container_name: cadvisor
+  ports:
+    - '8081:8080' # 8080 might be used by caddy in production
+  volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:ro
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+    - /dev/disk/:/dev/disk:ro
+  networks:
+    - transcendence
 ```
 
 **And add the job to `prometheus.yml`:**
 
 ```yaml
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080'] # Even though we map to 8081 externally, use 8080 internally (they are in the same Docker network)
+- job_name: 'cadvisor'
+  static_configs:
+    - targets: ['cadvisor:8080'] # Even though we map to 8081 externally, use 8080 internally (they are in the same Docker network)
 ```
 
-**Summary:**  
+**Summary:**
 
 Prometheus collects from:
+
 - **Node Exporter** = Monitor the **Computer**.
 - **cAdvisor** = Monitor the **Docker Containers**.
-- **Your App Metrics** = Monitor the **Code**.  
+- **Your App Metrics** = Monitor the **Code**.
 
 Grafana is the Unified Dashboard that centralizes all these different data streams.
 
 <br/>
 
 # Visualize your SQLite Data
-Since you are using SQLite (a file-based database) and Prisma, the best way to "monitor" it in Grafana is to install the **SQLite Data Source Plugin** and not an exporter.  
+
+Since you are using SQLite (a file-based database) and Prisma, the best way to "monitor" it in Grafana is to install the **SQLite Data Source Plugin** and not an exporter.
 
 Exporter: Target (OS) -> Exporter -> Prometheus -> Grafana  
-Plugin: SQLite File -> Grafana. (Prometheus is not involved).  
+Plugin: SQLite File -> Grafana. (Prometheus is not involved).
 
 When you use this plugin, Grafana reads your database.db file directly to count rows.
 This will allow you to run SQL queries directly in Grafana (e.g., "How many users are registered?", "How many friend requests are pending?") and visualize the answers.
@@ -418,23 +434,23 @@ You need to do two things:
 **Open `docker-compose.dev.yml` and modify the `grafana` service:**
 
 ```yaml
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=frser-sqlite-datasource # <--- ADD THIS
-    volumes:
-      - sqlite-data:/var/lib/grafana/db-mount # <--- ADD THIS (Mounts your DB volume)
-    networks:
-      - transcendence
-    depends_on:
-      - prometheus
+grafana:
+  image: grafana/grafana:latest
+  container_name: grafana
+  ports:
+    - '3001:3000'
+  environment:
+    - GF_SECURITY_ADMIN_PASSWORD=admin
+    - GF_INSTALL_PLUGINS=frser-sqlite-datasource # <--- ADD THIS
+  volumes:
+    - sqlite-data:/var/lib/grafana/db-mount # <--- ADD THIS (Mounts your DB volume)
+  networks:
+    - transcendence
+  depends_on:
+    - prometheus
 ```
 
-*(Make sure `sqlite-data` matches the volume name used by your `app` service).*
+_(Make sure `sqlite-data` matches the volume name used by your `app` service)._
 
 ### Step 2: Apply Changes
 
@@ -450,28 +466,34 @@ docker compose -f docker-compose.dev.yml up -d --build grafana
 2. Go to **Connections** > **Data Sources** > **Add data source**.
 3. Search for **SQLite** and select it.
 4. **Configure the Path**:
-* **Path**: `/var/lib/grafana/db-mount/dev.db`
-* *(Note: The filename `dev.db` depends on what you named it in your `.env` file. You might need to check your backend logs or file structure to confirm the exact name inside that volume. It is often `dev.db` or `database.db`)*.
-5. Click **Save & test**.
-* *Success:* "Data source is working".
-* *Error:* "file is encrypted or is not a database": Check the filename.
-* *Error:* "permission denied": This is a common Docker issue. Try running `chmod 644` on the db file or running the container as root (temporarily) to test.
 
+- **Path**: `/var/lib/grafana/db-mount/dev.db`
+- _(Note: The filename `dev.db` depends on what you named it in your `.env` file. You might need to check your backend logs or file structure to confirm the exact name inside that volume. It is often `dev.db` or `database.db`)_.
+
+5. Click **Save & test**.
+
+- _Success:_ "Data source is working".
+- _Error:_ "file is encrypted or is not a database": Check the filename.
+- _Error:_ "permission denied": This is a common Docker issue. Try running `chmod 644` on the db file or running the container as root (temporarily) to test.
 
 # Custom Metric and Dashboard
 
 If you want to monitor some data of your application, for example the number of users currently connected, you'll have to create a custom metric in your code.
 
 ### Example 1: Creating the metric `transcendence_connected_users_total`
+
 In already implemented code (great work from my colleague there!), I have map tracking connected sockets.
 
 #### A. Add the import at the top of the file:
+
 ```ts
 import { Gauge } from 'prom-client';
 ```
+
 Note: 'prom-client' may be underlined in red. This happens because 'prom-client' is currently a "hidden" dependency (installed automatically by fastify-metrics, but not listed in your package.json for you to use directly). To fix this, you need to install it explicitly. Run this command in your backend; `pnpm add prom-client`.
 
 #### B. Define the Gauge
+
 ```ts
 // Track connected sockets by user ID
 const connectedSockets = new Map<string, AuthenticatedSocket>();
@@ -488,6 +510,7 @@ new Gauge({
   },
 });
 ```
+
 That's it! No need to manually inc() or dec() inside the functions. The collect() magic handles it.
 
 ### Example 2: Creating the metric `transcendence_active_remote_matches_total`
@@ -512,7 +535,6 @@ const activeMatchesGauge = new Gauge({
   labelNames: ['mode'], // We will label them as '1v1' or 'tournament'
 });
 // ----------------
-
 ```
 
 **C. Update `createMatch` (Increment):**
@@ -526,7 +548,7 @@ Locate the `createMatch` method. Add the increment line right before `return mat
     mode: MatchMode = '1v1'
   ): ActiveMatch {
     // ... existing code ...
-    
+
     this.matches.set(matchId, match);
     this.playerMatches.set(playerId, matchId);
 
@@ -574,8 +596,9 @@ Locate the `cleanupMatch` method. Add the decrement line right before `this.matc
 2. **Open two browser tabs** and log in to your app (this connects the WebSockets).
 3. **Start a game** in one tab.
 4. **Check the raw metrics**:
-Go to `http://localhost:3000/metrics`.
-Search (Ctrl+F) for `transcendence`. You should see:
+   Go to `http://localhost:3000/metrics`.
+   Search (Ctrl+F) for `transcendence`. You should see:
+
 ```text
 # HELP transcendence_connected_users_total Number of users currently connected...
 # TYPE transcendence_connected_users_total gauge
@@ -595,7 +618,7 @@ Think of **Labels** as "Tags" or "Categories" that allow you to split one metric
 ### 1. `labelNames: ['mode']` (The Setup)
 
 When you define the Gauge, you are telling Prometheus:
-*"I am going to track 'Active Matches', but I don't want just one big total number. I want to be able to split this number based on the **Game Mode**."*
+_"I am going to track 'Active Matches', but I don't want just one big total number. I want to be able to split this number based on the **Game Mode**."_
 
 If you didn't do this, you would only know that "5 games are running," but you wouldn't know if they were 1v1s or Tournaments.
 
@@ -603,15 +626,14 @@ If you didn't do this, you would only know that "5 games are running," but you w
 
 When you actually increment the counter, you have to be specific about **which category** you are adding to.
 
-* **The Syntax:** `{ mode: mode }` is a standard JavaScript object.
-* The **first word** (`mode`) is the **Key**: It must match the string you defined in `labelNames`.
-* The **second word** (`mode`) is your **Variable**: It holds the actual value (like `'1v1'` or `'tournament'`).
+- **The Syntax:** `{ mode: mode }` is a standard JavaScript object.
+- The **first word** (`mode`) is the **Key**: It must match the string you defined in `labelNames`.
+- The **second word** (`mode`) is your **Variable**: It holds the actual value (like `'1v1'` or `'tournament'`).
 
 **What actually happens behind the scenes:**
 
 1. If `mode` is `'1v1'`, the library finds the specific counter for `1v1` and adds 1.
-2. If `mode` is `'tournament'`, it finds the *different* counter for `tournament` and adds 1.
-
+2. If `mode` is `'tournament'`, it finds the _different_ counter for `tournament` and adds 1.
 
 ### The Result in Prometheus
 
@@ -631,13 +653,14 @@ transcendence_active_remote_matches_total{mode="tournament"} 1
 Now, in Grafana, you can do two different things with the exact same metric:
 
 1. **See the Total:**
-`sum(transcendence_active_remote_matches_total)` -> Result: **4**
+   `sum(transcendence_active_remote_matches_total)` -> Result: **4**
 2. **See Specifics:**
-`transcendence_active_remote_matches_total{mode="tournament"}` -> Result: **1**
+   `transcendence_active_remote_matches_total{mode="tournament"}` -> Result: **1**
 
 Without `labelNames`, you would have been forced to create two completely separate variables like `activeMatches1v1Gauge` and `activeMatchesTournamentGauge`, which is messy!
 
 ## A common mistake: "Cardinality Explosion"
+
 Metrics from frontend: Page Views tracking. Every time a user navigates to a new URL (e.g., /game, /profile, /chat), you send a metric.
 If 100 users view 1 page each, or 1 user views 100 pages, the graph looks exactly the same (Total = 100).
 
@@ -649,18 +672,19 @@ This is the most common mistake in Prometheus, called the **"Cardinality Explosi
 **Why it is dangerous:**
 Prometheus creates a **separate time-series database entry** for every unique label combination.
 
-* If you label by `page`: You have ~10 pages. Prometheus tracks 10 metrics. (Excellent ✅)
-* If you label by `user_id`: If you have 1,000 users, Prometheus tries to manage **1,000 separate metrics** for just this one counter. If you have 10,000 users, your Prometheus container will likely **run out of RAM and crash**.
+- If you label by `page`: You have ~10 pages. Prometheus tracks 10 metrics. (Excellent ✅)
+- If you label by `user_id`: If you have 1,000 users, Prometheus tries to manage **1,000 separate metrics** for just this one counter. If you have 10,000 users, your Prometheus container will likely **run out of RAM and crash**.
 
 **The Rule of Thumb:**
 
-* **Prometheus (Metrics):** Use for data with **few** possibilities (Page names, Status codes 200/404, Game Modes).
-* **Logs (ELK/Console):** Use for data with **many** possibilities (User IDs, Match IDs, Chat messages).
+- **Prometheus (Metrics):** Use for data with **few** possibilities (Page names, Status codes 200/404, Game Modes).
+- **Logs (ELK/Console):** Use for data with **many** possibilities (User IDs, Match IDs, Chat messages).
 
 **What to do instead?**
 If you want to track "Who visited what?", use a standard console.log in your backend. If ELK is setup, Kibana is the perfect tool to visualize "User X visited Page Y".
 
 # Provisioning
+
 When you rebuild a container, the data that was inside is lost and thus your setup; the data source connections, your beautiful custom dashboards and you (or your colleagues that want to see your magnificient dashboards) will have to reconfigure all of it. But you can automate this! Grafana has a feature called Provisioning that lets you define data sources and dashboards in YAML files. Since these are files, you can push them to Git.  
 When your colleagues start the project, Grafana will read these files and automatically set everything up for them.
 
@@ -673,6 +697,7 @@ Here is how to do it (it takes 3 steps):
 3. Go to the **Export** tab. Click **Export as code**
 4. **Download file**.
 5. **Move this JSON file** into your project folder. Let's create a structure like this:
+
 ```
 transcendence/
 └── grafana/
@@ -698,7 +723,6 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: false # Prevents accidental changes in UI
-
 ```
 
 **B. Create `dashboards.yaml`**
@@ -716,7 +740,6 @@ providers:
     updateIntervalSeconds: 10
     options:
       path: /etc/grafana/dashboards # Where we will mount the JSON files
-
 ```
 
 ### Step 3: Update `docker-compose.dev.yml`
@@ -726,20 +749,19 @@ We need to mount these new configuration folders into the Grafana container.
 Update your `grafana` service volumes:
 
 ```yaml
-  grafana:
-    # ... existing config ...
-    volumes:
-      - grafana-storage:/var/lib/grafana
-      - sqlite-data:/var/lib/grafana/db-mount
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/etc/grafana/dashboards
-
+grafana:
+  # ... existing config ...
+  volumes:
+    - grafana-storage:/var/lib/grafana
+    - sqlite-data:/var/lib/grafana/db-mount
+    - ./grafana/provisioning:/etc/grafana/provisioning
+    - ./grafana/dashboards:/etc/grafana/dashboards
 ```
 
 ### Summary
 
 When you use `volumes: - ./local/path:/container/path` in `docker-compose.dev.yml`, Docker creates a bind mount that overlays a host directory onto a directory inside the container. This overlay hides any existing files in the container at that path and makes the host’s files immediately visible inside the container, even without using a `COPY` instruction in the Dockerfile.
 
-When `docker compose up` is executed, the container starts and Docker activates the bind mounts. Grafana then initializes by reading its provisioning directory from the mounted path. It detects the data source configuration and automatically connects to Prometheus, then reads the dashboard provisioning instructions to locate dashboard JSON files. Grafana loads these dashboards from the mounted directory, imports them into its internal database, and starts fully configured and ready to use.  
+When `docker compose up` is executed, the container starts and Docker activates the bind mounts. Grafana then initializes by reading its provisioning directory from the mounted path. It detects the data source configuration and automatically connects to Prometheus, then reads the dashboard provisioning instructions to locate dashboard JSON files. Grafana loads these dashboards from the mounted directory, imports them into its internal database, and starts fully configured and ready to use.
 
 By committing the Grafana provisioning files, a colleague can pull the repository, run docker compose up, and have Grafana automatically configure data sources and import dashboards, resulting in a ready-to-use setup with no manual steps. 🚀

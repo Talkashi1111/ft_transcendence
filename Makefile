@@ -15,11 +15,7 @@ up:        ## start dev stack
 
 .PHONY: monitor
 monitor:    ## start ONLY monitoring services (in background)
-	docker compose -f docker-compose.dev.yml up -d --no-recreate $(MONITORING_SERVICES)
-
-.PHONY: halt-monitor
-halt-monitor: ## stop ONLY monitoring services
-	docker compose -f docker-compose.dev.yml stop $(MONITORING_SERVICES)
+	docker compose -f docker-compose.dev.yml up -d $(MONITORING_SERVICES)
 
 .PHONY: exec
 exec:      ## execute command in app container
@@ -29,13 +25,17 @@ exec:      ## execute command in app container
 halt:      ## stop dev stack
 	docker compose -f docker-compose.dev.yml stop
 
+.PHONY: halt-monitor
+halt-monitor: ## stop ONLY monitoring services
+	docker compose -f docker-compose.dev.yml stop $(MONITORING_SERVICES)
+
 .PHONY: rebuild
 rebuild:   ## rebuild dev stack
 	docker compose -f docker-compose.dev.yml up -d --force-recreate --no-deps --build app
 
 .PHONY: destroy
 destroy:    ## destroy dev stack
-	docker compose -f docker-compose.dev.yml down --rmi local -v --remove-orphans
+	docker compose -f docker-compose.dev.yml --profile monitoring down --rmi local -v --remove-orphans
 
 .PHONY: prune
 prune:	 ## prune unused docker resources

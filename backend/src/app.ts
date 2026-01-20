@@ -10,6 +10,7 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyMetrics from 'fastify-metrics';
+import { register } from 'prom-client';
 import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
 import avatarRoutes from './modules/user/avatar.route.js';
@@ -123,6 +124,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       signed: false, // We'll handle cookie signing separately
     },
   });
+
+  // Clear Prometheus register to avoid "Metric already registered" errors during tests/reloads
+  register.clear();
 
   // Register Metrics plugin
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

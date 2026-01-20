@@ -14,7 +14,7 @@ describe('2FA Module', () => {
 
   // Clean up after all tests
   afterAll(async () => {
-    await server.close();
+    if (server) await server.close();
   });
 
   const testUser = {

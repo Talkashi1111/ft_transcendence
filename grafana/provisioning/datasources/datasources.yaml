@@ -11,6 +11,7 @@ datasources:
   - name: 'Application DB'
     type: frser-sqlite-datasource
     access: proxy
-    url: /var/lib/grafana/db-mount/database.db
+    jsonData:
+      path: /var/lib/grafana/db-mount/database.db
     isDefault: false
     editable: false

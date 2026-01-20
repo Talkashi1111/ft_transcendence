@@ -95,7 +95,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=frser-sqlite-datasource
-      
+
       - GF_SECURITY_COOKIE_SECURE=true # Adds 'Secure' flag to cookies grafana gives you when logged in so they are only sent over HTTPS. If a hacker intercepts your cookies over HTTP, they can't use them to hijack your session.
       - GF_SERVER_ROOT_URL=https://localhost:3001 # It tells Grafana its public URL so that generated links and redirects (like for OAuth) match the external address the user visits, rather than its internal container address.
       - GF_SECURITY_DISABLE_GRAVATAR=true

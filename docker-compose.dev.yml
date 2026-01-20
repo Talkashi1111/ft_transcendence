@@ -23,6 +23,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    profiles: ['monitoring'] # Acts as a tag to include/exclude monitoring services/containers when starting with docker-compose
     container_name: prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -35,10 +36,10 @@ services:
       - '9090:9090'
     networks:
       - transcendence
-    profiles: ["monitoring"] # Acts as a tag to include/exclude monitoring services/containers when starting with docker-compose
 
   alertmanager:
     image: prom/alertmanager:latest
+    profiles: ['monitoring']
     container_name: alertmanager
     env_file:
       - ./backend/.env
@@ -52,10 +53,10 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
-    profiles: ["monitoring"]
 
   grafana:
     image: grafana/grafana:latest
+    profiles: ['monitoring']
     container_name: grafana
     ports:
       - '3001:3000'
@@ -80,10 +81,10 @@ services:
       - transcendence
     depends_on:
       - prometheus
-    profiles: ["monitoring"]
-    
+
   node-exporter:
     image: prom/node-exporter:latest
+    profiles: ['monitoring']
     container_name: node-exporter
     restart: unless-stopped
     volumes:
@@ -98,10 +99,10 @@ services:
       - '9100:9100'
     networks:
       - transcendence
-    profiles: ["monitoring"]
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
+    profiles: ['monitoring']
     container_name: cadvisor
     ports:
       - '8081:8080' # 8080 may be used by caddy in production
@@ -113,8 +114,6 @@ services:
       - /dev/disk/:/dev/disk:ro
     networks:
       - transcendence
-    profiles: ["monitoring"]
-
 
 volumes:
   sqlite-data:

@@ -14,7 +14,7 @@ import { GameEngine } from './engine/index.js';
 import { RECONNECT_TIMEOUT } from './engine/config.js';
 import { prisma } from '../../utils/prisma.js';
 import { GameMode } from '../../generated/prisma/client.js';
-import { Gauge } from 'prom-client';
+import { Gauge, register } from 'prom-client';
 
 interface ActiveMatch {
   id: string;
@@ -31,15 +31,18 @@ interface ActiveMatch {
 // Callback for broadcasting match list updates
 type MatchListUpdateCallback = () => void;
 
-const activeMatchesGauge = new Gauge({
-  name: 'transcendence_active_remote_matches_total',
-  help: 'Number of active remote matches currently ongoing',
-  labelNames: ['mode'], // We will label them as '1v1' or 'tournament'
-});
+// Get or Create logic: Check if metric exists to prevent "already registered" error in tests
+const gaugeName = 'transcendence_active_remote_matches_total';
 
-// Initialize gauge with 0 values for known modes
-activeMatchesGauge.labels({ mode: '1v1' }).set(0);
-activeMatchesGauge.labels({ mode: 'tournament' }).set(0);
+// If it exists, use it. If not, create it.
+const activeMatchesGauge =
+  (register.getSingleMetric(gaugeName) as Gauge) ||
+  new Gauge({
+    name: gaugeName,
+    help: 'Number of active remote matches currently ongoing',
+  });
+
+activeMatchesGauge.set(0); // Initialize to 0
 
 export class MatchManager {
   private matches: Map<string, ActiveMatch> = new Map();
@@ -106,8 +109,8 @@ export class MatchManager {
     this.playerMatches.set(playerId, matchId);
 
     console.log(`[MatchManager] Match ${matchId} created by ${username}`);
-    
-    activeMatchesGauge.inc({ mode: mode }); // +1 for this specific mode
+
+    activeMatchesGauge.inc();
 
     // Notify about new available match
     this.notifyMatchListUpdate();
@@ -458,7 +461,7 @@ export class MatchManager {
       this.playerMatches.delete(match.player2.id);
     }
 
-    activeMatchesGauge.dec({ mode: match.mode }); // -1 for this specific mode
+    activeMatchesGauge.dec(); // -1 for this specific mode
 
     // Remove match
     this.matches.delete(matchId);
