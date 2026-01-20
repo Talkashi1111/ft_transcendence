@@ -1,0 +1,17 @@
+Salut, 
+Comme j'ai merdé avec toutes les branches avec un push force, il faudra faire une commande différente quand tu voudras merge le main sur tes branches.
+```bash
+git checkout main
+git fetch origin
+git reset --hard origin/main
+git checkout my-branch
+git rebase main
+```
+Au lieu de faire "git merge", fais "git rebase". Si tu fais "merge", tous les changemenst faits sur main seront des conflits, donc il y aura beaucoup de conflits. Avec "rebase", il y aura des conflits seulement avec ta branche.
+Ensuite,
+```bash
+git add .
+git rebase --continue
+```
+Une fois qu'il n'y aura plus de conflits, `git push --force-with-lease`
+Écris-moi s'il y a un problème.

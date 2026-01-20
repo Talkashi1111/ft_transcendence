@@ -29,10 +29,6 @@ exec:      ## execute command in app container
 halt:      ## stop dev stack
 	docker compose -f docker-compose.dev.yml stop
 
-.PHONY: halt-monitor
-halt-monitor: ## stop monitoring services
-	docker compose -f docker-compose.dev.yml --profile monitoring stop
-
 .PHONY: rebuild
 rebuild:   ## rebuild dev stack
 	docker compose -f docker-compose.dev.yml up -d --force-recreate --no-deps --build app
