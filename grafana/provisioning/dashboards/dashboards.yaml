@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: 'Default' # Name of the datasource
+  - name: 'Default' # Name of the dashboard provider
     orgId: 1
     folder: '' # Root folder
     type: file
