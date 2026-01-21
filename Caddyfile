@@ -43,13 +43,12 @@ tls internal
     handle {
         reverse_proxy app:3000
     }
+}
 
-    # Grafana Secure Access
-    :3001 {
-        reverse_proxy grafana:3000
-        tls internal
-    }
-
+# Grafana Secure Access
+:3001 {
+    reverse_proxy grafana:3000
+    tls internal
 }
 
 # HTTP to HTTPS redirect

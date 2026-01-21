@@ -125,14 +125,36 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   });
 
-  // Clear Prometheus register to avoid "Metric already registered" errors during tests/reloads
-  register.clear();
+  // --- METRICS CONFIGURATION ---
+  // When running tests, buildApp is called multiple times in the same process.
+  // We must remove existing metrics that fastify-metrics tries to register (system & route metrics)
+  // to avoid "Metric already registered" errors.
+  // We DO NOT remove custom metrics (transcendence_*) as they are module-scoped and not re-created.
+  try {
+    const metrics = await register.getMetricsAsJSON();
+    for (const metric of metrics) {
+      const name = metric.name;
+      // Remove system metrics (process_*, nodejs_*, up)
+      // Remove route metrics (http_*, fastify_*) which fastify-metrics tries to re-register
+      if (
+        name.startsWith('process_') ||
+        name.startsWith('nodejs_') ||
+        name === 'up' ||
+        name.startsWith('http_') ||
+        name.startsWith('fastify_')
+      ) {
+        register.removeSingleMetric(name);
+      }
+    }
+  } catch {
+    // Ignore errors during metric cleanup
+  }
 
   // Register Metrics plugin
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await server.register(fastifyMetrics as any, {
     endpoint: '/metrics',
-    enableDefaultMetrics: true,
+    defaultMetrics: { enabled: true }, // Safe to enable now that we've cleaned up
   });
 
   // Authentication decorator
@@ -239,7 +261,8 @@ export async function configureStaticServing(server: FastifyInstance): Promise<v
     const indexHtml = fs.readFileSync(indexPath, 'utf-8');
 
     server.setNotFoundHandler(async (request, reply) => {
-      if (!request.url.startsWith('/api/')) {
+      // Exclude /metrics from SPA fallback to prevent sending HTML to Prometheus
+      if (!request.url.startsWith('/api/') && request.url !== '/metrics') {
         return reply.type('text/html').send(indexHtml);
       } else {
         return reply.code(404).send({ error: 'Not found' });
