@@ -56,7 +56,8 @@ export default async function analyticsRoutes(server: FastifyInstance) {
       const { page } = request.body;
 
       // 4. Increment the Counter
-      if (page) {
+      // Only track views for known pages to keep Prometheus label cardinality bounded
+      if (page && knownPages.includes(page)) {
         pageViewCounter.inc({ page: page });
       }
 
