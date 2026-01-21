@@ -143,11 +143,16 @@ export async function buildApp(): Promise<FastifyInstance> {
         name.startsWith('http_') ||
         name.startsWith('fastify_')
       ) {
-        register.removeSingleMetric(name);
+        // Only remove metrics that are actually registered
+        const existingMetric = register.getSingleMetric(name);
+        if (existingMetric) {
+          register.removeSingleMetric(name);
+        }
       }
     }
-  } catch {
-    // Ignore errors during metric cleanup
+  } catch (err) {
+    // Log errors during metric cleanup instead of silently ignoring them
+    console.error('Error during metrics cleanup before registering fastify-metrics:', err);
   }
 
   // Register Metrics plugin
