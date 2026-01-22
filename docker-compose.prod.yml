@@ -27,12 +27,12 @@ services:
     # Pre-built image from GitHub Actions CI
     image: ghcr.io/talkashi1111/ft_transcendence:latest
     # Always pull latest image from registry (see: https://docs.docker.com/reference/compose-file/services/#pull_policy)
-    pull_policy: build
+    pull_policy: always
     # To build locally instead: uncomment build section and set pull_policy to 'build'
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    # build:
+    #  context: .
+    #  dockerfile: Dockerfile
+    #  target: production
     restart: unless-stopped
     volumes:
       - sqlite-data:/app/data
@@ -90,8 +90,8 @@ services:
     container_name: grafana-prod
     restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=frser-sqlite-datasource
