@@ -31,7 +31,7 @@ export default async function analyticsRoutes(server: FastifyInstance) {
         body: {
           type: 'object',
           properties: {
-            page: { type: 'string' },
+            page: { type: 'string', enum: knownPages},
           },
           required: ['page'],
         },

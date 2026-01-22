@@ -42,7 +42,7 @@ For production, all containers are set up with `make prod-build` like usual. In 
 
 # Initial Set Up
 
-Is it considered you have a project with a backend and and docker-compose.yml
+This assumes you have a project with a backend and and docker-compose.yml
 
 ## 1. Install the Metrics Library
 
