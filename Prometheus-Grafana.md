@@ -38,6 +38,7 @@ Access grafana with http://localhost:3001. Log in with the Grafana Access of you
 - Trigger an alert: Play two remote matches at the same time. You should receive an alert on your discord channel.
 
 ### Production
+
 For production, all containers are set up with `make prod-build` like usual. In `./prometheus/prometheus.yml`, change the 'env' value to `prod` so all alerts are enabled. Access grafana with https://localhost:3001, pass the warning and enter the login access of your `.env.prod`.
 
 # Initial Set Up

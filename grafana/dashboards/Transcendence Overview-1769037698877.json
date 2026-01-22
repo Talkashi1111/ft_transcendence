@@ -92,9 +92,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -174,9 +172,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
+          "calcs": ["last"],
           "fields": "/.*/",
           "values": false
         },
@@ -195,10 +191,7 @@
           "queryType": "table",
           "rawQueryText": "SELECT 1;",
           "refId": "A",
-          "timeColumns": [
-            "time",
-            "ts"
-          ]
+          "timeColumns": ["time", "ts"]
         }
       ],
       "title": "Database (SQLite) Status",
@@ -661,9 +654,7 @@
               "id": "byNames",
               "options": {
                 "mode": "exclude",
-                "names": [
-                  "Value"
-                ],
+                "names": ["Value"],
                 "prefix": "All except:",
                 "readOnly": true
               }
@@ -769,9 +760,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
+          "calcs": ["last"],
           "fields": "",
           "values": false
         },
@@ -830,9 +819,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
+          "calcs": ["last"],
           "fields": "",
           "values": false
         },
@@ -851,10 +838,7 @@
           "queryType": "table",
           "rawQueryText": "SELECT count(*) FROM \"User\";",
           "refId": "A",
-          "timeColumns": [
-            "time",
-            "ts"
-          ]
+          "timeColumns": ["time", "ts"]
         }
       ],
       "title": "Total Registered Users",
@@ -898,9 +882,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "/.*/",
           "values": false
         },
@@ -919,10 +901,7 @@
           "queryType": "table",
           "rawQueryText": "SELECT \n  User.alias as \"User\", \n  COUNT(*) as \"Friend Count\"\nFROM (\n  -- Get all people who SENT an accepted request\n  SELECT userId AS id FROM Friendship WHERE status = 'ACCEPTED'\n  UNION ALL\n  -- Get all people who RECEIVED an accepted request\n  SELECT friendId AS id FROM Friendship WHERE status = 'ACCEPTED'\n) AS Friends\nJOIN User ON User.id = Friends.id\nGROUP BY User.alias\nORDER BY \"Friend Count\" DESC\nLIMIT 1;",
           "refId": "A",
-          "timeColumns": [
-            "time",
-            "ts"
-          ]
+          "timeColumns": ["time", "ts"]
         }
       ],
       "title": "Most Popular User",
@@ -1190,15 +1169,11 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "values": [
-            "percent"
-          ]
+          "values": ["percent"]
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
+          "calcs": ["last"],
           "fields": "",
           "values": false
         },
@@ -1228,9 +1203,7 @@
   ],
   "preload": false,
   "schemaVersion": 42,
-  "tags": [
-    "custom"
-  ],
+  "tags": ["custom"],
   "templating": {
     "list": [
       {
