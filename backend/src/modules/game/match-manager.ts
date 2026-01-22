@@ -35,14 +35,18 @@ type MatchListUpdateCallback = () => void;
 const gaugeName = 'transcendence_active_remote_matches_total';
 
 // If it exists, use it. If not, create it.
+const existingActiveMatchesGauge = register.getSingleMetric(gaugeName) as Gauge | undefined;
 const activeMatchesGauge =
-  (register.getSingleMetric(gaugeName) as Gauge) ||
+  existingActiveMatchesGauge ||
   new Gauge({
     name: gaugeName,
     help: 'Number of active remote matches currently ongoing',
   });
 
-activeMatchesGauge.set(0); // Initialize to 0
+// Only initialize to 0 when the gauge is newly created, to avoid overwriting existing values
+if (!existingActiveMatchesGauge) {
+  activeMatchesGauge.set(0);
+}
 
 export class MatchManager {
   private matches: Map<string, ActiveMatch> = new Map();
