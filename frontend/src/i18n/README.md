@@ -2,13 +2,13 @@
 
 ### Multiple language support
 
-| Go to                                                   |
-| ------------------------------------------------------- |
-| [Module requirements](#module-requirements)             |
-| [Current logic](#current-logic)                         |
-| [Workflow](#workflow)                                   |
-| [Known issues](#known-issues)                           |
-| [Files with UI text/errors](#files-with-ui-text/errors) |
+| Go to                                                         |
+| ------------------------------------------------------------- |
+| [Module requirements](#module-requirements)                   |
+| [Current logic](#current-logic)                               |
+| [Workflow](#workflow)                                         |
+| [Known issues](#known-issues)                                 |
+| [Files with UI text/errors](#files-with-user-text-and-errors) |
 
 ## Module requirements
 
@@ -43,7 +43,7 @@
 - Allow users to set their preferred language as the default for subsequent visits.
 
   ```text
-  NOTE - Currently persistence is maintained using localStorage. Ultimately, might want to implement preferredLanguage in the DB.
+  NOTE - Browser-specific persistence is maintained using localStorage. Persistence across browsers and devices is done through preferredLanguage setting in the DB.
   ```
 
 This minor module aims to enhance the accessibility and inclusivity of your website by offering content in multiple languages, making it more user-friendly for a diverse international audience.
@@ -145,9 +145,9 @@ E. Fallback to English
   <a href="#top">⬆ Back to top</a>
 </p>
 
-## Files with UI text/errors
+## Files with user text and errors
 
-| File name      | Function name |
+| File name      | Progress      |
 | -------------- | ------------- |
 | main.ts        |               |
 | play.ts        |               |
