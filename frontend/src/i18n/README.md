@@ -147,15 +147,15 @@ E. Fallback to English
 
 ## Files with user text and errors
 
-| File name      | Progress      |
-| -------------- | ------------- |
-| main.ts        |               |
-| play.ts        |               |
-| login.ts       |               |
-| register.ts    |               |
-| tournaments.ts |               |
-| friends.ts     |               |
-| settings.ts    |               |
+| File name      | Progress |
+| -------------- | -------- |
+| main.ts        |          |
+| play.ts        |          |
+| login.ts       |          |
+| register.ts    |          |
+| tournaments.ts |          |
+| friends.ts     |          |
+| settings.ts    |          |
 
 <p style="text-align: right;">
   <a href="#top">⬆ Back to top</a>
