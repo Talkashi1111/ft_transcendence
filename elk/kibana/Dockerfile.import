@@ -1,0 +1,4 @@
+FROM curlimages/curl:8.5.0
+COPY config_dash.ndjson /import/config_dash.ndjson
+COPY import_kibana.sh /import/import_kibana.sh
+ENTRYPOINT ["/bin/sh", "/import/import_kibana.sh"]

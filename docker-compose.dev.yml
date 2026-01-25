@@ -21,48 +21,111 @@ services:
     ports:
       - '5173:5173' # Frontend Vite dev server
       - '3000:3000' # Backend API server
+    labels:
+      - 'filebeat_collect=true'
     command: sleep infinity
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
-    profiles: ['elk']
+    # profiles: ['elk']
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - xpack.security.enrollment.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    env_file:
+      - .env
     ports:
       - '9200:9200'
     networks:
       - transcendence
 
+  es_setup:
+    build:
+      context: ./elk/setup
+      dockerfile: Dockerfile.setup
+    env_file: [.env]
+    depends_on:
+      elasticsearch:
+        condition: service_started
+    networks: [transcendence]
+    restart: 'no'
+
   logstash:
     image: docker.elastic.co/logstash/logstash:9.2.4
-    profiles: ['elk']
+    # profiles: ['elk']
     depends_on:
       - elasticsearch
-    ports:
-      - '5000:5000'
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    env_file:
+      - .env
     command: >
-      logstash -e 'input { tcp { port => 5000 codec => json_lines } }
-      output { elasticsearch { hosts => ["http://elasticsearch:9200"] index => "transcendence-%{+YYYY.MM.dd}" }
-      stdout { codec => rubydebug } }'
+      logstash -e 'input { beats { port => 5044 } tcp { port => 5000 codec => json_lines } }
+      output {
+        elasticsearch {
+          hosts  => ["http://elasticsearch:9200"]
+          user     => "elastic"
+          password => "${ELASTIC_PASSWORD}"
+          index  => "logs-app-%{+YYYY.MM.dd}"
+          action => "create"
+        }
+        stdout { codec => rubydebug }
+      }'
     networks:
       - transcendence
 
   kibana:
     image: docker.elastic.co/kibana/kibana:9.2.4
-    profiles: ['elk']
+    # profiles: ['elk']
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_started
+      es_setup:
+        condition: service_completed_successfully
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_HOST=0.0.0.0
-      - XPACK_SECURITY_ENABLED=false
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+    env_file:
+      - .env
     ports:
       - '5601:5601'
+    networks:
+      - transcendence
+
+  kibana_import:
+    build:
+      context: ./elk/kibana
+      dockerfile: Dockerfile.import
+    env_file:
+      - .env
+    depends_on:
+      kibana:
+        condition: service_started
+    networks:
+      - transcendence
+    restart: 'no'
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.2.4
+    user: root
+    command: ['filebeat', '-e', '--strict.perms=false']
+    depends_on:
+      - logstash
+    env_file:
+      - .env
+    volumes:
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - filebeatdata:/usr/share/filebeat/data
     networks:
       - transcendence
 
@@ -72,6 +135,7 @@ volumes:
   frontend_node_modules:
   backend_node_modules:
   esdata:
+  filebeatdata:
 
 networks:
   transcendence:

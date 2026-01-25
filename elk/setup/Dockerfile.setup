@@ -1,0 +1,3 @@
+FROM curlimages/curl:8.5.0
+COPY setup.sh /setup.sh
+ENTRYPOINT ["/bin/sh", "/setup.sh"]

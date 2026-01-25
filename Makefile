@@ -58,7 +58,7 @@ check-deps: ## check if dependencies are installed
 
 .PHONY: dev
 dev: check-deps ## run both frontend and backend in development mode
-	pnpm run dev
+	@bash -lc 'set -o pipefail; pnpm run dev 2>&1 | sudo tee -a /proc/1/fd/1'
 
 .PHONY: frontend
 frontend: check-deps ## run only frontend
@@ -120,17 +120,17 @@ all: format lint test build ## run format, lint, test, and build
 	@echo "========================================"
 	@echo ""
 
-.PHONY: elk-up
-elk-up: ## Lauches ELK in background 
-	docker compose -f docker-compose.dev.yml --profile elk up -d elasticsearch logstash kibana
+# .PHONY: elk-up
+# elk-up: ## Lauches ELK in background 
+# 	docker compose -f docker-compose.dev.yml --profile elk up -d elasticsearch logstash kibana
 
-.PHONY: dev-elk 
-dev-elk: elk-up ## launches ELK, initiate enviornment var for the tee and THEN make dev
-	LOGSTASH_ENABLED=true LOGSTASH_HOST=logstash LOGSTASH_PORT=5000 $(MAKE) dev
+# .PHONY: dev-elk 
+# dev-elk: elk-up ## launches ELK, initiate enviornment var for the tee and THEN make dev
+# 	LOGSTASH_ENABLED=true LOGSTASH_HOST=logstash LOGSTASH_PORT=5000 $(MAKE) dev
 
-.PHONY: dev-elk-down 
-dev-elk-down: ## Stops the ELK containers
-	docker compose -f docker-compose.dev.yml --profile elk stop elasticsearch logstash kibana
+# .PHONY: dev-elk-down 
+# dev-elk-down: ## Stops the ELK containers
+# 	docker compose -f docker-compose.dev.yml --profile elk stop elasticsearch logstash kibana
 
 ## ============================================
 ## Blockchain targets (run INSIDE devcontainer)

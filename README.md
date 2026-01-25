@@ -160,7 +160,42 @@ If you want to avoid using raw IPs for OAuth (sometimes Google is picky), you ca
 - This domain automatically resolves to your IP without needing to modify `/etc/hosts`.
 - You would use `https://10.11.12.13.nip.io` in your browser, `Caddyfile`, and Google Console.
 
----
+## ELK (logs + dashboards)
+
+### What is it used for
+
+- **Filebeat** reads the logs of the docker container
+- **Logstash** receives them and sends them into **Elasticsearch** wich keeps them
+- **Kibana** allows visualization
+
+### 1) Create passwords
+
+At the root in your **`.env`** file:
+
+```env
+ELASTIC_PASSWORD=Chanhge_that_part
+KIBANA_PASSWORD=Change_that_part
+```
+
+### 2) Launch the stack
+
+Stack automatically launches when you `Reopen in Container`
+
+### 3) Connecting to Kibana
+
+Open : `http://localhost:5601`
+
+Login :
+
+- **user** : `elastic`
+- **password** : your `ELASTIC_PASSWORD`
+
+### 4) Dashboard location ?
+
+In Kibana :
+
+- **Analytics → Dashboard**
+- **Stack Management → Data Views** (data view `logs-app-*`)
 
 ## 🔐 Production Deployment
 
