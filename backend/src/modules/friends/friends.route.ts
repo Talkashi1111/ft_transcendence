@@ -35,6 +35,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Get list of friends with online status',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         response: {
           200: friendsListResponseJsonSchema,
         },
@@ -50,6 +51,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Get pending friend requests (sent and received)',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         response: {
           200: friendRequestsResponseJsonSchema,
         },
@@ -65,6 +67,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Send a friend request to another user',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         body: sendFriendRequestBodyJsonSchema,
         response: {
           201: friendRequestResponseJsonSchema,
@@ -82,6 +85,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Accept a pending friend request',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           properties: {
@@ -105,6 +109,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Decline a pending friend request',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           properties: {
@@ -128,6 +133,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Cancel a friend request you sent',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           properties: {
@@ -151,6 +157,7 @@ async function friendsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Remove a friend (unfriend)',
         tags: ['Friends'],
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           properties: {

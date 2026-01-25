@@ -12,6 +12,8 @@ import type {
 } from './game.types.js';
 import { GameEngine } from './engine/index.js';
 import { RECONNECT_TIMEOUT } from './engine/config.js';
+import { prisma } from '../../utils/prisma.js';
+import { GameMode } from '../../generated/prisma/client.js';
 
 interface ActiveMatch {
   id: string;
@@ -204,11 +206,30 @@ export class MatchManager {
     });
 
     // Handle game end
-    match.engine.setOnGameEnd((winnerId, score1, score2) => {
+    match.engine.setOnGameEnd(async (winnerId, score1, score2) => {
       match.status = 'finished';
       console.log(
         `[MatchManager] Match ${match.id} finished. Winner: ${winnerId}, Score: ${score1}-${score2}`
       );
+
+      // Save match to history (both players are logged in for remote games)
+      try {
+        await prisma.matchHistory.create({
+          data: {
+            mode: GameMode.REMOTE_1V1,
+            player1Id: match.player1.id,
+            player1Alias: match.player1.username,
+            player2Id: match.player2!.id,
+            player2Alias: match.player2!.username,
+            score1,
+            score2,
+          },
+        });
+        console.log(`[MatchManager] Match history saved for match ${match.id}`);
+      } catch (err) {
+        console.error(`[MatchManager] Failed to save match history:`, err);
+      }
+
       // Clean up after a delay
       setTimeout(() => this.cleanupMatch(match.id), 5000);
     });

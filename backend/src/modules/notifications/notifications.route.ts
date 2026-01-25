@@ -24,6 +24,7 @@ async function notificationsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Get user notifications',
         tags: ['Notifications'],
+        security: [{ bearerAuth: [] }],
         querystring: {
           type: 'object',
           properties: {
@@ -64,6 +65,7 @@ async function notificationsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Get unread notification count',
         tags: ['Notifications'],
+        security: [{ bearerAuth: [] }],
         response: {
           200: {
             type: 'object',
@@ -84,6 +86,7 @@ async function notificationsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Mark specific notifications as read',
         tags: ['Notifications'],
+        security: [{ bearerAuth: [] }],
         body: {
           type: 'object',
           required: ['notificationIds'],
@@ -115,6 +118,7 @@ async function notificationsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Mark all notifications as read',
         tags: ['Notifications'],
+        security: [{ bearerAuth: [] }],
         response: {
           200: {
             type: 'object',
@@ -136,6 +140,7 @@ async function notificationsRoutes(server: FastifyInstance) {
       schema: {
         description: 'Delete a notification',
         tags: ['Notifications'],
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           properties: {

@@ -9,7 +9,7 @@ import {
   getAvatarUrl,
   updatePreferredLanguage,
 } from '../utils/auth';
-import { getLang, setLang, t } from '../i18n/i18n';
+import { setLang, t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
 
 type SettingsUIState = {
@@ -263,13 +263,6 @@ export async function renderSettingsPage(
           <!-- Messages -->
           <div id="2fa-message" class="hidden mt-4 p-3 rounded-lg" role="alert"></div>
         </div>
-
-        <!-- Back to Home -->
-        <div class="mt-6">
-          <button id="back-home-btn" class="text-blue-600 hover:text-blue-700 font-medium">
-            ← ${t('settings.link.backtohome')}
-          </button>
-        </div>
       </div>
     </div>
   `;
@@ -487,14 +480,14 @@ function setupPreferredLanguageHandler(initialFromDb: string | null): void {
 
   if (!form || !status || !saveBtn) return;
 
-  // Preselect: DB value first, otherwise current app lang
-  const fallback = getLang();
-  const initial = initialFromDb ?? fallback;
-
-  const initialRadio = form.querySelector<HTMLInputElement>(
-    `input[name="preferredLanguage"][value="${initial}"]`
-  );
-  if (initialRadio) initialRadio.checked = true;
+  // Only preselect if DB has a saved value - don't fall back to current UI lang
+  // This ensures the radio only reflects the user's SAVED preference, not the nav language
+  if (initialFromDb) {
+    const initialRadio = form.querySelector<HTMLInputElement>(
+      `input[name="preferredLanguage"][value="${initialFromDb}"]`
+    );
+    if (initialRadio) initialRadio.checked = true;
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -539,7 +532,6 @@ function setup2FAHandlers(): void {
   const verifyBtn = document.getElementById('verify-code-btn');
   const cancelBtn = document.getElementById('cancel-setup-btn');
   const messageDiv = document.getElementById('2fa-message');
-  const backHomeBtn = document.getElementById('back-home-btn');
 
   const showMessage = (message: string, isError = false) => {
     if (!messageDiv) return;
@@ -682,14 +674,6 @@ function setup2FAHandlers(): void {
         (disableBtn as HTMLButtonElement).disabled = false;
         disableBtn.textContent = t('settings.2FA.disable2FA');
       }
-    });
-  }
-
-  // Back to home
-  if (backHomeBtn) {
-    backHomeBtn.addEventListener('click', () => {
-      const event = new CustomEvent('navigate', { detail: { page: 'home' } });
-      window.dispatchEvent(event);
     });
   }
 }

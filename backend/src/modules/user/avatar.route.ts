@@ -172,9 +172,11 @@ async function avatarRoutes(server: FastifyInstance) {
   server.get<{ Params: { id: string } }>(
     '/:id/avatar',
     {
+      onRequest: [server.authenticate],
       schema: {
         description: 'Get avatar image for a user. Returns default avatar if not set.',
         tags: ['Users'],
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           properties: {
