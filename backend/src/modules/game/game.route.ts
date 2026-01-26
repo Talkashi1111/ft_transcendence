@@ -3,12 +3,15 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { matchManager } from './match-manager.js';
 import { prisma } from '../../utils/prisma.js';
+import { GameMode } from '../../generated/prisma/client.js';
 import {
   createMatchSchema,
   playerInputSchema,
+  localMatchResultSchema,
   matchResponseSchema,
   type CreateMatchInput,
   type PlayerInputData,
+  type LocalMatchResultInput,
 } from './game.schema.js';
 import type { PlayerInput } from './game.types.js';
 
@@ -444,6 +447,74 @@ export default async function gameRoutes(server: FastifyInstance): Promise<void>
 
       return reply.send({
         match: match ? matchManager.toMatchResponse(match) : null,
+      });
+    }
+  );
+
+  /**
+   * Record a completed local match (1v1 or vs bot)
+   * POST /api/game/local-match
+   * Only records completed games, not abandoned ones
+   */
+  server.post<{ Body: LocalMatchResultInput }>(
+    '/local-match',
+    {
+      schema: {
+        description: 'Record a completed local match (1v1 or vs bot)',
+        tags: ['Game'],
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['mode', 'player1Alias', 'player2Alias', 'score1', 'score2'],
+          properties: {
+            mode: { type: 'string', enum: ['LOCAL_1V1', 'VS_BOT'] },
+            player1Alias: { type: 'string', minLength: 1, maxLength: 20 },
+            player2Alias: { type: 'string', minLength: 1, maxLength: 20 },
+            score1: { type: 'integer', minimum: 0 },
+            score2: { type: 'integer', minimum: 0 },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              matchId: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id: userId } = (request as AuthenticatedRequest).user;
+      const { mode, player1Alias, player2Alias, score1, score2 } = request.body;
+
+      // Validate with zod
+      const parsed = localMatchResultSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({ error: 'Invalid match data' });
+      }
+
+      // Create match history record
+      const matchHistory = await prisma.matchHistory.create({
+        data: {
+          mode: mode === 'LOCAL_1V1' ? GameMode.LOCAL_1V1 : GameMode.VS_BOT,
+          player1Id: userId,
+          player1Alias,
+          player2Id: null, // Guest or bot
+          player2Alias,
+          score1,
+          score2,
+        },
+      });
+
+      console.log(
+        `[Game] Local match recorded: ${mode} ${player1Alias} vs ${player2Alias} (${score1}-${score2})`
+      );
+
+      return reply.status(201).send({
+        success: true,
+        matchId: matchHistory.id,
       });
     }
   );

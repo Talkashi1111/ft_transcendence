@@ -49,6 +49,7 @@ describe('Avatar Upload', () => {
       const response = await server.inject({
         method: 'GET',
         url: `/api/users/${testUserId}/avatar`,
+        cookies: { token: authToken },
       });
 
       expect(response.statusCode).toBe(200);
@@ -59,9 +60,19 @@ describe('Avatar Upload', () => {
       const response = await server.inject({
         method: 'GET',
         url: '/api/users/non-existent-id/avatar',
+        cookies: { token: authToken },
       });
 
       expect(response.statusCode).toBe(404);
+    });
+
+    it('should reject request without authentication', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: `/api/users/${testUserId}/avatar`,
+      });
+
+      expect(response.statusCode).toBe(401);
     });
   });
 

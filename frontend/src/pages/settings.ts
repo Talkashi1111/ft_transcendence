@@ -177,13 +177,6 @@ export async function renderSettingsPage(
           <!-- Messages -->
           <div id="2fa-message" class="hidden mt-4 p-3 rounded-lg" role="alert"></div>
         </div>
-
-        <!-- Back to Home -->
-        <div class="mt-6">
-          <button id="back-home-btn" class="text-blue-600 hover:text-blue-700 font-medium">
-            ← ${t('settings.link.backtohome')}
-          </button>
-        </div>
       </div>
     </div>
   `;
@@ -402,7 +395,6 @@ function setup2FAHandlers(): void {
   const verifyBtn = document.getElementById('verify-code-btn');
   const cancelBtn = document.getElementById('cancel-setup-btn');
   const messageDiv = document.getElementById('2fa-message');
-  const backHomeBtn = document.getElementById('back-home-btn');
 
   const showMessage = (message: string, isError = false) => {
     if (!messageDiv) return;
@@ -535,14 +527,6 @@ function setup2FAHandlers(): void {
         (disableBtn as HTMLButtonElement).disabled = false;
         disableBtn.textContent = t('settings.2FA.disable2FA');
       }
-    });
-  }
-
-  // Back to home
-  if (backHomeBtn) {
-    backHomeBtn.addEventListener('click', () => {
-      const event = new CustomEvent('navigate', { detail: { page: 'home' } });
-      window.dispatchEvent(event);
     });
   }
 }
