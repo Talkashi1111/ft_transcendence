@@ -369,7 +369,7 @@ async function handleTournamentPopstate(event: PopStateEvent): Promise<void> {
         '',
         window.location.href
       );
-      toast.info('Tournament ended');
+      toast.info(t('play.local.tournament.ended'));
     }
   }
 }
@@ -1656,7 +1656,7 @@ function setupPlayPageEvents(): void {
         remoteConnectionStatus.textContent = `Match ID: ${match.id.slice(0, 8)}...`;
       }
 
-      toast.info('Rejoining your active match...');
+      toast.info(t('play.rejoining.active.match'));
 
       // Create remote game and reconnect
       remoteGame = new RemotePongGame(remotePongCanvas, {
@@ -2152,7 +2152,7 @@ function setupPlayPageEvents(): void {
       window.history.replaceState({ page: 'play' }, '', window.location.href);
       tournamentManager = null;
       syncTournamentToModule();
-      toast.info('Tournament ended');
+      toast.info(t('play.local.tournament.ended'));
     }
   });
 
@@ -2174,7 +2174,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player1 = t('play.player1.label'); // Default name
+      player1 = t('play.player1.default.label'); // Default name
     }
 
     // Validate player 2 alias
@@ -2185,7 +2185,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player2 = t('play.player2.label'); // Default name
+      player2 = t('play.player2.default.label'); // Default name
     }
 
     // Check for duplicate names

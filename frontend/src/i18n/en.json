@@ -8,6 +8,7 @@
   "_meta.tournaments": "src/pages/tournaments.ts",
   "_meta.friends": "src/pages/friends.ts",
   "_meta.settings": "src/pages/settings.ts",
+  "_meta.stats": "src/pages/stats.ts",
   "_meta.auth.error": "TBD",
 
   "nav.home": "Home",
@@ -47,7 +48,6 @@
   "play.local.1vbot.tracky": "Track-y",
   "play.local.1vbot.human": "I am human",
   "play.local.1vbot.god": "I am God",
-
   "play.local.1vbot.hidden.text": "Select Difficulty Level for Bot",
   "play.local.1vbot.hidden.paw": "Paw Patrol",
   "play.local.1vbot.hidden.tracky": "Track-y",
@@ -90,8 +90,6 @@
   "play.local.tournament.bracket.complete.startnew.button": "Start New Tournament",
   "play.local.tournament.bracket.tbd": "TBD",
   "play.local.tournament.registration.you": "(You)",
-  "play.local.tournament.started": "Tournament started!",
-  "play.local.tournament.toast.error": "Cannot start tournament. Need at least 2 players.",
   "play.local.tournament.ended": "Tournament ended",
   "play.remote.label": "Remote play",
   "play.remote.quickmatch.button": "Quick Match",
@@ -129,9 +127,6 @@
   "play.remote.available.matches.join.button": "Join",
   "play.remote.connecting": "Connecting...",
   "play.rejoining.active.match": "Rejoining your active match...",
-  "play.remote.join.match.toast.success": "{playerNumber} joined the match!",
-  "play.remote.opponent.join.match.toast.success": "{opponentName} joined the match!",
-
   "play.game_setup.title": "Game Setup",
   "play.game_setup.player1.alias.label": "Player 1 Alias",
   "play.game_setup.player1.alias.placeholder": "Enter name...",
@@ -169,7 +164,6 @@
   "tournaments.input.label": "Blockchain Tournament ID:",
   "tournaments.input.placeholder": "e.g., 0",
   "tournaments.load.button": "Verify",
-  "tournaments.bottom.text": "Enter a blockchain tournament ID to verify results",
   "tournaments.detail.round": "Round {round}",
   "tournaments.detail.finals": "Finals",
   "tournaments.detail.vs": "vs",
@@ -259,6 +253,7 @@
   "settings.avatar.picture": "Avatar picture",
   "settings.avatar.picture.upload.button": "Upload New",
   "settings.avatar.picture.remove.button": "Remove",
+  "settings.avatar.picture.remove.confirm": "Are you sure you want to remove your avatar picture?",
   "settings.avatar.picture.update.button": "Update",
   "settings.avatar.picture.updating.button": "Updating...",
   "settings.avatar.picture.text": "JPG, PNG, WebP, or GIF. Max 5MB.",
@@ -309,7 +304,6 @@
   "settings.2FA.setup.code.error.message": "Please enter a valid 6-digit code.",
   "settings.2FA.setup.verify.code.error.message": "Failed to verify code",
   "settings.2FA.disable2FA.error.message": "Failed to disable 2FA.",
-  "settings.link.backtohome": "Back to Home",
 
   "stats.title": "Game Statistics",
   "stats.overview": "Overview",
@@ -355,5 +349,10 @@
   "aria.label.email.address": "Email address",
   "aria.label.login.account": "Login to your account",
   "alt.nav.user.avatar": "Avatar picture",
-  "alt.nav.user.avatar.mobile": "Avatar picture"
+  "alt.nav.user.avatar.mobile": "Avatar picture",
+
+  "preferredlanguage.choose.language.text": "Please choose a language.",
+  "preferredlanguage.saving": "Saving...",
+  "preferredlanguage.saved": "Saved.",
+  "preferredlanguage.failedtosave.message": "Failed to save language."
 }

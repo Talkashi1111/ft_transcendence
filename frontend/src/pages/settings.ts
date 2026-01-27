@@ -9,8 +9,9 @@ import {
   getAvatarUrl,
   updatePreferredLanguage,
 } from '../utils/auth';
-import { setLang, t } from '../i18n/i18n';
+import { applyAccountLang, t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
+import { isLang, type Lang } from '../types/lang';
 
 type SettingsUIState = {
   is2faSetupOpen: boolean;
@@ -367,7 +368,7 @@ function setupAvatarHandler(userId: string): void {
     deleteBtn.addEventListener('click', async () => {
       hideMessage();
 
-      if (!confirm('Are you sure you want to remove your profile picture?')) {
+      if (!confirm(t('settings.avatar.picture.remove.confirm'))) {
         return;
       }
 
@@ -473,7 +474,7 @@ function setupAliasHandler(): void {
   }
 }
 
-function setupPreferredLanguageHandler(initialFromDb: string | null): void {
+function setupPreferredLanguageHandler(initialFromDb: Lang | null): void {
   const form = document.getElementById('preferredLanguageForm') as HTMLFormElement | null;
   const status = document.getElementById('preferredLanguageStatus') as HTMLSpanElement | null;
   const saveBtn = document.getElementById('preferredLanguageSaveBtn') as HTMLButtonElement | null;
@@ -495,19 +496,19 @@ function setupPreferredLanguageHandler(initialFromDb: string | null): void {
     const checked = form.querySelector<HTMLInputElement>('input[name="preferredLanguage"]:checked');
     const value = checked?.value;
 
-    if (value !== 'en' && value !== 'de' && value !== 'fr' && value !== 'ja') {
-      status.textContent = 'Please choose a language.';
+    if (!isLang(value)) {
+      status.textContent = t('preferredlanguage.choose.language.text');
       return;
     }
 
-    status.textContent = 'Saving...';
+    status.textContent = t('preferredlanguage.saving');
     saveBtn.disabled = true;
 
     try {
-      await updatePreferredLanguage(value); // ✅ use your auth util
+      await updatePreferredLanguage(value);
 
-      setLang(value); // ✅ apply immediately
-      status.textContent = 'Saved.';
+      applyAccountLang(value);
+      status.textContent = t('preferredlanguage.saved');
 
       // Optional: re-render page so every string refreshes immediately
       setTimeout(() => {
@@ -515,7 +516,8 @@ function setupPreferredLanguageHandler(initialFromDb: string | null): void {
         window.dispatchEvent(event);
       }, 300);
     } catch (err) {
-      status.textContent = err instanceof Error ? err.message : 'Failed to save language.';
+      status.textContent =
+        err instanceof Error ? err.message : t('preferredlanguage.failedtosave.message');
     } finally {
       saveBtn.disabled = false;
     }

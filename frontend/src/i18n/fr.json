@@ -8,6 +8,7 @@
   "_meta.tournaments": "src/pages/tournaments.ts",
   "_meta.friends": "src/pages/friends.ts",
   "_meta.settings": "src/pages/settings.ts",
+  "_meta.stats": "src/pages/stats.ts",
   "_meta.auth.error": "TBD",
 
   "nav.home": "Accueil",
@@ -40,7 +41,6 @@
   "play.text": "Choisissez un mode de jeu pour commencer",
   "play.local.label": "Jeu local",
   "play.local.local1v1.button": "Local 1v1",
-
   "play.local.1vbot.button": "1vBot",
   "play.local.1vbot.title": "Configuration de partie contre un bot",
   "play.local.1vbot.text": "Sélectionnez le niveau de difficulté du bot",
@@ -90,8 +90,6 @@
   "play.local.tournament.bracket.complete.startnew.button": "Démarrer un nouveau tournoi",
   "play.local.tournament.bracket.tbd": "À déterminer",
   "play.local.tournament.registration.you": "(Vous)",
-  "play.local.tournament.started": "Tournoi démarré !",
-  "play.local.tournament.toast.error": "Impossible de démarrer le tournoi. Au moins 2 joueurs sont requis.",
   "play.local.tournament.ended": "Tournoi terminé",
   "play.remote.label": "Jeu en ligne",
   "play.remote.quickmatch.button": "Partie rapide",
@@ -129,9 +127,6 @@
   "play.remote.available.matches.join.button": "Rejoindre",
   "play.remote.connecting": "Connexion en cours...",
   "play.rejoining.active.match": "Reconnexion à votre match en cours...",
-  "play.remote.join.match.toast.success": "{playerNumber} a rejoint le match !",
-  "play.remote.opponent.join.match.toast.success": "{opponentName} a rejoint le match !",
-
   "play.game_setup.title": "Configuration de la partie",
   "play.game_setup.player1.alias.label": "Pseudo du joueur 1",
   "play.game_setup.player1.alias.placeholder": "Entrez un nom...",
@@ -169,7 +164,6 @@
   "tournaments.input.label": "Identifiant tournoi blockchain :",
   "tournaments.input.placeholder": "ex. 0",
   "tournaments.load.button": "Vérifier",
-  "tournaments.bottom.text": "Entrez un identifiant de tournoi blockchain pour vérifier les résultats",
   "tournaments.detail.round": "Tour {round}",
   "tournaments.detail.finals": "Finale",
   "tournaments.detail.vs": "vs",
@@ -259,6 +253,7 @@
   "settings.avatar.picture": "Avatar",
   "settings.avatar.picture.upload.button": "Téléverser",
   "settings.avatar.picture.remove.button": "Supprimer",
+  "settings.avatar.picture.remove.confirm": "Voulez-vous vraiment supprimer votre avatar ?",
   "settings.avatar.picture.update.button": "Mettre à jour",
   "settings.avatar.picture.updating.button": "Mise à jour...",
   "settings.avatar.picture.text": "JPG, PNG, WebP ou GIF. 5 Mo max.",
@@ -309,7 +304,6 @@
   "settings.2FA.setup.code.error.message": "Veuillez entrer un code valide à 6 chiffres.",
   "settings.2FA.setup.verify.code.error.message": "Échec de la vérification du code.",
   "settings.2FA.disable2FA.error.message": "Échec de la désactivation de l'authentification à deux facteurs.",
-  "settings.link.backtohome": "Retour à l'accueil",
 
   "stats.title": "Statistiques de jeu",
   "stats.overview": "Aperçu",
@@ -355,5 +349,10 @@
   "aria.label.email.address": "Adresse e-mail",
   "aria.label.login.account": "Se connecter à votre compte",
   "alt.nav.user.avatar": "Avatar",
-  "alt.nav.user.avatar.mobile": "Avatar"
+  "alt.nav.user.avatar.mobile": "Avatar",
+
+  "preferredlanguage.choose.language.text": "Veuillez choisir une langue.",
+  "preferredlanguage.saving": "Enregistrement...",
+  "preferredlanguage.saved": "Enregistré.",
+  "preferredlanguage.failedtosave.message": "Échec de l’enregistrement de la langue."
 }

@@ -3,8 +3,8 @@ import fr from './fr.json';
 import ja from './ja.json';
 import de from './de.json';
 import { getCurrentUser } from '../utils/auth';
+import { isLang, type Lang } from '../types/lang';
 
-export type Lang = 'en' | 'ja' | 'fr' | 'de';
 const STORAGE_KEY = 'lang';
 
 const listeners = new Set<() => void>();
@@ -15,10 +15,6 @@ export function onLangChange(fn: () => void) {
 }
 
 let accountLang: Lang | null = null; // DB preference (default for new devices)
-
-function isLang(x: unknown): x is Lang {
-  return x === 'en' || x === 'fr' || x === 'de' || x === 'ja';
-}
 
 function detectBrowserLang(): Lang {
   const navLang = navigator.languages?.[0] || navigator.language || 'en';

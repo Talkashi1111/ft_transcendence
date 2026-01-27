@@ -1,3 +1,5 @@
+import { isLang, type Lang } from '../types/lang';
+
 /**
  * Authentication Utility
  *
@@ -13,8 +15,6 @@ interface LoginResponse {
   success: boolean;
   requires2FA?: boolean;
 }
-
-export type Lang = 'en' | 'de' | 'fr' | 'ja';
 
 // Current user info (fresh from API)
 export interface AuthUser {
@@ -155,10 +155,6 @@ export async function logout(): Promise<void> {
 export async function isAuthenticated(): Promise<boolean> {
   const user = await getCurrentUser();
   return user !== null;
-}
-
-function isLang(x: unknown): x is Lang {
-  return x === 'en' || x === 'de' || x === 'fr' || x === 'ja';
 }
 
 /**

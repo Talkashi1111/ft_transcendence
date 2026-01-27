@@ -56,8 +56,19 @@ function applyNavTranslationsInPlace(): void {
     if (el) el.textContent = t(key);
   }
 
-  const langSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
-  if (langSelect) langSelect.value = getLang();
+  const lang = getLang();
+
+  const desktopSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
+  if (desktopSelect) {
+    desktopSelect.value = lang;
+    desktopSelect.setAttribute('aria-label', t('aria.label.nav.lang'));
+  }
+
+  const mobileSelect = document.getElementById('nav-lang-mobile') as HTMLSelectElement | null;
+  if (mobileSelect) {
+    mobileSelect.value = lang;
+    mobileSelect.setAttribute('aria-label', t('aria.label.nav.lang'));
+  }
 }
 
 function setTextById(id: string, key: string): void {
@@ -919,8 +930,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       render();
       return;
     }
-
-    console.log(currentPage);
 
     if (currentPage === 'home') {
       setTextById('home-welcome', 'home.welcome');
