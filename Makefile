@@ -35,7 +35,7 @@ rebuild:   ## rebuild dev stack
 
 .PHONY: destroy
 destroy:    ## destroy dev stack
-	docker compose -f docker-compose.dev.yml --profile monitoring down --rmi local -v --remove-orphans
+	docker compose -f docker-compose.dev.yml down --rmi local -v --remove-orphans
 
 .PHONY: prune
 prune:	 ## prune unused docker resources

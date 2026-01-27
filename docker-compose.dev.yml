@@ -23,7 +23,6 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.53.3
-    profiles: ['monitoring']
     container_name: prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -40,7 +39,6 @@ services:
 
   alertmanager:
     image: prom/alertmanager:v0.28.0
-    profiles: ['monitoring']
     container_name: alertmanager
     volumes:
       - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
@@ -54,7 +52,6 @@ services:
 
   grafana:
     image: grafana/grafana:11.4.0
-    profiles: ['monitoring']
     container_name: grafana
     restart: unless-stopped
     environment:
@@ -81,7 +78,6 @@ services:
 
   node-exporter:
     image: prom/node-exporter:v1.8.2
-    profiles: ['monitoring']
     container_name: node-exporter
     volumes:
       - /proc:/host/proc:ro # :ro for Read-only access to host /proc
@@ -98,7 +94,6 @@ services:
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57
-    profiles: ['monitoring']
     container_name: cadvisor
     ports:
       - '8081:8080' # 8080 may be used by caddy in production
