@@ -22,12 +22,13 @@ services:
     command: sleep infinity
 
   prometheus:
-    image: prom/prometheus:latest
-    profiles: ['monitoring'] # Acts as a tag to include/exclude monitoring services/containers when starting with docker-compose
+    image: prom/prometheus:v2.53.3
+    profiles: ['monitoring']
     container_name: prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--web.external-url=http://localhost:9090' # Set external URL for proper link generation (for Alertmanager for discord webhook)
+      - '--storage.tsdb.retention.time=14d'
+      - '--storage.tsdb.retention.size=2GB'
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
@@ -38,11 +39,10 @@ services:
       - transcendence
 
   alertmanager:
-    image: prom/alertmanager:latest
+    image: prom/alertmanager:v0.28.0
     profiles: ['monitoring']
     container_name: alertmanager
-    env_file:
-      - ./backend/.env
+    restart: unless-stopped
     volumes:
       - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - alertmanager-data:/alertmanager
@@ -52,14 +52,12 @@ services:
       - transcendence
     depends_on:
       - prometheus
-    restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     profiles: ['monitoring']
     container_name: grafana
-    ports:
-      - '3001:3000'
+    restart: unless-stopped
     environment:
       - GF_INSTALL_PLUGINS=frser-sqlite-datasource
 
@@ -75,13 +73,15 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/etc/grafana/dashboards
       - sqlite-data:/var/lib/grafana/db-mount
+    ports:
+      - '3001:3000'
     networks:
       - transcendence
     depends_on:
       - prometheus
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.8.2
     profiles: ['monitoring']
     container_name: node-exporter
     restart: unless-stopped
@@ -99,9 +99,11 @@ services:
       - transcendence
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57
     profiles: ['monitoring']
     container_name: cadvisor
+    restart: unless-stopped
+    privileged: true # Required to access all system info
     ports:
       - '8081:8080' # 8080 may be used by caddy in production
     volumes:

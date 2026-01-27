@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 15s # Check for new data every 5 seconds
+  scrape_interval: 15s # Check for new data every 15 seconds
   external_labels:
     env: dev # Attaches an 'env' label with value 'dev' to all metrics and alerts
   evaluation_interval: 15s # Check alert rules every 15s

@@ -16,7 +16,7 @@ route:
 receivers:
   - name: 'discord_team'
     discord_configs:
-      - webhook_url: 'https://discord.com/api/webhooks/1462028238271287368/E2Pmp-LyfH_zJ-z62OUm9QEZ3Vc03rpVcQO1wFFl4INRl7igHJBic5Wnt-dZRXeguimr'
+      - webhook_url: ''
         send_resolved: true # Notify when alerts are resolved
         # Customizing the message format
         title: '{{ .CommonLabels.alertname }} ({{ .Status | toUpper }})'
@@ -29,7 +29,7 @@ receivers:
 
   - name: 'discord_personal'
     discord_configs:
-      - webhook_url: 'https://discord.com/api/webhooks/1462922120496414805/yL5-IoXXN5SU2fF2605jpLCxSbiXgJi7-3QEbVzYq7nsXJizE0JnQwdAounBC6_UyKfm' # <--- Paste your personal Discord webhook URL here
+      - webhook_url: 'https://discord.com/api/webhooks/1465456047270531193/ZK_5koy126SSWMRtEmRQSlt_6C0PKKb8cteR_zQgVPmSpT5ywZQMYWYfdTuINzmlyATA' # <--- Paste your personal Discord webhook URL here
         send_resolved: true
         title: '🚨 PERSONAL ALERT: {{ .CommonLabels.alertname }}'
         message: |

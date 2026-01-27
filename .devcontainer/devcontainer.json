@@ -6,6 +6,8 @@
   "service": "app",
   "workspaceFolder": "/app",
 
+  "runServices": ["app", "prometheus", "grafana", "alertmanager", "node-exporter", "cadvisor"],
+
   // All containers should stop if we close / reload the VSCode window.
   "shutdownAction": "stopCompose",
 

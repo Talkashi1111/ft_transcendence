@@ -62,19 +62,22 @@ services:
       - '5556:5556'
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.53.3
     container_name: prometheus-prod
     restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=14d'
+      - '--storage.tsdb.retention.size=2GB'
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus-data-prod:/prometheus
-    # No ports! Internal access only
     networks:
       - transcendence-prod
 
   alertmanager:
-    image: prom/alertmanager:latest
+    image: prom/alertmanager:v0.28.0
     container_name: alertmanager-prod
     restart: unless-stopped
     volumes:
@@ -86,7 +89,7 @@ services:
       - prometheus
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: grafana-prod
     restart: unless-stopped
     environment:
@@ -112,7 +115,7 @@ services:
       - prometheus
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.8.2
     container_name: node-exporter-prod
     restart: unless-stopped
     volumes:
@@ -127,7 +130,7 @@ services:
       - transcendence-prod
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57
     container_name: cadvisor-prod
     restart: unless-stopped
     volumes:
