@@ -30,9 +30,9 @@ services:
     pull_policy: always
     # To build locally instead: uncomment build section and set pull_policy to 'build'
     # build:
-    #  context: .
-    #  dockerfile: Dockerfile
-    #  target: production
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: production
     restart: unless-stopped
     volumes:
       - sqlite-data:/app/data
