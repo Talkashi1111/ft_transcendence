@@ -14,22 +14,9 @@ route:
       receiver: 'dev-null'
 
 receivers:
-  - name: 'discord_team'
-    discord_configs:
-      - webhook_url: '' # <--- Paste your team Discord webhook URL here
-        send_resolved: true # Notify when alerts are resolved
-        # Customizing the message format
-        title: '{{ .CommonLabels.alertname }} ({{ .Status | toUpper }})'
-        message: |
-          {{ range .Alerts }}
-          **Summary:** {{ .Annotations.summary }}
-          **Description:** {{ .Annotations.description }}
-          **Severity:** {{ .Labels.severity }}
-          {{ end }}
-
   - name: 'discord_personal'
     discord_configs:
-      - webhook_url: '' # <--- Paste your personal Discord webhook URL here
+      - webhook_url: '' # <--- Paste your personal Discord webhook URL here. IF EMPTY, ALERTMANAGER CONTAINER WILL FAIL TO START
         send_resolved: true
         title: '🚨 PERSONAL ALERT: {{ .CommonLabels.alertname }}'
         message: |

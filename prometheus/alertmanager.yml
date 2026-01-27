@@ -14,19 +14,6 @@ route:
       receiver: 'dev-null'
 
 receivers:
-  - name: 'discord_team'
-    discord_configs:
-      - webhook_url: ''
-        send_resolved: true # Notify when alerts are resolved
-        # Customizing the message format
-        title: '{{ .CommonLabels.alertname }} ({{ .Status | toUpper }})'
-        message: |
-          {{ range .Alerts }}
-          **Summary:** {{ .Annotations.summary }}
-          **Description:** {{ .Annotations.description }}
-          **Severity:** {{ .Labels.severity }}
-          {{ end }}
-
   - name: 'discord_personal'
     discord_configs:
       - webhook_url: 'https://discord.com/api/webhooks/1465456047270531193/ZK_5koy126SSWMRtEmRQSlt_6C0PKKb8cteR_zQgVPmSpT5ywZQMYWYfdTuINzmlyATA' # <--- Paste your personal Discord webhook URL here
