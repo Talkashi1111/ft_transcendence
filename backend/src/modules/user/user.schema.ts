@@ -13,6 +13,12 @@ const userCore = {
     ),
 };
 
+export const preferredLanguageSchema = z.enum(['en', 'de', 'fr', 'ja']);
+
+export const updatePreferredLanguageSchema = z.object({
+  preferredLanguage: preferredLanguageSchema,
+});
+
 // Request schemas
 export const createUserSchema = z.object({
   ...userCore,
@@ -55,6 +61,7 @@ export const userMeResponseSchema = z.object({
   email: z.email(),
   alias: z.string(),
   twoFactorEnabled: z.boolean(),
+  preferredLanguage: preferredLanguageSchema.nullable(),
   createdAt: z.string(),
 });
 
@@ -105,6 +112,7 @@ export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateAliasInput = z.infer<typeof updateAliasSchema>;
 export type UserResponse = z.infer<typeof userResponseSchema>;
+export type UpdatePreferredLanguageInput = z.infer<typeof updatePreferredLanguageSchema>;
 export type UserStats = z.infer<typeof userStatsSchema>;
 
 // JSON Schema for Fastify (Swagger) - using Zod 4's native toJSONSchema with draft-7 for Fastify/Ajv compatibility
@@ -115,4 +123,7 @@ export const userResponseJsonSchema = z.toJSONSchema(userResponseSchema, { targe
 export const userMeResponseJsonSchema = z.toJSONSchema(userMeResponseSchema, { target: 'draft-7' });
 export const loginResponseJsonSchema = z.toJSONSchema(loginResponseSchema, { target: 'draft-7' });
 export const usersResponseJsonSchema = z.toJSONSchema(usersResponseSchema, { target: 'draft-7' });
+export const updatePreferredLanguageJsonSchema = z.toJSONSchema(updatePreferredLanguageSchema, {
+  target: 'draft-7',
+});
 export const userStatsJsonSchema = z.toJSONSchema(userStatsSchema, { target: 'draft-7' });

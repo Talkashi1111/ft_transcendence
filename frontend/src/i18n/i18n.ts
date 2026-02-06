@@ -2,8 +2,9 @@ import en from './en.json';
 import fr from './fr.json';
 import ja from './ja.json';
 import de from './de.json';
+import { getCurrentUser } from '../utils/auth';
+import { isLang, type Lang } from '../types/lang';
 
-export type Lang = 'en' | 'ja' | 'fr' | 'de';
 const STORAGE_KEY = 'lang';
 
 const listeners = new Set<() => void>();
@@ -12,6 +13,8 @@ export function onLangChange(fn: () => void) {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
+
+let accountLang: Lang | null = null; // DB preference (default for new devices)
 
 function detectBrowserLang(): Lang {
   const navLang = navigator.languages?.[0] || navigator.language || 'en';
@@ -23,17 +26,70 @@ function detectBrowserLang(): Lang {
   return 'en';
 }
 
+/**
+ * Sync account language from backend.
+ * Rule: Only seed localStorage from account if localStorage has no valid lang yet.
+ */
+export async function syncLangFromAccount(): Promise<void> {
+  const user = await getCurrentUser();
+  accountLang = isLang(user?.preferredLanguage) ? user!.preferredLanguage : null;
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const hasSaved = isLang(saved);
+
+  // Seed device lang from account only if device has no preference yet
+  if (!hasSaved && accountLang) {
+    localStorage.setItem(STORAGE_KEY, accountLang);
+  }
+
+  listeners.forEach((fn) => fn());
+}
+
+/**
+ * Priority:
+ * 1) localStorage (device choice)
+ * 2) accountLang (DB default, if already synced)
+ * 3) browser language
+ */
 export function getLang(): Lang {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved === 'en' || saved === 'ja' || saved === 'fr' || saved === 'de') return saved;
+  if (isLang(saved)) return saved;
+
+  if (accountLang) return accountLang;
+
   return detectBrowserLang();
 }
 
+/**
+ * Device-only language change (navbar).
+ * Does NOT touch accountLang (DB).
+ */
 export function setLang(lang: Lang) {
   const current = getLang();
-  if (lang === current) return; // prevents pointless rerenders
+  if (lang === current) return;
+
   localStorage.setItem(STORAGE_KEY, lang);
-  listeners.forEach((fn) => fn()); // tell the app to re-render
+  listeners.forEach((fn) => fn());
+}
+
+/**
+ * Use this ONLY after the user saves language in Settings (Option B):
+ * - DB is updated server-side
+ * - apply immediately on this device
+ * - also update accountLang in memory so it matches DB
+ */
+export function applyAccountLang(lang: Lang) {
+  accountLang = lang;
+  localStorage.setItem(STORAGE_KEY, lang);
+  listeners.forEach((fn) => fn());
+}
+
+/**
+ * Call on logout so we don’t keep stale DB state in memory.
+ * (localStorage remains, as we agreed.)
+ */
+export function clearAccountLang(): void {
+  accountLang = null;
 }
 
 // ---- JSON dictionaries + t() ----

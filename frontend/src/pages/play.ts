@@ -20,6 +20,288 @@ const GAME_END_DELAY_MS = 2000; // Delay before showing result screen after game
 let pageCleanup: (() => void) | null = null;
 let isInActiveRemoteGame = false;
 
+// Track current play screen for i18n rerender logic
+let lastPlayScreenId = 'mode-selection';
+let playNeedsRerenderAfterGame = false;
+let lastWinnerName = ''; // Store winner name for language change re-translation
+
+function requestPlayRerenderIfNeeded(): void {
+  if (!playNeedsRerenderAfterGame) return;
+  playNeedsRerenderAfterGame = false;
+  window.dispatchEvent(new CustomEvent('play:rerender'));
+}
+
+export function markPlayNeedsRerenderAfterGame(): void {
+  playNeedsRerenderAfterGame = true;
+}
+
+export function isPlayInNoRerenderScreen(): boolean {
+  // Don't rerender during active games, setup screens, or waiting/join screens (to preserve user input)
+  return (
+    lastPlayScreenId === 'game-screen' ||
+    lastPlayScreenId === 'result-screen' ||
+    lastPlayScreenId === 'remote-game-screen' ||
+    lastPlayScreenId === 'game-setup' ||
+    lastPlayScreenId === 'bot-game-setup' ||
+    lastPlayScreenId === 'join-match-screen' ||
+    lastPlayScreenId === 'remote-waiting-screen' ||
+    lastPlayScreenId === 'tournament-screen'
+  );
+}
+
+// Updates language strings on screen during a game or setup
+export function applyPlayInGameTranslations(): void {
+  // Game screen translations
+  const endBtn = document.getElementById('end-game-btn');
+  if (endBtn) endBtn.textContent = t('play.endgame.button');
+
+  // Result screen translations (always update these elements when they exist)
+  const gameOverTitle = document.getElementById('gameover-title');
+  if (gameOverTitle) gameOverTitle.textContent = t('play.gameover.title');
+
+  const winnerNameEl = document.getElementById('winner-name');
+  if (winnerNameEl && lastWinnerName) {
+    winnerNameEl.textContent = t('play.gameover.winner', { winner: lastWinnerName });
+  }
+
+  const player1Label = document.getElementById('result-player1');
+  if (player1Label) player1Label.textContent = t('play.player1.label');
+
+  const player2Label = document.getElementById('result-player2');
+  if (player2Label) player2Label.textContent = t('play.player2.label');
+
+  const backBtn = document.getElementById('back-to-menu-btn');
+  if (backBtn) backBtn.textContent = t('play.gameover.backtomenu.button');
+
+  const playAgain = document.getElementById('play-again-btn');
+  if (playAgain) playAgain.textContent = t('play.gameover.playagain.button');
+
+  const leaveRemote = document.getElementById('leave-remote-game-btn');
+  if (leaveRemote) leaveRemote.textContent = t('play.remote.leavegame.button');
+
+  // Game setup (1v1) translations
+  const gameSetup = document.getElementById('game-setup');
+  if (gameSetup && !gameSetup.classList.contains('hidden')) {
+    const title = gameSetup.querySelector('h3');
+    if (title) title.textContent = t('play.game_setup.title');
+
+    const labels = gameSetup.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = t('play.game_setup.player1.alias.label');
+    if (labels[1]) labels[1].textContent = t('play.game_setup.player2.alias.label');
+
+    const player1Input = document.getElementById('player1-alias') as HTMLInputElement | null;
+    if (player1Input) player1Input.placeholder = t('play.game_setup.player1.alias.placeholder');
+
+    const player2Input = document.getElementById('player2-alias') as HTMLInputElement | null;
+    if (player2Input) player2Input.placeholder = t('play.game_setup.player2.alias.placeholder');
+
+    const controlsTitle = gameSetup.querySelector('.bg-blue-50 h4');
+    if (controlsTitle) controlsTitle.textContent = t('play.game_setup.controls.label');
+
+    // Update control instructions
+    const controlsBox = gameSetup.querySelector('.bg-blue-50');
+    if (controlsBox) {
+      const controlParagraphs = controlsBox.querySelectorAll('p');
+      if (controlParagraphs[0]) {
+        controlParagraphs[0].innerHTML = `<strong>${t('play.game_setup.controls.player1.key')}</strong> ${t('play.game_setup.controls.player1.value')}`;
+      }
+      if (controlParagraphs[1]) {
+        controlParagraphs[1].innerHTML = `<strong>${t('play.game_setup.controls.player2.key')}</strong> ${t('play.game_setup.controls.player2.value')}`;
+      }
+      if (controlParagraphs[2]) {
+        controlParagraphs[2].innerHTML = `<strong>${t('play.game_setup.controls.pause.key')}</strong> ${t('play.game_setup.controls.pause.value')}`;
+      }
+    }
+
+    const startBtn = document.getElementById('start-game-btn');
+    if (startBtn) startBtn.textContent = t('play.game_setup.button.start');
+
+    const backToModeBtn = document.getElementById('back-to-mode-btn');
+    if (backToModeBtn) backToModeBtn.textContent = t('play.game_setup.button.back');
+  }
+
+  // Bot game setup translations
+  const botSetup = document.getElementById('bot-game-setup');
+  if (botSetup && !botSetup.classList.contains('hidden')) {
+    const title = botSetup.querySelector('h3');
+    if (title) title.textContent = t('play.local.1vbot.title');
+
+    const difficultyLabel = botSetup.querySelector('.block.text-sm');
+    if (difficultyLabel) difficultyLabel.textContent = t('play.local.1vbot.text');
+
+    const btn1 = document.getElementById('botlvl-1-btn');
+    const btn2 = document.getElementById('botlvl-2-btn');
+    const btn3 = document.getElementById('botlvl-3-btn');
+    const btn4 = document.getElementById('botlvl-4-btn');
+    if (btn1) btn1.textContent = t('play.local.1vbot.paw');
+    if (btn2) btn2.textContent = t('play.local.1vbot.tracky');
+    if (btn3) btn3.textContent = t('play.local.1vbot.human');
+    if (btn4) btn4.textContent = t('play.local.1vbot.god');
+
+    const controlsTitle = botSetup.querySelector('.bg-blue-50 h4');
+    if (controlsTitle) controlsTitle.textContent = t('play.local.1vbot.controls');
+
+    // Update control instructions
+    const controlsBox = botSetup.querySelector('.bg-blue-50');
+    if (controlsBox) {
+      const controlParagraphs = controlsBox.querySelectorAll('p');
+      if (controlParagraphs[0]) {
+        controlParagraphs[0].innerHTML = `<strong>${t('play.local.1vbot.controls.up.label')}</strong>${t('play.local.1vbot.controls.up')}`;
+      }
+      if (controlParagraphs[1]) {
+        controlParagraphs[1].innerHTML = `<strong>${t('play.local.1vbot.controls.down.label')}</strong>${t('play.local.1vbot.controls.down')}`;
+      }
+      if (controlParagraphs[2]) {
+        controlParagraphs[2].innerHTML = `<strong>${t('play.local.1vbot.controls.pause.label')}</strong>${t('play.local.1vbot.controls.pause')}`;
+      }
+    }
+
+    const startBotBtn = document.getElementById('start-bot-game-btn');
+    if (startBotBtn) startBotBtn.textContent = t('play.local.1vbot.start.button');
+
+    const backFromBotBtn = document.getElementById('back-to-mode-from-bot-btn');
+    if (backFromBotBtn) backFromBotBtn.textContent = t('play.local.1vbot.back.button');
+  }
+
+  // Join match screen translations
+  const joinMatchScreen = document.getElementById('join-match-screen');
+  if (joinMatchScreen && !joinMatchScreen.classList.contains('hidden')) {
+    const title = joinMatchScreen.querySelector('h3');
+    if (title) title.textContent = t('play.remote.join.match.title');
+
+    const matchIdLabel = joinMatchScreen.querySelector('label[for="match-id-input"]');
+    if (matchIdLabel) matchIdLabel.textContent = t('play.remote.matchID.label');
+
+    const matchIdInput = document.getElementById('match-id-input') as HTMLInputElement | null;
+    if (matchIdInput) matchIdInput.placeholder = t('play.remote.matchID.placeholder');
+
+    const confirmBtn = document.getElementById('confirm-join-btn');
+    if (confirmBtn) confirmBtn.textContent = t('play.remote.join.match.confirm.button');
+
+    const cancelBtn = document.getElementById('cancel-join-btn');
+    if (cancelBtn) cancelBtn.textContent = t('play.remote.join.match.cancel.button');
+
+    const availableTitle = joinMatchScreen.querySelector('.border-t h4');
+    if (availableTitle) availableTitle.textContent = t('play.remote.available.matches.title');
+
+    const refreshBtn = document.getElementById('refresh-matches-btn');
+    if (refreshBtn) refreshBtn.textContent = t('play.remote.available.matches.refresh.button');
+
+    // Update empty matches text if shown
+    const availableMatchesList = document.getElementById('available-matches-list');
+    if (availableMatchesList) {
+      const emptyText = availableMatchesList.querySelector('p.text-gray-500');
+      if (emptyText && availableMatchesList.children.length === 1) {
+        emptyText.textContent = t('play.remote.available.matches.empty');
+      }
+    }
+  }
+
+  // Remote waiting screen translations
+  const remoteWaitingScreen = document.getElementById('remote-waiting-screen');
+  if (remoteWaitingScreen && !remoteWaitingScreen.classList.contains('hidden')) {
+    const title = document.getElementById('remote-waiting-title');
+    if (title) title.textContent = t('play.remote.waiting.room.title');
+
+    const status = document.getElementById('remote-waiting-status');
+    if (status) status.textContent = t('play.remote.waiting.room.status');
+
+    const controlsTitle = remoteWaitingScreen.querySelector('.bg-blue-50 h4');
+    if (controlsTitle) controlsTitle.textContent = t('play.remote.waiting.room.controls.title');
+
+    const controlsBox = remoteWaitingScreen.querySelector('.bg-blue-50');
+    if (controlsBox) {
+      const controlParagraphs = controlsBox.querySelectorAll('p');
+      if (controlParagraphs[0]) {
+        controlParagraphs[0].innerHTML = `<strong>${t('play.remote.waiting.room.controls.up.label')}</strong> ${t('play.remote.waiting.room.controls.up.value')}`;
+      }
+      if (controlParagraphs[1]) {
+        controlParagraphs[1].innerHTML = `<strong>${t('play.remote.waiting.room.controls.down.label')}</strong> ${t('play.remote.waiting.room.controls.down.value')}`;
+      }
+    }
+
+    const cancelBtn = document.getElementById('cancel-remote-btn');
+    if (cancelBtn) cancelBtn.textContent = t('play.remote.waiting.room.cancel.button');
+  }
+
+  // Tournament registration screen translations
+  const tournamentRegistration = document.getElementById('tournament-registration');
+  if (tournamentRegistration && !tournamentRegistration.classList.contains('hidden')) {
+    const title = tournamentRegistration.querySelector('h3');
+    if (title) title.textContent = t('play.local.tournament.registration.title');
+
+    const desc = tournamentRegistration.querySelector('p.text-gray-600');
+    if (desc) desc.textContent = t('play.local.tournament.registration.text');
+
+    const aliasInput = document.getElementById(
+      'tournament-player-alias'
+    ) as HTMLInputElement | null;
+    if (aliasInput) aliasInput.placeholder = t('play.local.tournament.registration.placeholder');
+
+    const addBtn = document.getElementById('add-tournament-player-btn');
+    if (addBtn) addBtn.textContent = t('play.local.tournament.registration.addplayer.button');
+
+    const startBtn = document.getElementById('start-tournament-btn');
+    if (startBtn)
+      startBtn.textContent = t('play.local.tournament.registration.starttournament.button');
+
+    const backBtn = document.getElementById('back-from-tournament-btn');
+    if (backBtn) backBtn.textContent = t('play.local.tournament.registration.backtomenu.button');
+
+    // Update the "/ 8 players" label
+    const playersLabel = document.getElementById('tournament-players-label');
+    if (playersLabel)
+      playersLabel.textContent = ` / 8 ${t('play.local.tournament.registration.players')}`;
+
+    // Update status message based on current player count
+    const statusMessage = document.getElementById('tournament-status-message');
+    const playerCountEl = document.getElementById('tournament-player-count');
+    if (statusMessage && playerCountEl) {
+      const playerCount = parseInt(playerCountEl.textContent || '0', 10);
+      if (playerCount === 0) {
+        statusMessage.textContent = t('play.local.tournament.registration.smalltext');
+      } else if (playerCount === 1) {
+        statusMessage.textContent = t('play.local.tournament.registration.smalltext.onemore');
+      } else if (playerCount < 8) {
+        const remaining = 8 - playerCount;
+        statusMessage.textContent = t('play.local.tournament.registration.smalltext.ready', {
+          remaining,
+        });
+      } else {
+        statusMessage.textContent = t('play.local.tournament.registration.smalltext.full');
+      }
+    }
+
+    // Update "(you)" text and remove button in player list
+    const playersList = document.getElementById('tournament-players-list');
+    if (playersList) {
+      const youLabels = playersList.querySelectorAll('.text-blue-600');
+      youLabels.forEach((label) => {
+        label.textContent = t('play.local.tournament.registration.you');
+      });
+      const removeButtons = playersList.querySelectorAll('.remove-player-btn');
+      removeButtons.forEach((btn) => {
+        btn.textContent = t('play.local.tournament.registration.remove.button');
+      });
+    }
+  }
+
+  // Tournament bracket screen translations
+  const tournamentBracket = document.getElementById('tournament-bracket');
+  if (tournamentBracket && !tournamentBracket.classList.contains('hidden')) {
+    const title = tournamentBracket.querySelector('h3');
+    if (title) title.textContent = t('play.local.tournament.bracket.title');
+
+    const endBtn = document.getElementById('end-tournament-btn');
+    if (endBtn) endBtn.textContent = t('play.local.tournament.bracket.end.button');
+  }
+}
+
+export function resetPlayUIState(): void {
+  lastPlayScreenId = 'mode-selection';
+  playNeedsRerenderAfterGame = false;
+}
+
 // Module-level tournament state for popstate handler
 let moduleTournamentManager: TournamentManager | null = null;
 let moduleCurrentGame: PongGame | null = null;
@@ -87,7 +369,7 @@ async function handleTournamentPopstate(event: PopStateEvent): Promise<void> {
         '',
         window.location.href
       );
-      toast.info('Tournament ended');
+      toast.info(t('play.local.tournament.ended'));
     }
   }
 }
@@ -358,7 +640,7 @@ export async function renderPlayPage(
         <!-- Game Result Screen -->
         <div id="result-screen" class="hidden">
           <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
-            <h3 class="text-3xl font-bold text-gray-900 mb-4">${t('play.gameover.title')}</h3>
+            <h3 id="gameover-title" class="text-3xl font-bold text-gray-900 mb-4">${t('play.gameover.title')}</h3>
 
             <div class="mb-6">
               <p class="text-5xl font-bold text-blue-600 mb-4" id="winner-name">Winner</p>
@@ -501,7 +783,7 @@ export async function renderPlayPage(
 
               <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span class="text-gray-700">
-                  <span id="tournament-player-count" class="font-bold text-purple-600">0</span> / 8 ${t('play.local.tournament.registration.players')}
+                  <span id="tournament-player-count" class="font-bold text-purple-600">0</span><span id="tournament-players-label"> / 8 ${t('play.local.tournament.registration.players')}</span>
                 </span>
                 <span id="tournament-status-message" class="text-sm text-gray-500">${t('play.local.tournament.registration.smalltext')}</span>
               </div>
@@ -754,6 +1036,15 @@ function setupPlayPageEvents(): void {
     remoteGameScreen?.classList.add('hidden');
     screen.classList.remove('hidden');
 
+    // Track current screen for i18n rerender logic
+    const screenId = getScreenId(screen);
+    if (screenId) lastPlayScreenId = screenId;
+
+    // Check if we need to re-render after a game
+    if (screen === modeSelection) {
+      requestPlayRerenderIfNeeded();
+    }
+
     // Subscribe to match list updates when join screen is visible
     if (screen === joinMatchScreen) {
       startMatchListSubscription();
@@ -768,7 +1059,6 @@ function setupPlayPageEvents(): void {
       screen !== gameScreen &&
       screen !== resultScreen
     ) {
-      const screenId = getScreenId(screen);
       if (screenId) {
         window.history.pushState({ page: 'play', playScreen: screenId }, '', window.location.href);
       }
@@ -821,8 +1111,7 @@ function setupPlayPageEvents(): void {
     if (!availableMatchesList) return;
 
     if (matches.length === 0) {
-      availableMatchesList.innerHTML =
-        '<p class="text-gray-500 text-sm">No matches available. Create one!</p>';
+      availableMatchesList.innerHTML = `<p class="text-gray-500 text-sm">${t('play.remote.available.matches.empty')}</p>`;
       return;
     }
 
@@ -973,9 +1262,6 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
 
-    // Disable language selectors during game
-    setLanguageSelectorsEnabled(false);
-
     // Hide tournament UI, show game canvas
     if (tournamentBracket) tournamentBracket.classList.add('hidden');
     if (gameScreen) gameScreen.classList.remove('hidden');
@@ -1007,9 +1293,6 @@ function setupPlayPageEvents(): void {
       currentGame.destroy();
       currentGame = null;
     }
-
-    // Re-enable language selectors between matches
-    setLanguageSelectorsEnabled(true);
 
     // Record the result
     tournamentManager.recordMatchResult(matchId, winnerId, score1, score2);
@@ -1373,7 +1656,7 @@ function setupPlayPageEvents(): void {
         remoteConnectionStatus.textContent = `Match ID: ${match.id.slice(0, 8)}...`;
       }
 
-      toast.info('Rejoining your active match...');
+      toast.info(t('play.rejoining.active.match'));
 
       // Create remote game and reconnect
       remoteGame = new RemotePongGame(remotePongCanvas, {
@@ -1440,9 +1723,8 @@ function setupPlayPageEvents(): void {
       await remoteGame.connect(match.id);
       remoteGame.start();
 
-      // Mark as in active remote game and disable language selectors
+      // Mark as in active remote game
       isInActiveRemoteGame = true;
-      setLanguageSelectorsEnabled(false);
     } catch (err) {
       console.error('[Play] Error checking for active match:', err);
       // Silently fail - user can still create new matches
@@ -1466,8 +1748,7 @@ function setupPlayPageEvents(): void {
     if (!availableMatchesList) return;
 
     if (matches.length === 0) {
-      availableMatchesList.innerHTML =
-        '<p class="text-gray-500 text-sm">No matches available. Create one!</p>';
+      availableMatchesList.innerHTML = `<p class="text-gray-500 text-sm">${t('play.remote.available.matches.empty')}</p>`;
       return;
     }
 
@@ -1592,9 +1873,8 @@ function setupPlayPageEvents(): void {
       await remoteGame.connect(matchId);
       remoteGame.start();
 
-      // Mark as in active remote game and disable language selectors
+      // Mark as in active remote game
       isInActiveRemoteGame = true;
-      setLanguageSelectorsEnabled(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start game';
       toast.error(message);
@@ -1620,13 +1900,6 @@ function setupPlayPageEvents(): void {
     // Only reset WebSocket manager when truly cleaning up, not when starting a new game
     // The WebSocket connection will be reused for the new game
     isInActiveRemoteGame = false;
-    // Re-enable language selectors
-    setLanguageSelectorsEnabled(true);
-  }
-
-  // Helper to enable/disable language selectors during games
-  function setLanguageSelectorsEnabled(enabled: boolean): void {
-    setLanguageSelectorsEnabledGlobal(enabled);
   }
 
   // Event: Local Game button
@@ -1820,8 +2093,6 @@ function setupPlayPageEvents(): void {
       // Sync to module level after status change to 'in-progress'
       syncTournamentToModule();
       showTournamentPhase('bracket');
-      // Disable language selectors during tournament
-      setLanguageSelectorsEnabled(false);
       // Push history state for bracket phase to enable back button confirmation
       window.history.pushState(
         { page: 'play', playScreen: 'tournament-bracket' },
@@ -1875,16 +2146,13 @@ function setupPlayPageEvents(): void {
         currentGame = null;
       }
 
-      // Re-enable language selectors
-      setLanguageSelectorsEnabled(true);
-
       // Reset tournament
       showScreen(modeSelection!);
       // Update history state so language change doesn't restore the old screen
       window.history.replaceState({ page: 'play' }, '', window.location.href);
       tournamentManager = null;
       syncTournamentToModule();
-      toast.info('Tournament ended');
+      toast.info(t('play.local.tournament.ended'));
     }
   });
 
@@ -1906,7 +2174,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player1 = t('play.player1.label'); // Default name
+      player1 = t('play.player1.default.label'); // Default name
     }
 
     // Validate player 2 alias
@@ -1917,7 +2185,7 @@ function setupPlayPageEvents(): void {
         return;
       }
     } else {
-      player2 = t('play.player2.label'); // Default name
+      player2 = t('play.player2.default.label'); // Default name
     }
 
     // Check for duplicate names
@@ -1941,9 +2209,6 @@ function setupPlayPageEvents(): void {
         showResultScreen(winner, player1, player2, score1, score2);
       }, GAME_END_DELAY_MS);
     });
-
-    // Disable language selectors during game
-    setLanguageSelectorsEnabled(false);
 
     showScreen(gameScreen!);
     currentGame.start();
@@ -2006,9 +2271,6 @@ function setupPlayPageEvents(): void {
       }, GAME_END_DELAY_MS);
     });
 
-    // Disable language selectors during game
-    setLanguageSelectorsEnabled(false);
-
     showScreen(gameScreen!);
     currentGame.start();
   });
@@ -2021,14 +2283,12 @@ function setupPlayPageEvents(): void {
       currentGame = null;
     }
 
-    // If we're in a tournament, go back to tournament bracket (keep language selectors disabled)
+    // If we're in a tournament, go back to tournament bracket
     if (tournamentManager && tournamentManager.getTournament().status === 'in-progress') {
       if (tournamentBracket) tournamentBracket.classList.remove('hidden');
       if (gameScreen) gameScreen.classList.add('hidden');
       showScreen(tournamentScreen!);
     } else {
-      // Re-enable language selectors only when not in tournament
-      setLanguageSelectorsEnabled(true);
       showScreen(modeSelection!);
       // Update history state so language change doesn't restore the old screen
       window.history.replaceState({ page: 'play' }, '', window.location.href);
@@ -2095,9 +2355,7 @@ function setupPlayPageEvents(): void {
     score2: number,
     isRemoteGame: boolean = false
   ): void {
-    // Re-enable language selectors when game ends
-    setLanguageSelectorsEnabled(true);
-
+    lastWinnerName = winner; // Store for language change re-translation
     if (winnerNameEl) winnerNameEl.textContent = t('play.gameover.winner', { winner });
     if (resultPlayer1El) resultPlayer1El.textContent = player1;
     if (resultScore1El) resultScore1El.textContent = score1.toString();

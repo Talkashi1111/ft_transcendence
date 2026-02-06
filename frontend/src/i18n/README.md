@@ -2,14 +2,13 @@
 
 ### Multiple language support
 
-| Go to                                         |
-| --------------------------------------------- |
-| [Module requirements](#module-requirements)   |
-| [Current logic](#current-logic)               |
-| [Workflow](#workflow)                         |
-| [Known issues](#known-issues)                 |
-| [Files with UI text](#files-with-ui-text)     |
-| [Files with UI errors](#files-with-ui-errors) |
+| Go to                                                         |
+| ------------------------------------------------------------- |
+| [Module requirements](#module-requirements)                   |
+| [Current logic](#current-logic)                               |
+| [Workflow](#workflow)                                         |
+| [Known issues](#known-issues)                                 |
+| [Files with UI text/errors](#files-with-user-text-and-errors) |
 
 ## Module requirements
 
@@ -44,7 +43,7 @@
 - Allow users to set their preferred language as the default for subsequent visits.
 
   ```text
-  NOTE - Currently persistence is maintained using localStorage. Ultimately, might want to implement preferredLanguage in the DB.
+  NOTE - Browser-specific persistence is maintained using localStorage. Persistence across browsers and devices is done through preferredLanguage setting in the DB.
   ```
 
 This minor module aims to enhance the accessibility and inclusivity of your website by offering content in multiple languages, making it more user-friendly for a diverse international audience.
@@ -123,9 +122,9 @@ E. Fallback to English
 
 <ul style="list-style: none; padding-left: 0;">
   <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 1 - UI text</li> 
-  <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 2 - CI tests</li>
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 3 - UI errors</li>
-  <li><input type="checkbox" style="accent-color: #2e7d32;" disabled> Step 4 - DB preferences and routes</li>
+  <li><input type="checkbox" style="accent-color: #2e7d32;" checked> Step 2 - CI tests</li>
+  <li><input type="checkbox" style="accent-color: #ed6c02;" checked> Step 3 - UI errors</li>
+  <li><input type="checkbox" style="accent-color: #2e7d32;" checked> Step 4 - DB preferences and routes</li>
 </ul>
 
 <p style="text-align: right;">
@@ -134,25 +133,29 @@ E. Fallback to English
 
 ## Known issues
 
-Rendering is only per page basis currently. (TO FIX)
+<input type="checkbox" style="accent-color: #2e7d32;" checked> Issue #1 - Rendering is only per main page basis.
 
-## Files with UI text
+> Fixed for play and settings as far as I know.
 
-| File name      | Function name |
-| -------------- | ------------- |
-| main.ts        |               |
-| play.ts        |               |
-| login.ts       |               |
-| register.ts    |               |
-| tournaments.ts |               |
-| friends.ts     |               |
-| settings.ts    |               |
+<input type="checkbox" style="accent-color: #2e7d32;" checked> Issue #2 - When returning to a game that was left using the browser the game's empty canvas is rendered instead of the main screen.
+
+<input type="checkbox" style="accent-color: #2e7d32;" checked> Issue #3 - Translation while game is running. Inline?
 
 <p style="text-align: right;">
   <a href="#top">⬆ Back to top</a>
 </p>
 
-## Files with UI errors
+## Files with user text and errors
+
+| File name      | Progress |
+| -------------- | -------- |
+| main.ts        |          |
+| play.ts        |          |
+| login.ts       |          |
+| register.ts    |          |
+| tournaments.ts |          |
+| friends.ts     |          |
+| settings.ts    |          |
 
 <p style="text-align: right;">
   <a href="#top">⬆ Back to top</a>
