@@ -1,0 +1,28 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      templates:
+        - condition:
+            equals:
+              docker.container.labels.filebeat_collect: 'true'
+          config:
+            - type: filestream
+              id: 'docker-app-${data.docker.container.id}'
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log ##rempli auto par autodiscover
+              prospector:
+                scanner:
+                  fingerprint:
+                    length: 64
+                    offset: 0
+              parsers:
+                - container:
+                    stream: all
+                    format: docker
+
+processors: []
+
+output.logstash:
+  hosts: ['logstash:5044']
+
+logging.level: info
