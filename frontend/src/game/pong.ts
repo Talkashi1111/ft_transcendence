@@ -123,6 +123,16 @@ export class PongGame {
     }
   }
 
+  pause(): void {
+    if (this.gameState.status === 'playing' || this.gameState.status === 'countdown') {
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+        this.countdownInterval = null;
+      }
+      this.gameState.status = 'paused';
+    }
+  }
+
   protected handleInput(): void {
     // Player 1 controls (W/S)
     if (this.inputHandler.isPlayer1UpPressed()) {

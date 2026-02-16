@@ -13,6 +13,7 @@ import {
   hasActiveRemoteGame,
   leaveRemoteGame,
   resetPlayUIState,
+  pauseLocalGame,
   applyPlayInGameTranslations,
   markPlayNeedsRerenderAfterGame,
   isPlayInNoRerenderScreen,
@@ -199,6 +200,9 @@ async function connectGlobalWebSocket(): Promise<void> {
         window.history.pushState({ page: 'home' }, '', '/');
         render();
       }
+
+      // Pause any local game so it doesn't continue behind the modal
+      pauseLocalGame();
 
       // Show modal with only "Reclaim Session" button
       const reclaim = await showConfirmModal({
