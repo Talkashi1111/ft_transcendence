@@ -17,6 +17,7 @@ export class PongGame {
   protected inputHandler: InputHandler;
   private animationId: number | null = null;
   private countdownInterval: number | null = null;
+  private pausedDuringCountdown: boolean = false;
   private onGameEnd?: (winner: string, player1Score: number, player2Score: number) => void;
   private lastFrameTime: number = 0;
   private accumulator: number = 0;
@@ -119,18 +120,56 @@ export class PongGame {
     if (this.gameState.status === 'playing') {
       this.gameState.status = 'paused';
     } else if (this.gameState.status === 'paused') {
-      this.gameState.status = 'playing';
+      if (this.pausedDuringCountdown) {
+        this.pausedDuringCountdown = false;
+        this.resumeCountdown();
+      } else {
+        this.gameState.status = 'playing';
+      }
     }
   }
 
   pause(): void {
     if (this.gameState.status === 'playing' || this.gameState.status === 'countdown') {
+      this.pausedDuringCountdown = this.gameState.status === 'countdown';
       if (this.countdownInterval) {
         clearInterval(this.countdownInterval);
         this.countdownInterval = null;
       }
       this.gameState.status = 'paused';
     }
+  }
+
+  resume(): void {
+    if (this.gameState.status === 'paused') {
+      if (this.pausedDuringCountdown) {
+        this.pausedDuringCountdown = false;
+        this.resumeCountdown();
+      } else {
+        this.gameState.status = 'playing';
+      }
+    }
+  }
+
+  private resumeCountdown(): void {
+    this.gameState.status = 'countdown';
+    // If countdown already reached 0 while pausing, go straight to playing
+    if (this.gameState.countdown <= 0) {
+      this.gameState.status = 'playing';
+      return;
+    }
+
+    this.countdownInterval = window.setInterval(() => {
+      this.gameState.countdown--;
+
+      if (this.gameState.countdown <= 0) {
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+          this.countdownInterval = null;
+        }
+        this.gameState.status = 'playing';
+      }
+    }, 1000);
   }
 
   protected handleInput(): void {
