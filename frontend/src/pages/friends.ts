@@ -201,7 +201,7 @@ async function sendFriendRequest(userId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.error || data.message || 'Failed to send request');
+      toast.error(data.error || data.message || t('friends.send.request.toast.error'));
       return false;
     }
   } catch {
@@ -225,7 +225,7 @@ async function acceptFriendRequest(friendshipId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.error || data.message || 'Failed to accept request');
+      toast.error(data.error || data.message || t('friends.accept.request.toast.error'));
       return false;
     }
   } catch {
@@ -249,7 +249,7 @@ async function declineFriendRequest(friendshipId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.error || data.message || 'Failed to decline request');
+      toast.error(data.error || data.message || t('friends.decline.request.toast.error'));
       return false;
     }
   } catch {
@@ -273,7 +273,7 @@ async function removeFriend(friendshipId: string): Promise<boolean> {
       return true;
     } else {
       const data = await response.json();
-      toast.error(data.error || data.message || 'Failed to remove friend');
+      toast.error(data.error || data.message || t('friends.remove.toast.error'));
       return false;
     }
   } catch {
@@ -482,7 +482,7 @@ function renderSearchResults(): string {
   if (searchResults.length === 0) {
     return `
       <div class="text-center py-8 text-gray-500">
-        <p class="text-sm">No users found matching "${escapeHtml(searchQuery)}"</p>
+        <p class="text-sm">${t('friends.search.no.result', { query: escapeHtml(searchQuery) })}</p>
       </div>
     `;
   }
@@ -561,13 +561,17 @@ function renderNotificationsList(): string {
           let icon = '';
 
           // Both notification types use fromAlias to identify who triggered the action
-          const senderAlias = n.data.fromAlias || 'Someone';
+          const senderAlias = n.data.fromAlias ?? t('friends.notification.someone');
 
           if (n.type === 'FRIEND_REQUEST') {
-            message = `<strong>${escapeHtml(senderAlias)}</strong> sent you a friend request`;
+            message = t('friends.notification.request', {
+              alias: `<strong>${escapeHtml(senderAlias)}</strong>`,
+            });
             icon = '👋';
           } else if (n.type === 'FRIEND_ACCEPTED') {
-            message = `<strong>${escapeHtml(senderAlias)}</strong> accepted your friend request`;
+            message = t('friends.notification.accepted', {
+              alias: `<strong>${escapeHtml(senderAlias)}</strong>`,
+            });
             icon = '🎉';
           }
 
@@ -658,11 +662,10 @@ function setupEventHandlers(app: HTMLElement): void {
       if (removeBtn) {
         const friendshipId = removeBtn.dataset.removeFriend!;
         const confirmed = await showConfirmModal({
-          title: 'Remove Friend',
-          message:
-            'Are you sure you want to remove this friend? You can always add them back later.',
-          confirmText: 'Remove',
-          cancelText: 'Cancel',
+          title: t('friends.remove.friend.button.title'),
+          message: t('friends.remove.friend.button.message'),
+          confirmText: t('friends.remove.friend.button.confirm'),
+          cancelText: t('friends.remove.friend.button.cancel'),
           isDangerous: true,
         });
         if (confirmed) {
@@ -679,7 +682,7 @@ function setupEventHandlers(app: HTMLElement): void {
 
       // Load more search results
       if (target.id === 'load-more-search' && searchCursor) {
-        target.textContent = 'Loading...';
+        target.textContent = t('friends.notifications.search.loading.more');
         await searchUsers(searchQuery, searchCursor);
         updateContent(app);
       }

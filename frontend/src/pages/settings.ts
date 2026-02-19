@@ -7,9 +7,54 @@ import {
   uploadAvatar,
   deleteAvatar,
   getAvatarUrl,
+  updatePreferredLanguage,
 } from '../utils/auth';
-import { t } from '../i18n/i18n';
+import { applyAccountLang, t } from '../i18n/i18n';
 import { escapeHtml } from '../utils/sanitize';
+import { isLang, type Lang } from '../types/lang';
+
+type SettingsUIState = {
+  is2faSetupOpen: boolean;
+  qrCodeDataUrl?: string;
+  secret?: string;
+  verificationCodeDraft?: string;
+};
+
+const settingsUIState: SettingsUIState = {
+  is2faSetupOpen: false,
+};
+
+export function cleanupSettingsUIState(): void {
+  settingsUIState.is2faSetupOpen = false;
+  settingsUIState.secret = undefined;
+  settingsUIState.qrCodeDataUrl = undefined;
+  settingsUIState.verificationCodeDraft = undefined;
+}
+
+function restore2FAUIFromState(): void {
+  if (!settingsUIState.is2faSetupOpen) return;
+
+  const setupContainer = document.getElementById('2fa-setup-container');
+  const qrCodeContainer = document.getElementById('qr-code-container');
+  const secretCode = document.getElementById('secret-code');
+  const setupBtn = document.getElementById('setup-2fa-btn');
+  const verificationCode = document.getElementById('verification-code') as HTMLInputElement | null;
+
+  setupContainer?.classList.remove('hidden');
+  setupBtn?.classList.add('hidden');
+
+  if (qrCodeContainer && settingsUIState.qrCodeDataUrl) {
+    qrCodeContainer.innerHTML = `<img src="${settingsUIState.qrCodeDataUrl}" alt="2FA QR Code" class="w-48 h-48" />`;
+  }
+
+  if (secretCode && settingsUIState.secret) {
+    secretCode.textContent = settingsUIState.secret;
+  }
+
+  if (verificationCode && settingsUIState.verificationCodeDraft) {
+    verificationCode.value = settingsUIState.verificationCodeDraft;
+  }
+}
 
 export async function renderSettingsPage(
   app: HTMLElement,
@@ -31,7 +76,7 @@ export async function renderSettingsPage(
       ${navBar}
 
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">${t('settings.title')}</h1>
+        <h1 id="settings-title" class="text-3xl font-bold text-gray-900 mb-8">${t('settings.title')}</h1>
 
         <!-- Avatar Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -98,6 +143,48 @@ export async function renderSettingsPage(
               <div id="alias-message" class="hidden mt-2 p-2 rounded text-sm" role="alert"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Set preferred language Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-1">${t('settings.language.title')}</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            ${t('settings.language.text')}
+          </p>
+
+          <form id="preferredLanguageForm" class="space-y-3">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="en" class="h-4 w-4" />
+              <span class="text-gray-900">${t('settings.language.english')}</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="de" class="h-4 w-4" />
+              <span class="text-gray-900">${t('settings.language.german')}</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="fr" class="h-4 w-4" />
+              <span class="text-gray-900">${t('settings.language.french')}</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" name="preferredLanguage" value="ja" class="h-4 w-4" />
+              <span class="text-gray-900">${t('settings.language.japanese')}</span>
+            </label>
+
+            <div class="pt-2 flex items-center gap-3">
+              <button
+                id="preferredLanguageSaveBtn"
+                type="submit"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold"
+              >
+                ${t('settings.language.save.button')}
+              </button>
+
+              <span id="preferredLanguageStatus" class="text-sm text-gray-600"></span>
+            </div>
+          </form>
         </div>
 
         <!-- 2FA Section -->
@@ -184,7 +271,9 @@ export async function renderSettingsPage(
   setupNavigation();
   setupAvatarHandler(user.id);
   setupAliasHandler();
+  setupPreferredLanguageHandler(user.preferredLanguage ?? null);
   setup2FAHandlers();
+  restore2FAUIFromState();
 }
 
 function setupAvatarHandler(userId: string): void {
@@ -279,7 +368,7 @@ function setupAvatarHandler(userId: string): void {
     deleteBtn.addEventListener('click', async () => {
       hideMessage();
 
-      if (!confirm('Are you sure you want to remove your profile picture?')) {
+      if (!confirm(t('settings.avatar.picture.remove.confirm'))) {
         return;
       }
 
@@ -385,6 +474,56 @@ function setupAliasHandler(): void {
   }
 }
 
+function setupPreferredLanguageHandler(initialFromDb: Lang | null): void {
+  const form = document.getElementById('preferredLanguageForm') as HTMLFormElement | null;
+  const status = document.getElementById('preferredLanguageStatus') as HTMLSpanElement | null;
+  const saveBtn = document.getElementById('preferredLanguageSaveBtn') as HTMLButtonElement | null;
+
+  if (!form || !status || !saveBtn) return;
+
+  // Only preselect if DB has a saved value - don't fall back to current UI lang
+  // This ensures the radio only reflects the user's SAVED preference, not the nav language
+  if (initialFromDb) {
+    const initialRadio = form.querySelector<HTMLInputElement>(
+      `input[name="preferredLanguage"][value="${initialFromDb}"]`
+    );
+    if (initialRadio) initialRadio.checked = true;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const checked = form.querySelector<HTMLInputElement>('input[name="preferredLanguage"]:checked');
+    const value = checked?.value;
+
+    if (!isLang(value)) {
+      status.textContent = t('preferredlanguage.choose.language.text');
+      return;
+    }
+
+    status.textContent = t('preferredlanguage.saving');
+    saveBtn.disabled = true;
+
+    try {
+      await updatePreferredLanguage(value);
+
+      applyAccountLang(value);
+      status.textContent = t('preferredlanguage.saved');
+
+      // Optional: re-render page so every string refreshes immediately
+      setTimeout(() => {
+        const event = new CustomEvent('navigate', { detail: { page: 'settings' } });
+        window.dispatchEvent(event);
+      }, 300);
+    } catch (err) {
+      status.textContent =
+        err instanceof Error ? err.message : t('preferredlanguage.failedtosave.message');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+}
+
 function setup2FAHandlers(): void {
   const setupBtn = document.getElementById('setup-2fa-btn');
   const disableBtn = document.getElementById('disable-2fa-btn');
@@ -427,6 +566,10 @@ function setup2FAHandlers(): void {
       try {
         const { secret, qrCodeDataUrl } = await setup2FA();
 
+        settingsUIState.is2faSetupOpen = true;
+        settingsUIState.secret = secret;
+        settingsUIState.qrCodeDataUrl = qrCodeDataUrl;
+
         if (qrCodeContainer) {
           qrCodeContainer.innerHTML = `<img src="${qrCodeDataUrl}" alt="2FA QR Code" class="w-48 h-48" />`;
         }
@@ -452,6 +595,7 @@ function setup2FAHandlers(): void {
     verificationCode.addEventListener('input', (e) => {
       const input = e.target as HTMLInputElement;
       input.value = input.value.replace(/[^\d]/g, '');
+      settingsUIState.verificationCodeDraft = input.value;
     });
 
     verifyBtn.addEventListener('click', async () => {
@@ -488,6 +632,11 @@ function setup2FAHandlers(): void {
   // Cancel button
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
+      settingsUIState.is2faSetupOpen = false;
+      settingsUIState.secret = undefined;
+      settingsUIState.qrCodeDataUrl = undefined;
+      settingsUIState.verificationCodeDraft = undefined;
+
       setupContainer?.classList.add('hidden');
       setupBtn?.classList.remove('hidden');
       if (setupBtn) {

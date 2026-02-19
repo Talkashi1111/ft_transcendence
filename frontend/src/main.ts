@@ -1,15 +1,25 @@
 import './index.css';
-import { onLangChange, getLang, setLang } from './i18n/i18n';
-import { t } from './i18n/i18n';
+import {
+  onLangChange,
+  getLang,
+  setLang,
+  t,
+  clearAccountLang,
+  syncLangFromAccount,
+} from './i18n/i18n';
 import {
   renderPlayPage,
   cleanupPlayPage,
   hasActiveRemoteGame,
   leaveRemoteGame,
+  resetPlayUIState,
+  applyPlayInGameTranslations,
+  markPlayNeedsRerenderAfterGame,
+  isPlayInNoRerenderScreen,
 } from './pages/play';
 import { renderLoginPage } from './pages/login';
 import { renderRegisterPage } from './pages/register';
-import { renderSettingsPage } from './pages/settings';
+import { renderSettingsPage, cleanupSettingsUIState } from './pages/settings';
 import { renderStatsPage } from './pages/stats';
 import { renderFriendsPage, cleanupFriendsPage } from './pages/friends';
 import { renderTournamentsPage, cleanupTournamentsPage } from './pages/tournaments';
@@ -17,6 +27,54 @@ import { isAuthenticated, logout, getCurrentUser } from './utils/auth';
 import { getWebSocketManager, resetWebSocketManager } from './utils/websocket';
 import { showConfirmModal } from './utils/modal';
 import { escapeHtml } from './utils/sanitize';
+
+function applyNavTranslationsInPlace(): void {
+  const byId: Record<string, string> = {
+    'nav-home': 'nav.home',
+    'nav-play': 'nav.play',
+    'nav-tournaments': 'nav.tournaments',
+    'nav-friends': 'nav.friends',
+    'nav-stats': 'nav.stats',
+    'nav-settings': 'nav.settings',
+    'nav-login': 'nav.login',
+    'nav-register': 'nav.register',
+    'nav-logout': 'nav.logout',
+
+    'nav-home-mobile': 'mobile.home',
+    'nav-play-mobile': 'mobile.play',
+    'nav-tournaments-mobile': 'mobile.tournaments',
+    'nav-friends-mobile': 'mobile.friends',
+    'nav-stats-mobile': 'mobile.stats',
+    'nav-settings-mobile': 'mobile.settings',
+    'nav-login-mobile': 'mobile.login',
+    'nav-register-mobile': 'mobile.register',
+    'nav-logout-mobile': 'mobile.logout',
+  };
+
+  for (const [id, key] of Object.entries(byId)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(key);
+  }
+
+  const lang = getLang();
+
+  const desktopSelect = document.getElementById('nav-lang') as HTMLSelectElement | null;
+  if (desktopSelect) {
+    desktopSelect.value = lang;
+    desktopSelect.setAttribute('aria-label', t('aria.label.nav.lang'));
+  }
+
+  const mobileSelect = document.getElementById('nav-lang-mobile') as HTMLSelectElement | null;
+  if (mobileSelect) {
+    mobileSelect.value = lang;
+    mobileSelect.setAttribute('aria-label', t('aria.label.nav.lang'));
+  }
+}
+
+function setTextById(id: string, key: string): void {
+  const el = document.getElementById(id);
+  if (el) el.textContent = t(key);
+}
 
 // Router
 let currentPage:
@@ -237,10 +295,10 @@ async function navigate(
   // Check if leaving an active game - show confirmation
   if (currentPage === 'play' && hasActiveRemoteGame()) {
     const confirmed = await showConfirmModal({
-      title: 'Leave Game?',
-      message: 'You are in an active game. Leaving will forfeit the match. Are you sure?',
-      confirmText: 'Leave Game',
-      cancelText: 'Stay',
+      title: t('play.remote.nav.leavegame.title'),
+      message: t('play.remote.nav.leavegame.message'),
+      confirmText: t('play.remote.nav.leavegame.leave.button'),
+      cancelText: t('play.remote.nav.leavegame.stay.button'),
       isDangerous: true,
     });
 
@@ -254,6 +312,10 @@ async function navigate(
     cleanupPlayPage();
   } else if (currentPage === 'friends') {
     cleanupFriendsPage();
+  } else if (currentPage === 'settings') {
+    cleanupSettingsUIState();
+  } else if (currentPage === 'tournaments') {
+    cleanupTournamentsPage();
   }
 
   currentPage = page;
@@ -270,10 +332,10 @@ window.addEventListener('popstate', async (event) => {
   // Check if leaving an active game - show confirmation
   if (currentPage === 'play' && hasActiveRemoteGame()) {
     const confirmed = await showConfirmModal({
-      title: 'Leave Game?',
-      message: 'You are in an active game. Leaving will forfeit the match. Are you sure?',
-      confirmText: 'Leave Game',
-      cancelText: 'Stay',
+      title: t('play.remote.nav.leavegame.title'),
+      message: t('play.remote.nav.leavegame.message'),
+      confirmText: t('play.remote.nav.leavegame.leave.button'),
+      cancelText: t('play.remote.nav.leavegame.stay.button'),
       isDangerous: true,
     });
 
@@ -288,6 +350,8 @@ window.addEventListener('popstate', async (event) => {
     cleanupPlayPage();
   } else if (currentPage === 'friends') {
     cleanupFriendsPage();
+  } else if (currentPage === 'settings') {
+    cleanupSettingsUIState();
   } else if (currentPage === 'tournaments') {
     cleanupTournamentsPage();
   }
@@ -345,6 +409,7 @@ async function render() {
   if (currentPage === 'login') {
     renderLoginPage(app, renderNavBar, setupNavigation, async () => {
       // After successful login, connect WebSocket and go to home
+      await syncLangFromAccount();
       await connectGlobalWebSocket();
       navigate('home');
     });
@@ -450,28 +515,28 @@ async function renderNavBar(
               ${
                 isDev
                   ? `
-  <a
-    href="https://sidneybaumann.github.io/ft_transcendence/#"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="
-      text-xs font-semibold
-      text-red-600
-      visited:text-red-600
-      active:text-red-600
-      focus:text-red-600
-      border border-red-600
-      rounded px-2 py-0.5
-      hover:bg-red-100
-      focus:outline-none
-      transition
-    "
-    title="Use Ctrl/Cmd + click to open documentation in a background tab"
-    aria-label="Open project documentation (Ctrl or Cmd + click for background tab)"
-  >
-    DEV
-  </a>
-`
+                      <a
+                        href="https://sidneybaumann.github.io/ft_transcendence/#"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="
+                          text-xs font-semibold
+                          text-red-600
+                          visited:text-red-600
+                          active:text-red-600
+                          focus:text-red-600
+                          border border-red-600
+                          rounded px-2 py-0.5
+                          hover:bg-red-100
+                          focus:outline-none
+                          transition
+                        "
+                        title="Use Ctrl/Cmd + click to open documentation in a background tab"
+                        aria-label="Open project documentation (Ctrl or Cmd + click for background tab)"
+                      >
+                        DEV
+                      </a>
+                    `
                   : ''
               }
             </div>
@@ -664,7 +729,7 @@ async function renderHome(app: HTMLElement) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-2xl mx-auto">
           <div class="bg-white rounded-lg shadow-lg p-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">${t('home.welcome')}</h2>
+            <h2 class="text-3xl font-bold text-gray-900 mb-6" id="home-welcome">${t('home.welcome')}</h2>
 
             <div class="flex justify-center">
               <img
@@ -745,7 +810,11 @@ function setupNavigation() {
 
   // Desktop navigation
   homeBtn?.addEventListener('click', () => navigate('home'));
-  playBtn?.addEventListener('click', () => navigate('play'));
+  playBtn?.addEventListener('click', () => {
+    // Optional safety: don't reset if user is in an active remote game
+    if (!hasActiveRemoteGame()) resetPlayUIState();
+    navigate('play');
+  });
   tournamentsBtn?.addEventListener('click', () => navigate('tournaments'));
   friendsBtn?.addEventListener('click', () => navigate('friends'));
   statsBtn?.addEventListener('click', () => navigate('stats'));
@@ -760,6 +829,8 @@ function setupNavigation() {
   });
   playBtnMobile?.addEventListener('click', () => {
     closeMobileMenu();
+    // Optional safety: don't reset if user is in an active remote game
+    if (!hasActiveRemoteGame()) resetPlayUIState();
     navigate('play');
   });
   tournamentsBtnMobile?.addEventListener('click', () => {
@@ -803,10 +874,10 @@ function setupNavigation() {
     // Check if in an active game - show confirmation first
     if (currentPage === 'play' && hasActiveRemoteGame()) {
       const confirmed = await showConfirmModal({
-        title: 'Leave Game?',
-        message: 'You are in an active game. Logging out will forfeit the match. Are you sure?',
-        confirmText: 'Logout',
-        cancelText: 'Stay',
+        title: t('play.remote.nav.leavegame.title'),
+        message: t('play.remote.nav.logout.message'),
+        confirmText: t('play.remote.nav.logout.button'),
+        cancelText: t('play.remote.nav.leavegame.stay.button'),
         isDangerous: true,
       });
 
@@ -821,6 +892,7 @@ function setupNavigation() {
     }
 
     await logout();
+    clearAccountLang();
     // Disconnect global WebSocket on logout
     resetWebSocketManager();
     navigate('home');
@@ -831,7 +903,7 @@ function setupNavigation() {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Determine initial page from URL
   const path = window.location.pathname.substring(1); // Remove leading slash
   if (
@@ -839,7 +911,9 @@ document.addEventListener('DOMContentLoaded', () => {
     path === 'tournaments' ||
     path === 'login' ||
     path === 'register' ||
-    path === 'settings'
+    path === 'settings' ||
+    path === 'stats' ||
+    path === 'friends'
   ) {
     currentPage = path;
   } else {
@@ -864,159 +938,43 @@ document.addEventListener('DOMContentLoaded', () => {
       page === 'register' ||
       page === 'play' ||
       page === 'tournaments' ||
-      page === 'settings'
+      page === 'settings' ||
+      page === 'stats' ||
+      page === 'friends'
     ) {
       navigate(page);
     }
   }) as EventListener);
 
-  // Handle language change - re-render but preserve sub-screen state and form values
-  onLangChange(async () => {
-    // Save current state before re-render
-    const savedState = window.history.state;
-    const savedPage = currentPage;
+  window.addEventListener('play:rerender', () => {
+    if (currentPage === 'play') render();
+  });
 
-    // Save form field values before re-render
-    const savedFormValues: Record<string, { value: string; disabled: boolean }> = {};
-    const formFieldIds = ['player1-alias', 'player2-alias', 'tournament-player-alias'];
-    formFieldIds.forEach((id) => {
-      const el = document.getElementById(id) as HTMLInputElement | null;
-      if (el) {
-        savedFormValues[id] = { value: el.value, disabled: el.disabled };
-      }
-    });
+  await syncLangFromAccount();
 
-    // Save tournament players list if present (uses div elements, not li)
-    const tournamentPlayersList = document.getElementById('tournament-players-list');
-    const savedTournamentPlayers: { alias: string; isLoggedInUser: boolean }[] = [];
-    if (tournamentPlayersList) {
-      tournamentPlayersList.querySelectorAll('div.flex').forEach((div) => {
-        const nameSpan = div.querySelector('span.font-medium');
-        if (nameSpan) {
-          // Check if this is the logged-in user (has blue background)
-          const isLoggedInUser = div.classList.contains('bg-blue-50');
-          // Get the alias text (first text node, before "(You)" span)
-          let alias = '';
-          nameSpan.childNodes.forEach((node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              alias += node.textContent?.trim() || '';
-            }
-          });
-          if (alias) {
-            savedTournamentPlayers.push({ alias, isLoggedInUser });
-          }
-        }
-      });
+  onLangChange(() => {
+    if (currentPage !== 'play' && currentPage !== 'home') {
+      render();
+      return;
     }
 
-    await render();
+    if (currentPage === 'home') {
+      setTextById('home-welcome', 'home.welcome');
+      applyNavTranslationsInPlace();
+      return;
+    }
 
-    // Wait for DOM to be ready, then restore sub-screen state
-    requestAnimationFrame(() => {
-      setTimeout(async () => {
-        // Restore play sub-screen if on play page
-        if (savedState?.playScreen && savedPage === 'play') {
-          const screenId = savedState.playScreen;
-          const screen = document.getElementById(screenId);
-          if (screen) {
-            const screens = [
-              'mode-selection',
-              'game-setup',
-              'bot-game-setup',
-              'game-screen',
-              'result-screen',
-              'tournament-screen',
-              'remote-waiting-screen',
-              'join-match-screen',
-              'remote-game-screen',
-            ];
-            screens.forEach((id) => {
-              const el = document.getElementById(id);
-              if (el) el.classList.add('hidden');
-            });
-            screen.classList.remove('hidden');
+    // we're on play page
+    if (isPlayInNoRerenderScreen()) {
+      // don't rerender; keep game alive
+      applyNavTranslationsInPlace();
+      applyPlayInGameTranslations();
+      markPlayNeedsRerenderAfterGame();
+      return;
+    }
 
-            // Restore form field values
-            formFieldIds.forEach((id) => {
-              const el = document.getElementById(id) as HTMLInputElement | null;
-              if (el && savedFormValues[id]) {
-                el.value = savedFormValues[id].value;
-                el.disabled = savedFormValues[id].disabled;
-                if (savedFormValues[id].disabled) {
-                  el.classList.add('bg-gray-100', 'cursor-not-allowed');
-                }
-              }
-            });
-
-            // Restore tournament players by clicking the add button programmatically
-            if (savedTournamentPlayers.length > 0 && screenId === 'tournament-screen') {
-              const aliasInput = document.getElementById(
-                'tournament-player-alias'
-              ) as HTMLInputElement;
-              const addBtn = document.getElementById(
-                'add-tournament-player-btn'
-              ) as HTMLButtonElement;
-
-              if (aliasInput && addBtn) {
-                // Add each player by simulating the add flow
-                for (const player of savedTournamentPlayers) {
-                  if (player.isLoggedInUser) {
-                    // For logged-in user, we need to trigger the click on tournament button
-                    // which will auto-add them. Let's simulate this differently.
-                    continue; // Skip for now, will be handled by click simulation
-                  }
-                  aliasInput.value = player.alias;
-                  addBtn.click();
-                }
-
-                // If there was a logged-in user, we need to simulate the tournament button click
-                // to initialize tournamentManager and add the logged-in user
-                const hasLoggedInUser = savedTournamentPlayers.some((p) => p.isLoggedInUser);
-                if (hasLoggedInUser) {
-                  // The tournament button click initializes everything properly
-                  const tournamentBtn = document.getElementById('tournament-btn');
-                  if (tournamentBtn) {
-                    // Store the non-logged-in players to add after
-                    const otherPlayers = savedTournamentPlayers.filter((p) => !p.isLoggedInUser);
-                    tournamentBtn.click();
-
-                    // Wait a bit for async user fetch, then add other players
-                    setTimeout(() => {
-                      otherPlayers.forEach((player) => {
-                        aliasInput.value = player.alias;
-                        addBtn.click();
-                      });
-                      aliasInput.value = '';
-                    }, 100);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // Restore tournament detail views
-        if (savedState?.myTournamentDetail && savedPage === 'tournaments') {
-          const listEl = document.getElementById('my-tournaments-list');
-          const detailEl = document.getElementById('my-tournaments-detail');
-          const loadingEl = document.getElementById('my-tournaments-loading');
-          if (listEl && detailEl && loadingEl) {
-            loadingEl.classList.add('hidden');
-            listEl.classList.add('hidden');
-            detailEl.classList.remove('hidden');
-          }
-        } else if (savedState?.globalTournamentDetail && savedPage === 'tournaments') {
-          const listEl = document.getElementById('global-tournaments-list');
-          const detailEl = document.getElementById('global-tournaments-detail');
-          const loadingEl = document.getElementById('global-tournaments-loading');
-          if (listEl && detailEl && loadingEl) {
-            loadingEl.classList.add('hidden');
-            listEl.classList.add('hidden');
-            detailEl.classList.remove('hidden');
-          }
-        }
-      }, 50);
-    });
+    // safe screens inside play (menu/setup/etc): rerender fully
+    render();
   });
 
   render();

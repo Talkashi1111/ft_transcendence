@@ -1,27 +1,8 @@
-/* i18n usage enforcement via source scanning
- *
- * Run (all rules enabled by default):
- *   pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
- *
- * Disable by rule IDs:
- *   I18N_DISABLE=label,aria-label pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
- *
- * Disable by groups:
- *   I18N_DISABLE_GROUPS=attrs,calls pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
- *
- * Enable ONLY some rule IDs (everything else disabled):
- *   I18N_ONLY=button,attrs-placeholder pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
- *
- * Enable ONLY some groups:
- *   I18N_ONLY_GROUPS=tags pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
- *
- * List rule IDs and groups:
- *   I18N_LIST_RULES=true pnpm --filter frontend exec vitest run --config vitest.i18n.config.ts
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { getLang, setLang, onLangChange } from '../src/i18n/i18n';
+import { updatePreferredLanguage } from '../src/utils/auth';
 
 type Violation = {
   file: string;
@@ -67,6 +48,11 @@ type RuleAssignment = {
 };
 
 type Rule = RuleTagInner | RuleJsxAttr | RuleCallArg | RuleAssignment;
+
+type FetchMockResponse = {
+  ok: boolean;
+  json: () => Promise<unknown>;
+};
 
 const SRC_ROOT = path.resolve(process.cwd(), 'src');
 
@@ -592,7 +578,6 @@ describe('i18n usage enforcement (runtime toggles via env)', () => {
 // -----------------------
 // i18n runtime behavior tests
 // -----------------------
-import { getLang, setLang, onLangChange } from '../src/i18n/i18n';
 
 describe('i18n runtime behavior', () => {
   const originalNavigator = navigator;
@@ -689,5 +674,78 @@ describe('i18n runtime behavior', () => {
       setLang('de');
       expect(listener).toHaveBeenCalledTimes(1); // still 1, not called again
     });
+  });
+});
+
+describe('auth.updatePreferredLanguage', () => {
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function mockFetchOnce(res: FetchMockResponse) {
+    // Cast through unknown to avoid `any` while still calling mock helpers
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(res);
+  }
+
+  it('PATCHes /api/users/me/language with JSON body + credentials', async () => {
+    mockFetchOnce({
+      ok: true,
+      json: async () => ({
+        id: 'u1',
+        email: 'a@b.com',
+        alias: 'Bob',
+        twoFactorEnabled: false,
+        preferredLanguage: 'de',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    });
+
+    await updatePreferredLanguage('de');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/users/me/language', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferredLanguage: 'de' }),
+      credentials: 'include',
+    });
+  });
+
+  it('throws server message when response is not ok', async () => {
+    mockFetchOnce({
+      ok: false,
+      json: async () => ({ message: 'Bad request' }),
+    });
+
+    await expect(updatePreferredLanguage('fr')).rejects.toThrow('Bad request');
+  });
+
+  it('normalizes invalid preferredLanguage returned by server to null', async () => {
+    mockFetchOnce({
+      ok: true,
+      json: async () => ({
+        id: 'u1',
+        email: 'a@b.com',
+        alias: 'Bob',
+        twoFactorEnabled: false,
+        preferredLanguage: 'xx', // invalid
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    });
+
+    const user = await updatePreferredLanguage('en');
+    expect(user.preferredLanguage).toBeNull();
+  });
+
+  it('throws fallback message if server returns no message/error', async () => {
+    mockFetchOnce({
+      ok: false,
+      json: async () => ({}),
+    });
+
+    await expect(updatePreferredLanguage('ja')).rejects.toThrow('Failed to update language');
   });
 });

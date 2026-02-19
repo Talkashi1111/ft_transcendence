@@ -1,3 +1,5 @@
+import { isLang, type Lang } from '../types/lang';
+
 /**
  * Authentication Utility
  *
@@ -20,6 +22,7 @@ export interface AuthUser {
   email: string;
   alias: string; // Always current - fetched from database
   twoFactorEnabled: boolean;
+  preferredLanguage: Lang | null;
   createdAt: string;
 }
 
@@ -169,11 +172,44 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null;
     }
 
-    const user: AuthUser = await response.json();
+    const data = await response.json();
+
+    const user: AuthUser = {
+      ...data,
+      preferredLanguage: isLang(data?.preferredLanguage) ? data.preferredLanguage : null,
+    };
+
     return user;
   } catch {
     return null;
   }
+}
+
+/**
+ * Update user's preferred language
+ * @param preferredLanguage - 'en' | 'de' | 'fr' | 'ja'
+ * @returns Updated user info
+ */
+export async function updatePreferredLanguage(preferredLanguage: Lang): Promise<AuthUser> {
+  const response = await fetch('/api/users/me/language', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ preferredLanguage }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || errorData.error || 'Failed to update language');
+  }
+
+  const data = await response.json();
+
+  // normalize preferredLanguage in the returned payload too
+  return {
+    ...data,
+    preferredLanguage: isLang(data?.preferredLanguage) ? data.preferredLanguage : null,
+  } as AuthUser;
 }
 
 /**

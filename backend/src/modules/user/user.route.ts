@@ -7,6 +7,7 @@ import {
   logoutHandler,
   updateAliasHandler,
   searchUsersHandler,
+  updatePreferredLanguageHandler,
   getMyStatsHandler,
 } from './user.controller.js';
 import {
@@ -17,6 +18,7 @@ import {
   userMeResponseJsonSchema,
   loginResponseJsonSchema,
   usersResponseJsonSchema,
+  updatePreferredLanguageJsonSchema,
   userStatsJsonSchema,
 } from './user.schema.js';
 
@@ -166,6 +168,23 @@ async function userRoutes(server: FastifyInstance) {
     },
     searchUsersHandler
   );
+
+  // Update preferred language
+  server.route<{ Body: { preferredLanguage: 'en' | 'de' | 'fr' | 'ja' } }>({
+    method: 'PATCH',
+    url: '/me/language',
+    onRequest: [server.authenticate],
+    schema: {
+      description: 'Update preferred language for the current user.',
+      tags: ['Users'],
+      security: [{ bearerAuth: [] }],
+      body: updatePreferredLanguageJsonSchema,
+      response: {
+        200: userMeResponseJsonSchema,
+      },
+    },
+    handler: updatePreferredLanguageHandler,
+  });
 
   // Get user game statistics
   server.get(

@@ -30,7 +30,7 @@ export async function renderLoginPage(
                   placeholder="${t('login.email.placeholder')}"
                   required
                   aria-required="true"
-                  aria-label="Email address"
+                  aria-label="${t('aria.label.email.address')}"
                   autocomplete="email"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
@@ -63,7 +63,7 @@ export async function renderLoginPage(
               <button
                 type="submit"
                 id="login-btn"
-                aria-label="Login to your account"
+                aria-label="${t('aria.label.login.account')}"
                 class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
               ${t('login.button.login')}
@@ -74,8 +74,8 @@ export async function renderLoginPage(
             <div id="2fa-form" class="hidden space-y-4">
               <div class="text-center mb-4">
                 <div class="text-4xl mb-2">🔐</div>
-                <h3 class="text-lg font-semibold text-gray-900">Two-Factor Authentication</h3>
-                <p class="text-sm text-gray-600">Enter the 6-digit code from your authenticator app</p>
+                <h3 class="text-lg font-semibold text-gray-900">${t('login.2FA.title')}</h3>
+                <p class="text-sm text-gray-600">${t('login.2FA.text')}</p>
               </div>
 
               <div>
@@ -210,13 +210,13 @@ function setupLoginForm(onLoginSuccess: () => void): void {
   const oauthError = urlParams.get('error');
   if (oauthError) {
     const errorMessages: Record<string, string> = {
-      oauth_host_not_allowed: 'OAuth failed: This host is not allowed. Contact administrator.',
-      oauth_state_mismatch: 'OAuth failed: Session expired or invalid. Please try again.',
-      oauth_missing_code: 'OAuth failed: Authorization was cancelled or denied.',
-      oauth_token_failed: 'OAuth failed: Could not complete authentication with Google.',
-      oauth_callback_failed: 'OAuth failed: An error occurred during login. Please try again.',
+      oauth_host_not_allowed: t('oauth.hostnotallowed.error'),
+      oauth_state_mismatch: t('oauth.statemismatch.error'),
+      oauth_missing_code: t('oauth.missingcode.error'),
+      oauth_token_failed: t('oauth.tokenfailed.error'),
+      oauth_callback_failed: t('oauth.callbackfailed.error'),
     };
-    showError(errorMessages[oauthError] || 'OAuth login failed. Please try again.');
+    showError(errorMessages[oauthError] || t('oauth.loginfailed.error'));
     window.history.replaceState({}, '', '/login');
   }
 
@@ -228,12 +228,12 @@ function setupLoginForm(onLoginSuccess: () => void): void {
     const password = passwordInput.value;
 
     if (!email || !password) {
-      showError('Please fill in all fields');
+      showError(t('oauth.fillallfields.error'));
       return;
     }
 
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging in...';
+    loginBtn.textContent = t('login.loggingin.button');
 
     try {
       const result = await login(email, password);
@@ -243,7 +243,7 @@ function setupLoginForm(onLoginSuccess: () => void): void {
         // tempToken is in HTTP-only cookie (set by backend)
         showTwoFAForm();
         loginBtn.disabled = false;
-        loginBtn.textContent = 'Login';
+        loginBtn.textContent = t('login.button.login');
         return;
       }
 
@@ -251,10 +251,10 @@ function setupLoginForm(onLoginSuccess: () => void): void {
       form.reset();
       onLoginSuccess();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      const message = err instanceof Error ? err.message : t('login.failed.error.message');
       showError(message);
       loginBtn.disabled = false;
-      loginBtn.textContent = 'Login';
+      loginBtn.textContent = t('login.button.login');
     }
   });
 
@@ -265,22 +265,23 @@ function setupLoginForm(onLoginSuccess: () => void): void {
       const code = twoFACode.value.trim();
 
       if (!/^\d{6}$/.test(code)) {
-        show2FAError('Please enter a valid 6-digit code');
+        show2FAError(t('login.2FA.verify.code.error.message'));
         return;
       }
 
       // tempToken is in HTTP-only cookie (sent automatically)
       verifyBtn.disabled = true;
-      verifyBtn.textContent = 'Verifying...';
+      verifyBtn.textContent = t('login.2FA.verifying.button');
 
       try {
         await verify2FA(code);
         onLoginSuccess();
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Invalid code. Please try again.';
+        const message =
+          err instanceof Error ? err.message : t('login.2FA.verify.invalidcode.message');
         show2FAError(message);
         verifyBtn.disabled = false;
-        verifyBtn.textContent = 'Verify';
+        verifyBtn.textContent = t('login.2FA.verify.button');
       }
     });
 

@@ -1,9 +1,9 @@
 // Game REST API routes
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { GameMode } from '../../generated/prisma/client.js';
 import { matchManager } from './match-manager.js';
 import { prisma } from '../../utils/prisma.js';
-import { GameMode } from '../../generated/prisma/client.js';
 import {
   createMatchSchema,
   playerInputSchema,

@@ -14,7 +14,7 @@ import { GAME_CONFIG, COLORS } from './config';
 import { render, setupCanvas, clearCanvas, drawCenterLine } from './renderer';
 import { InputHandler } from '../utils/input';
 import { WebSocketManager, getWebSocketManager } from '../utils/websocket';
-
+import { t } from '../i18n/i18n';
 export type RemoteGameCallbacks = {
   onGameEnd?: (winner: string, winnerId: string, score1: number, score2: number) => void;
   onOpponentJoined?: (opponent: string) => void;
@@ -381,7 +381,11 @@ export class RemotePongGame {
     this.ctx.fillStyle = COLORS.text;
     this.ctx.font = 'bold 36px Arial';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('Connecting...', GAME_CONFIG.canvasWidth / 2, GAME_CONFIG.canvasHeight / 2);
+    this.ctx.fillText(
+      t('play.remote.connecting'),
+      GAME_CONFIG.canvasWidth / 2,
+      GAME_CONFIG.canvasHeight / 2
+    );
 
     // Show match ID if available
     if (this.matchId) {
