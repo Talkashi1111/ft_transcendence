@@ -61,6 +61,10 @@ services:
     ports:
       - '5556:5556'
 
+  # Ports intentionally not exposed — Prometheus is internal only.
+  # Access Prometheus UI for debugging via:
+  #   docker exec -it prometheus-prod wget -qO- http://localhost:9090/api/v1/status/runtimeinfo
+  # Or temporarily add `ports: ['9090:9090']` and restart.
   prometheus:
     image: prom/prometheus:v2.53.3
     container_name: prometheus-prod
@@ -119,6 +123,9 @@ services:
     depends_on:
       - prometheus
 
+  # Ports intentionally not exposed — node-exporter metrics are scraped
+  # internally by Prometheus only and should not be reachable from outside.
+  # To debug: docker exec -it node-exporter-prod wget -qO- http://localhost:9100/metrics | head -20
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: node-exporter-prod

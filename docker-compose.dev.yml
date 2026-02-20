@@ -21,6 +21,9 @@ services:
       - '3000:3000' # Backend API server
     command: sleep infinity
 
+  # Note: monitoring services intentionally have no restart policy in dev.
+  # They won't auto-restart after a Docker daemon restart or reboot, which is
+  # desirable in development to avoid unnecessary resource usage.
   prometheus:
     image: prom/prometheus:v2.53.3
     container_name: prometheus

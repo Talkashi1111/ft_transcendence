@@ -12,9 +12,13 @@ const pageViewCounter =
     labelNames: ['page'],
   });
 
-// Initialize all known pages to 0 so they appear in Grafana immediately
 const knownPages = ['home', 'play', 'tournaments', 'settings', 'friends', 'stats'];
 
+// Initialize all known pages to 0 so they appear in Grafana immediately on startup,
+// rather than showing "no data" until the first real page view occurs.
+// Safe to run on every module load: Counter.inc(0) is a no-op on the value (counters
+// only go up), and the getSingleMetric pattern above ensures we reuse the existing
+// counter instance across hot-reloads / test re-runs instead of creating a new one.
 knownPages.forEach((page) => {
   pageViewCounter.labels(page).inc(0);
 });

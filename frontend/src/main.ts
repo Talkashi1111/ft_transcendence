@@ -93,22 +93,30 @@ let notificationListenerRegistered = false;
 
 /**
  * Analytics: Track page view
+ * Deduplicates consecutive calls for the same page to avoid double-tracking
+ * on navigate + popstate edge cases.
  */
+let lastTrackedPage: string | null = null;
+
 async function trackPageView(pageName: string) {
-  // 1. Only track if user is authenticated
+  // Deduplicate: skip if this page was already the last one tracked
+  if (pageName === lastTrackedPage) return;
+  lastTrackedPage = pageName;
+
+  // Only track if user is authenticated
   const isAuth = await isAuthenticated();
   if (!isAuth) return;
 
-  // 2. Send fire-and-forget request
+  // Send fire-and-forget request
   try {
     await fetch('/api/analytics/page-view', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page: pageName }),
     });
-  } catch {
+  } catch (err) {
     // Fail silently - analytics should never break the app
-    console.warn('[Analytics] Failed to track page view');
+    console.warn('[Analytics] Failed to track page view:', err);
   }
 }
 
