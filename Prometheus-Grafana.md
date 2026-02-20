@@ -1,6 +1,6 @@
 # Subject requirements
 
-**Minor module**: Monitoring system.  
+**Minor module**: Monitoring system.
 The goal of this minor module is to set up a comprehensive monitoring system using Prometheus and Grafana . Key features and goals include:
 
 - Deploy Prometheus as the monitoring and alerting toolkit to collect metrics and monitor the health and performance of various system components.
@@ -24,22 +24,28 @@ Grafana is the Unified Dashboard that centralizes all these different data strea
 
 ### Developement
 
-Commands to run ON THE HOST (NOT INSIDE A CONTAINER):  
-`make monitor` will start the monitoring containers (does not start the application container).  
+Commands to run ON THE HOST (NOT INSIDE A CONTAINER):
+`make monitor` will start the monitoring containers (does not start the application container).
 `make halt-monitor` will stop the monitoring containers.
 
 Access grafana with http://localhost:3001. Log in with the Grafana Access of your .env file. At the top of the page, click "Dashboards", you should see a list of 4 dashboards. "Transcendence Overview" is the custom dashboard. The other ones are imported (pre-made).
 
 #### To test alerts:
 
-- Create the file `./prometheus/alertmanager.yml` (copy `./prometheus/alertmanager.example.yml`)
-- Enter your discord webhook next to `webhook_url` in `alertmanager.yml`
-- Restart alertmanager container.
-- Trigger an alert: Play two remote matches at the same time. You should receive an alert on your discord channel.
+- Set `DISCORD_WEBHOOK_URL` in your `.env` file to your Discord webhook URL.
+- Restart the alertmanager container: `docker compose -f docker-compose.dev.yml restart alertmanager`
+- Trigger an alert manually via the Alertmanager API:
+  ```bash
+  curl -X POST http://localhost:9093/api/v2/alerts \
+    -H 'Content-Type: application/json' \
+    -d '[{"labels":{"alertname":"TestAlert","severity":"warning"},"annotations":{"summary":"Test","description":"Manual test alert"}}]'
+  ```
+- Or trigger a real alert: play two remote matches simultaneously — `HighGameTraffic` will fire within ~10 seconds.
+- You should receive the alert notification in your Discord channel.
 
 ### Production
 
-For production, all containers are set up with `make prod-build` like usual. In `./prometheus/prometheus.yml`, change the 'env' value to `prod` so all alerts are enabled. Access grafana with https://localhost:3001, pass the warning and enter the login access of your `.env.prod`.
+For production, all containers are set up with `make prod-build` like usual. Set `DISCORD_WEBHOOK_URL` in your `.env.prod` file to enable alert notifications. Access grafana with https://localhost:3001, pass the warning and enter the login access of your `.env.prod`.
 
 # Initial Set Up
 
@@ -81,7 +87,7 @@ await server.register(fastifyMetrics, {
 
 ## 3. Create Prometheus Configuration
 
-We need to tell Prometheus where to find those metrics we just exposed, by creating a configuration file that the Prometheus container will read.  
+We need to tell Prometheus where to find those metrics we just exposed, by creating a configuration file that the Prometheus container will read.
 `prometheus.yml` (in the same folder as docker.compose):
 
 ```YAML
@@ -146,8 +152,8 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 You'll need to restart your server; `pnpm dev` inside your backend.
 
-You may encounter the error: TypeScript type mismatch. It happens because fastify-metrics (v12) and fastify (v5) have slightly different expectations about how the plugin is defined in strict TypeScript environments, or simply because of how the module is being imported in your setup.  
-Essentially, TypeScript is complaining: "I expect a specific Plugin function signature, but you gave me an imported Module object."  
+You may encounter the error: TypeScript type mismatch. It happens because fastify-metrics (v12) and fastify (v5) have slightly different expectations about how the plugin is defined in strict TypeScript environments, or simply because of how the module is being imported in your setup.
+Essentially, TypeScript is complaining: "I expect a specific Plugin function signature, but you gave me an imported Module object."
 Modify the registration of the plugin:
 
 ```ts
@@ -165,12 +171,12 @@ With your app running, open these three URLs in your browser:
 
 #### - The source: http://localhost:3000/metrics
 
-What it is: The Exporter (Raw Data). Service: Your Node.js Backend (app).  
+What it is: The Exporter (Raw Data). Service: Your Node.js Backend (app).
 This is the endpoint we created in backend/src/app.ts by registering the fastify-metrics plugin. It translates your server's internal state (memory usage, request counts) into a text format that Prometheus can read. Humans rarely read this. This page exists solely so Prometheus can visit it every 5 seconds to "scrape" (copy) the data.
 
 #### - The collector: http://localhost:9090/
 
-What it is: Prometheus (The Database). http://localhost:9090/ serves the Prometheus built-in Web UI. Service: The prometheus container defined in docker-compose.dev.yml. Role: It is the "brain" that stores metrics history.  
+What it is: Prometheus (The Database). http://localhost:9090/ serves the Prometheus built-in Web UI. Service: The prometheus container defined in docker-compose.dev.yml. Role: It is the "brain" that stores metrics history.
 How it works:
 
 - It reads your prometheus.yml configuration file.
@@ -180,7 +186,7 @@ How it works:
 
 #### - The visualizer: http://localhost:3001
 
-What it is: Grafana (The Dashboard). Service: The grafana container defined in docker-compose.dev.yml. Role: It makes the data beautiful and understandable.  
+What it is: Grafana (The Dashboard). Service: The grafana container defined in docker-compose.dev.yml. Role: It makes the data beautiful and understandable.
 How it works:
 
 - It does not touch your backend directly.
@@ -218,7 +224,7 @@ Looking at raw text is not very useful. Instead of building charts from scratch,
 - At the bottom, under **Prometheus** (data source), select the data source you created (it might be named "Prometheus" or similar).
 - Click **Import**.
 
-Et voilà! You should see charts now visualizing metrics of your app.  
+Et voilà! You should see charts now visualizing metrics of your app.
 Note: We configured Prometheus to scrape data from the app every 5 seconds (scrape_interval: 5s). If you set Grafana (that scrapes from prometheus) faster than that (like 1s), it would just show the same data point 5 times in a row.
 
 # Data exporters and integration
@@ -420,7 +426,7 @@ Grafana is the Unified Dashboard that centralizes all these different data strea
 
 Since you are using SQLite (a file-based database) and Prisma, the best way to "monitor" it in Grafana is to install the **SQLite Data Source Plugin** and not an exporter.
 
-Exporter: Target (OS) -> Exporter -> Prometheus -> Grafana  
+Exporter: Target (OS) -> Exporter -> Prometheus -> Grafana
 Plugin: SQLite File -> Grafana. (Prometheus is not involved).
 
 When you use this plugin, Grafana reads your database.db file directly to count rows.
@@ -689,7 +695,7 @@ If you want to track "Who visited what?", use a standard console.log in your bac
 
 # Provisioning
 
-When you rebuild a container, the data that was inside is lost and thus your setup; the data source connections, your beautiful custom dashboards and you (or your colleagues that want to see your magnificient dashboards) will have to reconfigure all of it. But you can automate this! Grafana has a feature called Provisioning that lets you define data sources and dashboards in YAML files. Since these are files, you can push them to Git.  
+When you rebuild a container, the data that was inside is lost and thus your setup; the data source connections, your beautiful custom dashboards and you (or your colleagues that want to see your magnificient dashboards) will have to reconfigure all of it. But you can automate this! Grafana has a feature called Provisioning that lets you define data sources and dashboards in YAML files. Since these are files, you can push them to Git.
 When your colleagues start the project, Grafana will read these files and automatically set everything up for them.
 
 Here is how to do it (it takes 3 steps):

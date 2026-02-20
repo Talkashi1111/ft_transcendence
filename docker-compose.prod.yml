@@ -70,7 +70,7 @@ services:
       - '--storage.tsdb.retention.time=14d'
       - '--storage.tsdb.retention.size=2GB'
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus-data-prod:/prometheus
     networks:
@@ -80,8 +80,13 @@ services:
     image: prom/alertmanager:v0.28.0
     container_name: alertmanager-prod
     restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/alertmanager.yml
     volumes:
-      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - alertmanager-data-prod:/alertmanager
     networks:
       - transcendence-prod
@@ -152,3 +157,29 @@ volumes:
 
 networks:
   transcendence-prod:
+
+configs:
+  alertmanager_config:
+    content: |
+      global:
+        resolve_timeout: 5m
+
+      route:
+        group_by: ["alertname"]
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 1h
+        receiver: "discord_personal"
+
+      receivers:
+        - name: "discord_personal"
+          discord_configs:
+            - webhook_url: "${DISCORD_WEBHOOK_URL}"
+              send_resolved: true
+              title: "ALERT: {{ .CommonLabels.alertname }}"
+              message: |
+                {{ range .Alerts }}
+                **Summary:** {{ .Annotations.summary }}
+                **Description:** {{ .Annotations.description }}
+                **Severity:** {{ .Labels.severity }}
+                {{ end }}

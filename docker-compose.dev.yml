@@ -40,8 +40,13 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.28.0
     container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/alertmanager.yml
     volumes:
-      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - alertmanager-data:/alertmanager
     ports:
       - '9093:9093'
@@ -117,3 +122,39 @@ volumes:
 
 networks:
   transcendence:
+
+configs:
+  alertmanager_config:
+    content: |
+      global:
+        resolve_timeout: 5m
+
+      route:
+        group_by: ["alertname"]
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 1h
+        receiver: "discord_personal"
+        routes:
+          - matchers:
+              - env = "dev"
+              - alertname = "InstanceDown"
+            receiver: "dev-null"
+
+      receivers:
+        - name: "discord_personal"
+          discord_configs:
+            - webhook_url: "${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/000/placeholder}"
+              send_resolved: true
+              title: "ALERT: {{ .CommonLabels.alertname }}"
+              message: |
+                {{ range .Alerts }}
+                **Summary:** {{ .Annotations.summary }}
+                **Description:** {{ .Annotations.description }}
+                **Severity:** {{ .Labels.severity }}
+                {{ end }}
+
+        - name: "dev-null"
+          webhook_configs:
+            - url: "http://127.0.0.1:1/"
+              send_resolved: true

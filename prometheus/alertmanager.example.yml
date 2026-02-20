@@ -1,3 +1,10 @@
+# NOTE: This file is for REFERENCE ONLY.
+# The actual alertmanager config is defined inline in docker-compose.dev.yml and
+# docker-compose.prod.yml under configs.alertmanager_config.content, which allows
+# Docker Compose to substitute ${DISCORD_WEBHOOK_URL} from your .env / .env.prod.
+#
+# To configure notifications, set DISCORD_WEBHOOK_URL in your .env or .env.prod file.
+
 global:
   resolve_timeout: 5m # Time to wait before marking an alert as resolved after it stops firing.
 
