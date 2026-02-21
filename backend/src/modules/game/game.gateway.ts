@@ -6,6 +6,7 @@ import type { WSMessage, ClientEvents, PlayerInput } from './game.types.js';
 import { matchManager } from './match-manager.js';
 import { prisma } from '../../utils/prisma.js';
 import { FriendshipStatus } from '../../generated/prisma/client.js';
+import { Gauge, register } from 'prom-client';
 
 interface AuthenticatedSocket extends WebSocket {
   userId: string;
@@ -15,6 +16,23 @@ interface AuthenticatedSocket extends WebSocket {
 
 // Track connected sockets by user ID
 const connectedSockets = new Map<string, AuthenticatedSocket>();
+
+/**
+ * Prometheus Gauge for connected users
+ */
+const GAUGE_NAME = 'transcendence_connected_users_total';
+
+export const connectedUsersGauge =
+  (register.getSingleMetric(GAUGE_NAME) as Gauge) ||
+  new Gauge({
+    name: GAUGE_NAME,
+    help: 'Number of users currently connected via WebSocket',
+    collect() {
+      // This function runs every time Prometheus scrapes.
+      // It automatically syncs the metric with the real map size.
+      this.set(connectedSockets.size);
+    },
+  });
 
 /**
  * Check if a user is currently online (connected via WebSocket)

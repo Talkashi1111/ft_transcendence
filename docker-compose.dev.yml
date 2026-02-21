@@ -21,11 +21,143 @@ services:
       - '3000:3000' # Backend API server
     command: sleep infinity
 
+  # Note: monitoring services intentionally have no restart policy in dev.
+  # They won't auto-restart after a Docker daemon restart or reboot, which is
+  # desirable in development to avoid unnecessary resource usage.
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=14d'
+      - '--storage.tsdb.retention.size=2GB'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus-data:/prometheus
+    ports:
+      - '9090:9090'
+    networks:
+      - transcendence
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/alertmanager.yml
+    volumes:
+      - alertmanager-data:/alertmanager
+    ports:
+      - '9093:9093'
+    networks:
+      - transcendence
+    depends_on:
+      - prometheus
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_INSTALL_PLUGINS=frser-sqlite-datasource
+
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin} # If GRAFANA_USER is not set, default to 'admin'
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+
+      - GF_AUTH_ANONYMOUS_ENABLED=false # Disable anonymous access
+      - GF_USERS_ALLOW_SIGN_UP=false # Disable sign up. Only admin can create users.
+
+      - GF_SECURITY_DISABLE_GRAVATAR=true # Disable Gravatar to enhance privacy. Gravatar fetches user images from external servers.
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      - sqlite-data:/var/lib/grafana/db-mount
+    ports:
+      - '3001:3000'
+    networks:
+      - transcendence
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro # :ro for Read-only access to host /proc
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - '19100:9100'
+    networks:
+      - transcendence
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57
+    container_name: cadvisor
+    ports:
+      - '8081:8080' # 8080 may be used by caddy in production
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - transcendence
+
 volumes:
   sqlite-data:
+  prometheus-data:
+  grafana-data:
   node_modules_cache:
   frontend_node_modules:
   backend_node_modules:
+  alertmanager-data:
 
 networks:
   transcendence:
+
+configs:
+  alertmanager_config:
+    content: |
+      global:
+        resolve_timeout: 5m
+
+      route:
+        group_by: ["alertname"]
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 1h
+        receiver: "discord_personal"
+        routes:
+          - matchers:
+              - env = "dev"
+              - alertname = "InstanceDown"
+            receiver: "dev-null"
+
+      receivers:
+        - name: "discord_personal"
+          discord_configs:
+            - webhook_url: "${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/000/placeholder}"
+              send_resolved: true
+              title: "ALERT: {{ .CommonLabels.alertname }}"
+              message: |
+                {{ range .Alerts }}
+                **Summary:** {{ .Annotations.summary }}
+                **Description:** {{ .Annotations.description }}
+                **Severity:** {{ .Labels.severity }}
+                {{ end }}
+
+        - name: "dev-null"
+          webhook_configs:
+            - url: "http://127.0.0.1:1/"
+              send_resolved: true

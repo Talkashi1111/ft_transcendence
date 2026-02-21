@@ -9,6 +9,8 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyMultipart from '@fastify/multipart';
+import fastifyMetrics from 'fastify-metrics';
+import { register } from 'prom-client';
 import fs from 'fs';
 import userRoutes from './modules/user/user.route.js';
 import avatarRoutes from './modules/user/avatar.route.js';
@@ -18,6 +20,7 @@ import twoFactorRoutes from './modules/2fa/2fa.route.js';
 import gameRoutes from './modules/game/game.route.js';
 import friendsRoutes from './modules/friends/friends.route.js';
 import notificationsRoutes from './modules/notifications/notifications.route.js';
+import analyticsRoutes from './modules/analytics/analytics.route.js';
 import { registerGameWebSocket } from './modules/game/game.gateway.js';
 
 const PORT = process.env.PORT || 3000;
@@ -122,6 +125,43 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   });
 
+  // --- METRICS CONFIGURATION ---
+  // When running tests, buildApp is called multiple times in the same process.
+  // We must remove existing metrics that fastify-metrics tries to register (system & route metrics)
+  // to avoid "Metric already registered" errors.
+  // We DO NOT remove custom metrics (transcendence_*) as they are module-scoped and not re-created.
+  try {
+    const metrics = await register.getMetricsAsJSON();
+    for (const metric of metrics) {
+      const name = metric.name;
+      // Remove system metrics (process_*, nodejs_*, up)
+      // Remove route metrics (http_*, fastify_*) which fastify-metrics tries to re-register
+      if (
+        name.startsWith('process_') ||
+        name.startsWith('nodejs_') ||
+        name === 'up' ||
+        name.startsWith('http_') ||
+        name.startsWith('fastify_')
+      ) {
+        // Only remove metrics that are actually registered
+        const existingMetric = register.getSingleMetric(name);
+        if (existingMetric) {
+          register.removeSingleMetric(name);
+        }
+      }
+    }
+  } catch (err) {
+    // Log errors during metric cleanup instead of silently ignoring them
+    console.error('Error during metrics cleanup before registering fastify-metrics:', err);
+  }
+
+  // Register Metrics plugin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await server.register(fastifyMetrics as any, {
+    endpoint: '/metrics',
+    defaultMetrics: { enabled: true }, // Safe to enable now that we've cleaned up
+  });
+
   // Authentication decorator
   server.decorate(
     'authenticate',
@@ -181,6 +221,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await server.register(gameRoutes, { prefix: '/api/game' });
   await server.register(friendsRoutes, { prefix: '/api/friends' });
   await server.register(notificationsRoutes, { prefix: '/api/notifications' });
+  await server.register(analyticsRoutes, { prefix: '/api/analytics' });
 
   // Register WebSocket gateway for real-time game communication
   await registerGameWebSocket(server);
@@ -225,7 +266,8 @@ export async function configureStaticServing(server: FastifyInstance): Promise<v
     const indexHtml = fs.readFileSync(indexPath, 'utf-8');
 
     server.setNotFoundHandler(async (request, reply) => {
-      if (!request.url.startsWith('/api/')) {
+      // Exclude /metrics from SPA fallback to prevent sending HTML to Prometheus
+      if (!request.url.startsWith('/api/') && request.url !== '/metrics') {
         return reply.type('text/html').send(indexHtml);
       } else {
         return reply.code(404).send({ error: 'Not found' });

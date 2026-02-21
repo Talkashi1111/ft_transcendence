@@ -14,6 +14,7 @@ import { GameEngine } from './engine/index.js';
 import { RECONNECT_TIMEOUT } from './engine/config.js';
 import { prisma } from '../../utils/prisma.js';
 import { GameMode } from '../../generated/prisma/client.js';
+import { Gauge, register } from 'prom-client';
 
 interface ActiveMatch {
   id: string;
@@ -29,6 +30,23 @@ interface ActiveMatch {
 
 // Callback for broadcasting match list updates
 type MatchListUpdateCallback = () => void;
+
+// Get or Create logic: Check if metric exists to prevent "already registered" error in tests
+const gaugeName = 'transcendence_active_remote_matches_total';
+
+// If it exists, use it. If not, create it.
+const existingActiveMatchesGauge = register.getSingleMetric(gaugeName) as Gauge | undefined;
+const activeMatchesGauge =
+  existingActiveMatchesGauge ||
+  new Gauge({
+    name: gaugeName,
+    help: 'Number of active remote matches currently ongoing',
+  });
+
+// Only initialize to 0 when the gauge is newly created, to avoid overwriting existing values
+if (!existingActiveMatchesGauge) {
+  activeMatchesGauge.set(0);
+}
 
 export class MatchManager {
   private matches: Map<string, ActiveMatch> = new Map();
@@ -95,6 +113,8 @@ export class MatchManager {
     this.playerMatches.set(playerId, matchId);
 
     console.log(`[MatchManager] Match ${matchId} created by ${username}`);
+
+    activeMatchesGauge.inc();
 
     // Notify about new available match
     this.notifyMatchListUpdate();
@@ -444,6 +464,8 @@ export class MatchManager {
     if (match.player2) {
       this.playerMatches.delete(match.player2.id);
     }
+
+    activeMatchesGauge.dec(); // -1 for this specific mode
 
     // Remove match
     this.matches.delete(matchId);
