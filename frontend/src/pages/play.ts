@@ -318,72 +318,91 @@ export function setModuleCurrentGame(game: PongGame | null): void {
 // Module-level popstate handler for tournament back confirmation
 let tournamentPopstateRegistered = false;
 
-async function handleTournamentPopstate(event: PopStateEvent): Promise<void> {
-  // Only handle if tournament is in progress
-  if (moduleTournamentManager && moduleTournamentManager.getTournament().status === 'in-progress') {
-    // Prevent main.ts from handling this event
-    event.stopImmediatePropagation();
+async function handleLocalGamePopstate(event: PopStateEvent): Promise<void> {
+  const isInTournament =
+    moduleTournamentManager && moduleTournamentManager.getTournament().status === 'in-progress';
+  const hasActiveLocalGame = moduleCurrentGame !== null;
 
-    // User pressed back while tournament is in progress
-    // Push the state back to prevent navigation
-    window.history.pushState(
-      { page: 'play', playScreen: 'tournament-bracket' },
+  if (!isInTournament && !hasActiveLocalGame) return;
+
+  // Prevent main.ts from handling this event
+  event.stopImmediatePropagation();
+
+  // Push the state back to prevent navigation
+  window.history.pushState(
+    {
+      page: 'play',
+      playScreen: isInTournament ? 'tournament-bracket' : 'game-screen',
+    },
+    '',
+    window.location.href
+  );
+
+  // Pause the game while showing the confirmation modal
+  if (moduleCurrentGame) {
+    moduleCurrentGame.pause();
+  }
+
+  // Show confirmation modal with context-appropriate text
+  const confirmed = await showConfirmModal({
+    title: isInTournament ? 'Leave Tournament?' : 'Leave Game?',
+    message: isInTournament
+      ? 'The tournament is in progress. Are you sure you want to leave? All progress will be lost.'
+      : 'Are you sure you want to leave the game?',
+    confirmText: isInTournament ? 'Leave Tournament' : 'Leave Game',
+    cancelText: 'Stay',
+    isDangerous: true,
+  });
+
+  if (confirmed) {
+    // Clean up the game
+    if (moduleCurrentGame) {
+      moduleCurrentGame.destroy();
+      moduleCurrentGame = null;
+    }
+
+    if (isInTournament) {
+      // Reset tournament
+      moduleTournamentManager = null;
+      // Re-enable language selectors
+      setLanguageSelectorsEnabledGlobal(true);
+    }
+
+    // Hide all play sub-screens and show mode selection
+    const modeSelection = document.getElementById('mode-selection');
+    const tournamentScreen = document.getElementById('tournament-screen');
+    const gameScreen = document.getElementById('game-screen');
+    if (gameScreen) gameScreen.classList.add('hidden');
+    if (tournamentScreen) tournamentScreen.classList.add('hidden');
+    if (modeSelection) modeSelection.classList.remove('hidden');
+
+    // Replace current state so back goes to previous page
+    window.history.replaceState(
+      { page: 'play', playScreen: 'mode-selection' },
       '',
       window.location.href
     );
-
-    // Show confirmation modal
-    const confirmed = await showConfirmModal({
-      title: 'Leave Tournament?',
-      message:
-        'The tournament is in progress. Are you sure you want to leave? All progress will be lost.',
-      confirmText: 'Leave Tournament',
-      cancelText: 'Stay',
-      isDangerous: true,
-    });
-
-    if (confirmed) {
-      // Clean up any running game
-      if (moduleCurrentGame) {
-        moduleCurrentGame.destroy();
-        moduleCurrentGame = null;
-      }
-
-      // Reset tournament
-      moduleTournamentManager = null;
-
-      // Re-enable language selectors
-      setLanguageSelectorsEnabledGlobal(true);
-
-      // Hide all play sub-screens and show mode selection
-      const modeSelection = document.getElementById('mode-selection');
-      const tournamentScreen = document.getElementById('tournament-screen');
-      const gameScreen = document.getElementById('game-screen');
-      if (gameScreen) gameScreen.classList.add('hidden');
-      if (tournamentScreen) tournamentScreen.classList.add('hidden');
-      if (modeSelection) modeSelection.classList.remove('hidden');
-
-      // Replace current state so back goes to previous page
-      window.history.replaceState(
-        { page: 'play', playScreen: 'mode-selection' },
-        '',
-        window.location.href
-      );
+    if (isInTournament) {
       toast.info(t('play.local.tournament.ended'));
+    }
+  } else {
+    // User cancelled - resume the game
+    if (moduleCurrentGame) {
+      moduleCurrentGame.resume();
     }
   }
 }
 
 // Register the handler once at module load (capture phase to run before main.ts)
-function ensureTournamentPopstateHandler(): void {
+function ensureLocalGamePopstateHandler(): void {
   if (!tournamentPopstateRegistered) {
-    window.addEventListener('popstate', handleTournamentPopstate, true);
+    window.addEventListener('popstate', handleLocalGamePopstate, true);
     tournamentPopstateRegistered = true;
   }
 }
 
 // Call immediately when module loads
-ensureTournamentPopstateHandler();
+ensureLocalGamePopstateHandler();
 
 /**
  * Helper to enable/disable language selectors (module-level for use in popstate handler)
@@ -413,6 +432,15 @@ function setLanguageSelectorsEnabledGlobal(enabled: boolean): void {
  */
 export function hasActiveRemoteGame(): boolean {
   return isInActiveRemoteGame;
+}
+
+/**
+ * Pause any active local game (used when session is replaced by another tab)
+ */
+export function pauseLocalGame(): void {
+  if (moduleCurrentGame) {
+    moduleCurrentGame.pause();
+  }
 }
 
 /**
@@ -643,15 +671,15 @@ export async function renderPlayPage(
             <h3 id="gameover-title" class="text-3xl font-bold text-gray-900 mb-4">${t('play.gameover.title')}</h3>
 
             <div class="mb-6">
-              <p class="text-5xl font-bold text-blue-600 mb-4" id="winner-name">Winner</p>
+              <p class="text-5xl font-bold text-blue-600 mb-4 whitespace-pre-wrap" id="winner-name">Winner</p>
               <div class="flex justify-center gap-8 text-2xl">
                 <div>
-                  <p class="text-gray-600" id="result-player1">${t('play.player1.label')}</p>
+                  <p class="text-gray-600 whitespace-pre-wrap" id="result-player1">${t('play.player1.label')}</p>
                   <p class="font-bold text-gray-900" id="result-score1">0</p>
                 </div>
                 <div class="text-gray-400">-</div>
                 <div>
-                  <p class="text-gray-600" id="result-player2">${t('play.player2.label')}</p>
+                  <p class="text-gray-600 whitespace-pre-wrap" id="result-player2">${t('play.player2.label')}</p>
                   <p class="font-bold text-gray-900" id="result-score2">0</p>
                 </div>
               </div>
@@ -1181,7 +1209,7 @@ function setupPlayPageEvents(): void {
           const isLoggedInUser = loggedInUserId !== null && player.id === loggedInUserId;
           return `
           <div class="flex items-center justify-between p-3 ${isLoggedInUser ? 'bg-blue-50 border border-blue-200' : 'bg-purple-50'} rounded-lg">
-            <span class="font-medium text-gray-800">
+            <span class="font-medium text-gray-800 whitespace-pre-wrap">
               ${escapeHtml(player.alias)}
               ${isLoggedInUser ? `<span class="text-xs text-blue-600 ml-2">${t('play.local.tournament.registration.you')}</span>` : ''}
             </span>
@@ -1243,9 +1271,9 @@ function setupPlayPageEvents(): void {
         <div class="text-center mb-4">
           <h3 class="text-2xl font-bold mb-2"> ${t('play.local.tournament.bracket.round', { round })}</h3>
           <p class="text-xl mb-4">
-            <span class="text-blue-400">${escapeHtml(match.player1.alias)}</span>
+            <span class="text-blue-400 whitespace-pre-wrap">${escapeHtml(match.player1.alias)}</span>
             ${t('play.local.tournament.bracket.versus')}
-            <span class="text-green-400">${escapeHtml(match.player2.alias)}</span>
+            <span class="text-green-400 whitespace-pre-wrap">${escapeHtml(match.player2.alias)}</span>
           </p>
           <button id="playMatchBtn" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-bold transition-colors">
             ${t('play.local.tournament.bracket.play.button')}
@@ -1269,6 +1297,7 @@ function setupPlayPageEvents(): void {
 
     // Create game with tournament players
     currentGame = new PongGame(canvas, match.player1.alias, match.player2.alias);
+    setModuleCurrentGame(currentGame);
 
     // Set up game end callback
     currentGame.setOnGameEnd((winner: string, player1Score: number, player2Score: number) => {
@@ -1292,6 +1321,7 @@ function setupPlayPageEvents(): void {
     if (currentGame) {
       currentGame.destroy();
       currentGame = null;
+      setModuleCurrentGame(null);
     }
 
     // Record the result
@@ -1369,7 +1399,7 @@ function setupPlayPageEvents(): void {
       <div class="${matchBoxClass}" style="height: ${MATCH_BOX_HEIGHT}px;">
         <!-- Player 1 -->
         <div class="bracket-player-slot bracket-player-slot--top" style="height: ${PLAYER_SLOT_HEIGHT}px;">
-          <span class="${p1Class}">
+          <span class="${p1Class} whitespace-pre-wrap">
             ${escapeHtml(match.player1.alias)}
           </span>
           <span class="${p1ScoreClass}">${p1IsTBD ? '-' : match.player1Score}</span>
@@ -1377,7 +1407,7 @@ function setupPlayPageEvents(): void {
 
         <!-- Player 2 -->
         <div class="bracket-player-slot" style="height: ${PLAYER_SLOT_HEIGHT}px;">
-          <span class="${p2Class}">
+          <span class="${p2Class} whitespace-pre-wrap">
             ${escapeHtml(match.player2.alias)}
           </span>
           <span class="${p2ScoreClass}">${p2IsTBD ? '-' : match.player2Score}</span>
@@ -1535,7 +1565,7 @@ function setupPlayPageEvents(): void {
           <div class="text-center">
             <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
             <p class="text-2xl mb-4">
-              ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
+              ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold whitespace-pre-wrap">${escapeHtml(winner.alias)}</span>
             </p>
             <p class="text-gray-400 mb-6">Recording tournament on blockchain...</p>
           </div>
@@ -1566,7 +1596,7 @@ function setupPlayPageEvents(): void {
         <div class="text-center">
           <h2 class="text-4xl font-bold mb-4 text-yellow-400">🏆 ${t('play.local.tournament.bracket.complete.title')} 🏆</h2>
           <p class="text-2xl mb-6">
-            ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold">${escapeHtml(winner.alias)}</span>
+            ${t('play.local.tournament.bracket.complete.winner.label')} <span class="text-green-400 font-bold whitespace-pre-wrap">${escapeHtml(winner.alias)}</span>
           </p>
           ${blockchainHtml}
           <button id="newTournamentBtn" class="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition-colors">
@@ -2188,8 +2218,8 @@ function setupPlayPageEvents(): void {
       player2 = t('play.player2.default.label'); // Default name
     }
 
-    // Check for duplicate names
-    if (player1.toLowerCase() === player2.toLowerCase()) {
+    // Check for duplicate names (case-sensitive)
+    if (player1 === player2) {
       showInlineError(player2ErrorEl, 'Both players cannot have the same name');
       return;
     }
@@ -2212,6 +2242,7 @@ function setupPlayPageEvents(): void {
 
     showScreen(gameScreen!);
     currentGame.start();
+    setModuleCurrentGame(currentGame);
   });
 
   // ============================================
@@ -2273,6 +2304,7 @@ function setupPlayPageEvents(): void {
 
     showScreen(gameScreen!);
     currentGame.start();
+    setModuleCurrentGame(currentGame);
   });
   // ====================
 
@@ -2281,6 +2313,7 @@ function setupPlayPageEvents(): void {
     if (currentGame) {
       currentGame.destroy();
       currentGame = null;
+      setModuleCurrentGame(null);
     }
 
     // If we're in a tournament, go back to tournament bracket
@@ -2310,6 +2343,7 @@ function setupPlayPageEvents(): void {
     if (currentGame) {
       currentGame.destroy();
       currentGame = null;
+      setModuleCurrentGame(null);
     }
     showScreen(modeSelection!);
     // Update history state so language change doesn't restore the old screen
