@@ -9,6 +9,13 @@
 localhost, mooo.com {
 tls internal
 
+    # Metrics endpoint - blocked at proxy level for external users
+    # Prometheus scrapes app:3000 directly inside the Docker network,
+    # so this endpoint does not need to be exposed externally.
+    handle /metrics {
+        respond "Access denied" 403
+    }
+
     # Swagger UI - accessible with IP whitelist for local networks
     # Allows access from localhost and common private network ranges
     handle /docs* {
@@ -44,6 +51,13 @@ tls internal
         reverse_proxy app:3000
     }
 
+}
+
+# Grafana Secure Access
+
+:3001 {
+reverse_proxy grafana:3000
+tls internal
 }
 
 # HTTP to HTTPS redirect

@@ -93,6 +93,35 @@ let unreadNotificationCount = 0;
 let notificationListenerRegistered = false;
 
 /**
+ * Analytics: Track page view
+ * Deduplicates consecutive calls for the same page to avoid double-tracking
+ * on navigate + popstate edge cases.
+ */
+let lastTrackedPage: string | null = null;
+
+async function trackPageView(pageName: string) {
+  // Deduplicate: skip if this page was already the last one tracked
+  if (pageName === lastTrackedPage) return;
+  lastTrackedPage = pageName;
+
+  // Only track if user is authenticated
+  const isAuth = await isAuthenticated();
+  if (!isAuth) return;
+
+  // Send fire-and-forget request
+  try {
+    await fetch('/api/analytics/page-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: pageName }),
+    });
+  } catch (err) {
+    // Fail silently - analytics should never break the app
+    console.warn('[Analytics] Failed to track page view:', err);
+  }
+}
+
+/**
  * Connect global WebSocket when authenticated
  * This shared connection is used for:
  * - Match list updates (play page)
@@ -302,6 +331,9 @@ async function navigate(
   }
 
   currentPage = page;
+
+  trackPageView(page);
+
   // Update browser history
   window.history.pushState({ page }, '', `/${page === 'home' ? '' : page}`);
   render();
@@ -343,6 +375,7 @@ window.addEventListener('popstate', async (event) => {
     currentPage = 'home';
   }
 
+  trackPageView(currentPage);
   // Render the page first
   await render();
 
@@ -905,6 +938,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     '',
     `/${currentPage === 'home' ? '' : currentPage}${window.location.search}`
   );
+
+  trackPageView(currentPage);
 
   // Listen for custom navigation events (from login/register links)
   window.addEventListener('navigate', ((event: CustomEvent) => {

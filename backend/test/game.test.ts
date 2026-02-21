@@ -53,7 +53,7 @@ describe('Game Module', () => {
   afterAll(async () => {
     // Clean up test user
     await prisma.user.deleteMany({ where: { email: 'gametest@example.com' } });
-    await server.close();
+    if (server) await server.close();
   });
 
   describe('REST API', () => {

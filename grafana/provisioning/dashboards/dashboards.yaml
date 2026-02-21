@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'Default' # Name of the dashboard provider
+    orgId: 1
+    folder: '' # Root folder
+    type: file
+    disableDeletion: true # Even Admin cannot delete this from the UI
+    allowUiUpdates: false # Even Admin cannot save changes from the UI
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/dashboards # Where we will mount the JSON files

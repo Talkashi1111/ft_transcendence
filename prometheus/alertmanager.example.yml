@@ -1,0 +1,39 @@
+# NOTE: This file is for REFERENCE ONLY.
+# The actual alertmanager config is defined inline in docker-compose.dev.yml and
+# docker-compose.prod.yml under configs.alertmanager_config.content, which allows
+# Docker Compose to substitute ${DISCORD_WEBHOOK_URL} from your .env / .env.prod.
+#
+# To configure notifications, set DISCORD_WEBHOOK_URL in your .env or .env.prod file.
+
+global:
+  resolve_timeout: 5m # Time to wait before marking an alert as resolved after it stops firing.
+
+route:
+  group_by: ['alertname'] # Group alerts together if they share the same 'alertname' label.
+  group_wait: 10s # BUFFER FOR FIRST ALERT: When a new group is created, wait 10s to collect more alerts before sending the FIRST notification.
+  group_interval: 10s # BUFFER FOR UPDATES: If a new alert is added to an existing group (that has already notified), wait 10s before sending an update.
+  repeat_interval: 1h # SPAM PROTECTION: If the alert is STILL firing, resend the notification every 1 hour (reminder).
+  receiver: 'discord_personal' # <---- Define here your default receiver
+  routes:
+    - matchers: # Since the alert matches the 'env' and 'alertname' labels defined in prometheus.yml, Alertmanager ignores the default receiver and sends it to 'dev-null'
+        - env = "dev"
+        - alertname = "InstanceDown"
+      receiver: 'dev-null'
+
+receivers:
+  - name: 'discord_personal'
+    discord_configs:
+      - webhook_url: '' # <--- Paste your personal Discord webhook URL here. IF EMPTY, ALERTMANAGER CONTAINER WILL FAIL TO START
+        send_resolved: true
+        title: '🚨 PERSONAL ALERT: {{ .CommonLabels.alertname }}'
+        message: |
+          {{ range .Alerts }}
+          **Summary:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Severity:** {{ .Labels.severity }}
+          {{ end }}
+
+  - name: 'dev-null' # Receiver to drop alerts in development
+    webhook_configs:
+      - url: 'http://127.0.0.1:1/' # Dummy URL to drop alerts
+        send_resolved: true

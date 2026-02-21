@@ -13,7 +13,7 @@ describe('OAuth Module', () => {
   });
 
   afterAll(async () => {
-    await server.close();
+    if (server) await server.close();
   });
 
   describe('fetchGoogleProfile', () => {

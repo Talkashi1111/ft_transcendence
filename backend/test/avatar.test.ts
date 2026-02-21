@@ -41,7 +41,7 @@ describe('Avatar Upload', () => {
       const avatarDir = path.join('/app/data/avatars', testUserId);
       await fs.rm(avatarDir, { recursive: true, force: true }).catch(() => {});
     }
-    await server.close();
+    if (server) await server.close();
   });
 
   describe('GET /api/users/:id/avatar', () => {
