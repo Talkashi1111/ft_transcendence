@@ -56,6 +56,7 @@ export const TournamentResponseSchema = Type.Object({
   timestamp: Type.String(),
   recordedBy: Type.String(),
   matches: Type.Array(MatchOutputSchema),
+  txHash: Type.Union([Type.String(), Type.Null()]),
 });
 
 export const TournamentCountResponseSchema = Type.Object({

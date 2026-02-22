@@ -882,8 +882,8 @@ function setupPlayPageEvents(): void {
     setModuleCurrentGame(null);
     // If in active remote game, leave the match properly
     if (remoteGame) {
-      // This calls stop() which sends match:leave, then disconnects
-      remoteGame.disconnect();
+      // stop() sends match:leave and cleans up, but keeps the global WS alive
+      remoteGame.stop();
       remoteGame = null;
     } else if (isInActiveRemoteGame) {
       // If we're marked as in a game but remoteGame is null (edge case),
@@ -1924,11 +1924,11 @@ function setupPlayPageEvents(): void {
 
   function cleanupRemoteGame(): void {
     if (remoteGame) {
-      remoteGame.disconnect();
+      // stop() sends match:leave and cleans up game resources,
+      // but keeps the global WebSocket connection alive for notifications etc.
+      remoteGame.stop();
       remoteGame = null;
     }
-    // Only reset WebSocket manager when truly cleaning up, not when starting a new game
-    // The WebSocket connection will be reused for the new game
     isInActiveRemoteGame = false;
   }
 

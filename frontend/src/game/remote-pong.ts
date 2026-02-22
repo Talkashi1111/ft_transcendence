@@ -45,6 +45,11 @@ export class RemotePongGame {
   // Input tracking - send on change only
   private lastSentDirection: 'up' | 'down' | 'none' = 'none';
 
+  // Network quality: jitter tracking from game state inter-arrival times
+  private stateArrivalTimes: number[] = [];
+  private readonly JITTER_WINDOW = 30; // track last 30 arrivals (~0.5s at 60Hz)
+  private _jitter = 0; // average absolute deviation from expected 16.67ms
+
   // Cleanup functions for event handlers
   private unsubscribeFunctions: (() => void)[] = [];
 
@@ -80,6 +85,15 @@ export class RemotePongGame {
 
         this.currentState = newState;
         this.lastStateTime = performance.now();
+
+        // Track inter-arrival jitter
+        this.stateArrivalTimes.push(this.lastStateTime);
+        if (this.stateArrivalTimes.length > this.JITTER_WINDOW + 1) {
+          this.stateArrivalTimes.shift();
+        }
+        if (this.stateArrivalTimes.length >= 2) {
+          this.computeJitter();
+        }
       })
     );
 
@@ -182,7 +196,7 @@ export class RemotePongGame {
     );
 
     // Connection state changes
-    this.ws.setStateChangeHandler((state) => {
+    const unsubStateChange = this.ws.setStateChangeHandler((state) => {
       if (state === 'connected') {
         this.callbacks.onConnectionStateChange?.('connected');
       } else if (state === 'disconnected') {
@@ -191,6 +205,7 @@ export class RemotePongGame {
         this.callbacks.onConnectionStateChange?.('reconnecting');
       }
     });
+    this.unsubscribeFunctions.push(unsubStateChange);
   }
 
   /**
@@ -338,6 +353,11 @@ export class RemotePongGame {
 
     render(this.ctx, renderState);
 
+    // Draw network quality indicator (top-right corner of canvas)
+    if (state.status === 'playing' || state.status === 'countdown') {
+      this.drawNetworkIndicator();
+    }
+
     // Draw additional overlays for remote-specific states
     if (state.status === 'paused') {
       this.drawDisconnectedOverlay();
@@ -355,17 +375,41 @@ export class RemotePongGame {
       return this.currentState;
     }
 
-    // Calculate interpolation factor
+    // Calculate interpolation / extrapolation factor
     const elapsed = performance.now() - this.lastStateTime;
-    const t = Math.min(elapsed / this.SERVER_TICK_MS, 1);
+    const t = elapsed / this.SERVER_TICK_MS;
 
-    // Interpolate ball position only (paddles updated instantly, ball interpolated)
+    if (t <= 1) {
+      // Normal interpolation between previous and current state
+      return {
+        ...this.currentState,
+        ball: {
+          ...this.currentState.ball,
+          x: this.lerp(this.previousState.ball.x, this.currentState.ball.x, t),
+          y: this.lerp(this.previousState.ball.y, this.currentState.ball.y, t),
+        },
+      };
+    }
+
+    // Extrapolation: continue ball along its velocity when server tick is late
+    // Cap extrapolation to 3 ticks to avoid runaway (e.g., tab was backgrounded)
+    const extraT = Math.min(t - 1, 3);
+    const vx = this.currentState.ball.x - this.previousState.ball.x;
+    const vy = this.currentState.ball.y - this.previousState.ball.y;
+
+    let extraX = this.currentState.ball.x + vx * extraT;
+    let extraY = this.currentState.ball.y + vy * extraT;
+
+    // Clamp to canvas bounds so the ball doesn't fly off screen
+    extraX = Math.max(0, Math.min(GAME_CONFIG.canvasWidth, extraX));
+    extraY = Math.max(0, Math.min(GAME_CONFIG.canvasHeight, extraY));
+
     return {
       ...this.currentState,
       ball: {
         ...this.currentState.ball,
-        x: this.lerp(this.previousState.ball.x, this.currentState.ball.x, t),
-        y: this.lerp(this.previousState.ball.y, this.currentState.ball.y, t),
+        x: extraX,
+        y: extraY,
       },
     };
   }
@@ -406,6 +450,85 @@ export class RemotePongGame {
       GAME_CONFIG.canvasWidth / 2,
       GAME_CONFIG.canvasHeight - 30
     );
+  }
+
+  /**
+   * Compute jitter from recent state arrival times.
+   * Jitter = average |delta - expected| across the window.
+   */
+  private computeJitter(): void {
+    const times = this.stateArrivalTimes;
+    const deltas: number[] = [];
+    for (let i = 1; i < times.length; i++) {
+      deltas.push(times[i] - times[i - 1]);
+    }
+    if (deltas.length === 0) return;
+
+    const jitter =
+      deltas.reduce((sum, d) => sum + Math.abs(d - this.SERVER_TICK_MS), 0) / deltas.length;
+
+    this._jitter = jitter;
+  }
+
+  /**
+   * Draw network quality indicator in top-right corner of canvas.
+   * Uses jitter from 60Hz game state arrivals for real-time accuracy,
+   * with ping RTT shown as a secondary metric.
+   */
+  private drawNetworkIndicator(): void {
+    const jitter = this._jitter;
+    const ctx = this.ctx;
+
+    // Quality tiers based on jitter (deviation from expected 16.67ms)
+    let color: string;
+    let bars: number;
+    if (this.stateArrivalTimes.length < 5) {
+      // Not enough data yet
+      color = '#888';
+      bars = 0;
+    } else if (jitter < 3) {
+      color = '#22c55e'; // green — excellent
+      bars = 4;
+    } else if (jitter < 8) {
+      color = '#84cc16'; // lime — good
+      bars = 3;
+    } else if (jitter < 20) {
+      color = '#eab308'; // yellow — fair
+      bars = 2;
+    } else {
+      color = '#ef4444'; // red — poor
+      bars = 1;
+    }
+
+    const x = GAME_CONFIG.canvasWidth - 70;
+    const y = 8;
+
+    ctx.save();
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = color;
+
+    // Show jitter
+    const jitterText = this.stateArrivalTimes.length >= 5 ? `±${Math.round(jitter)}ms` : '---';
+    ctx.fillText(jitterText, x - 4, y + 10);
+
+    // Draw signal bars
+    const barWidth = 4;
+    const barGap = 2;
+    const maxBarHeight = 14;
+    const barStartX = x;
+    const barBaseY = y + 12;
+
+    for (let i = 0; i < 4; i++) {
+      const barHeight = ((i + 1) / 4) * maxBarHeight;
+      const bx = barStartX + i * (barWidth + barGap);
+      const by = barBaseY - barHeight;
+
+      ctx.fillStyle = i < bars ? color : 'rgba(255,255,255,0.15)';
+      ctx.fillRect(bx, by, barWidth, barHeight);
+    }
+
+    ctx.restore();
   }
 
   private drawWaitingForOpponentOverlay(): void {

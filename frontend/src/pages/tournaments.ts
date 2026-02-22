@@ -26,6 +26,7 @@ interface TournamentData {
   winner: string;
   timestamp: string;
   recordedBy: string;
+  txHash: string | null;
   matches: {
     player1: string;
     player2: string;
@@ -230,6 +231,16 @@ function setupTournamentLoader() {
           <div class="mt-2 text-xs text-green-600">
             Recorded by: <span class="font-mono">${formatAddress(data.recordedBy)}</span>
           </div>
+          ${
+            data.txHash
+              ? `
+          <a href="https://testnet.snowtrace.io/tx/${data.txHash}" target="_blank" rel="noopener noreferrer"
+             class="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-block">
+            ${t('tournaments.detail.txhash')}: ${formatAddress(data.txHash)}
+          </a>
+          `
+              : ''
+          }
         </div>
 
         <h4 class="font-semibold text-gray-900 mb-4">Players: ${data.players.map((p) => escapeHtml(p)).join(', ')}</h4>

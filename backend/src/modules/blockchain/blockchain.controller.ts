@@ -108,6 +108,12 @@ export async function getTournamentFromBlockchainHandler(
     const tournament = await blockchainService.getTournament(blockchainId);
     const matches = await blockchainService.getTournamentMatches(blockchainId);
 
+    // Look up txHash from database
+    const dbTournament = await prisma.localTournament.findFirst({
+      where: { blockchainId },
+      select: { txHash: true },
+    });
+
     return reply.status(200).send({
       blockchainId: blockchainId.toString(),
       odUserId: tournament.odUserId,
@@ -117,6 +123,7 @@ export async function getTournamentFromBlockchainHandler(
       timestamp: tournament.timestamp.toString(),
       recordedBy: tournament.recordedBy,
       matches,
+      txHash: dbTournament?.txHash ?? null,
     });
   } catch (err) {
     request.log.error(err);

@@ -107,7 +107,7 @@ const DEFAULT_OPTIONS: Required<WebSocketManagerOptions> = {
   maxReconnectAttempts: 10,
   baseReconnectDelay: 1000,
   maxReconnectDelay: 30000,
-  pingInterval: 25000,
+  pingInterval: 5000,
 };
 
 export class WebSocketManager {
@@ -117,9 +117,12 @@ export class WebSocketManager {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private awaitingPong = false;
+  private pingSentAt = 0;
+  private _latency = 0; // RTT in ms
   private _state: ConnectionState = 'disconnected';
   private matchId: string | null = null;
-  private onStateChange?: (state: ConnectionState) => void;
+  private onStateChangeHandlers: ((state: ConnectionState) => void)[] = [];
 
   constructor(options: WebSocketManagerOptions = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options };
@@ -137,17 +140,29 @@ export class WebSocketManager {
     return this.matchId;
   }
 
+  /** Current round-trip latency in ms (0 if unknown) */
+  get latency(): number {
+    return this._latency;
+  }
+
   /**
-   * Set callback for connection state changes
+   * Add a callback for connection state changes (supports multiple handlers)
+   * Returns an unsubscribe function.
    */
-  setStateChangeHandler(handler: (state: ConnectionState) => void): void {
-    this.onStateChange = handler;
+  setStateChangeHandler(handler: (state: ConnectionState) => void): () => void {
+    this.onStateChangeHandlers.push(handler);
+    return () => {
+      const idx = this.onStateChangeHandlers.indexOf(handler);
+      if (idx !== -1) this.onStateChangeHandlers.splice(idx, 1);
+    };
   }
 
   private setState(newState: ConnectionState): void {
     if (this._state !== newState) {
       this._state = newState;
-      this.onStateChange?.(newState);
+      for (const handler of this.onStateChangeHandlers) {
+        handler(newState);
+      }
     }
   }
 
@@ -346,8 +361,12 @@ export class WebSocketManager {
         data: unknown;
       };
 
-      // Handle pong silently
+      // Handle pong — marks connection as alive and measures RTT
       if (event === 'pong') {
+        this.awaitingPong = false;
+        if (this.pingSentAt > 0) {
+          this._latency = Math.round(performance.now() - this.pingSentAt);
+        }
         return;
       }
 
@@ -363,8 +382,17 @@ export class WebSocketManager {
 
   private startPing(): void {
     this.stopPing();
+    this.awaitingPong = false;
     this.pingTimer = setInterval(() => {
       if (this.isConnected) {
+        // If we sent a ping and never got a pong back, the connection is dead
+        if (this.awaitingPong) {
+          console.warn('[WS] No pong received, connection appears dead');
+          this.ws!.close();
+          return;
+        }
+        this.awaitingPong = true;
+        this.pingSentAt = performance.now();
         this.ws!.send(JSON.stringify({ event: 'ping' }));
       }
     }, this.options.pingInterval);

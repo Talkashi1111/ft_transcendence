@@ -808,3 +808,29 @@ npx wscat -c 'ws://localhost:3000/api/game/ws' \
 5. ✅ Match results are persisted
 6. ✅ CLI can interact with game API
 7. ✅ Tournament mode works remotely
+
+---
+
+## Network Quality Indicator
+
+During remote games, a real-time network indicator is drawn in the top-right corner of the canvas.
+
+**Display:** `±3ms  ▁▂▃▄`
+
+### Jitter
+
+Measures deviation of 60Hz `game:state` inter-arrival times from the expected 16.67ms interval, over a 30-sample sliding window.
+
+| Jitter  | Color  | Bars | Quality   |
+| ------- | ------ | ---- | --------- |
+| < 3 ms  | Green  | 4    | Excellent |
+| 3–8 ms  | Lime   | 3    | Good      |
+| 8–20 ms | Yellow | 2    | Fair      |
+| > 20 ms | Red    | 1    | Poor      |
+
+### Disconnect Detection
+
+Two independent ping mechanisms ensure dead connections are caught within 5–10s:
+
+1. **Server → Client**: Protocol-level WebSocket ping (5s). Terminates unresponsive sockets.
+2. **Client → Server**: Application-level JSON ping (5s). Closes socket if no pong received.

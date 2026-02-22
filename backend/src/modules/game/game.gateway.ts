@@ -480,7 +480,7 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
     }
   );
 
-  // Keep-alive ping interval
+  // Keep-alive ping interval (5s for fast disconnect detection in games)
   const pingInterval = setInterval(() => {
     for (const socket of connectedSockets.values()) {
       if (!socket.isAlive) {
@@ -490,7 +490,7 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
       socket.isAlive = false;
       (socket as WebSocket).ping();
     }
-  }, 30000);
+  }, 5000);
 
   // Cleanup on server close
   server.addHook('onClose', () => {
