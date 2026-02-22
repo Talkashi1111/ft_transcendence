@@ -274,8 +274,21 @@ export class GameEngine {
 
   // Force end the game with a specific winner (e.g., opponent disconnected)
   forceEnd(winnerId: string): void {
-    const winner =
-      winnerId === this.gameState.player1.id ? this.gameState.player1 : this.gameState.player2;
+    const isPlayer1Winner = winnerId === this.gameState.player1.id;
+    const winner = isPlayer1Winner ? this.gameState.player1 : this.gameState.player2;
+
+    // Ensure the winner's score reflects the victory so match history is correct
+    // (scores determine won/lost in stats — without this, a 0-0 disconnect looks like a loss for both)
+    if (isPlayer1Winner) {
+      if (this.gameState.player1.paddle.score <= this.gameState.player2.paddle.score) {
+        this.gameState.player1.paddle.score = GAME_CONFIG.maxScore;
+      }
+    } else {
+      if (this.gameState.player2.paddle.score <= this.gameState.player1.paddle.score) {
+        this.gameState.player2.paddle.score = GAME_CONFIG.maxScore;
+      }
+    }
+
     this.endGame(winner.id, winner.alias);
   }
 }

@@ -419,6 +419,12 @@ async function render() {
   if (!app) return;
 
   if (currentPage === 'login') {
+    // Redirect authenticated users away from login page
+    const authenticated = await isAuthenticated();
+    if (authenticated) {
+      navigate('home');
+      return;
+    }
     renderLoginPage(app, renderNavBar, setupNavigation, async () => {
       // After successful login, connect WebSocket and go to home
       await syncLangFromAccount();
@@ -426,6 +432,12 @@ async function render() {
       navigate('home');
     });
   } else if (currentPage === 'register') {
+    // Redirect authenticated users away from register page
+    const authenticated = await isAuthenticated();
+    if (authenticated) {
+      navigate('home');
+      return;
+    }
     renderRegisterPage(app, renderNavBar, setupNavigation, () => {
       // After successful registration, go to login
       navigate('login');
@@ -523,7 +535,7 @@ async function renderNavBar(
         <div class="flex justify-between h-16">
           <div class="flex">
             <div class="flex-shrink-0 flex items-center gap-2">
-              <h1 class="text-xl sm:text-2xl font-bold text-gray-900">ft_transcendence</h1>
+              <h1 id="nav-title" class="text-xl sm:text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition">ft_transcendence</h1>
               ${
                 isDev
                   ? `
@@ -822,6 +834,7 @@ function setupNavigation() {
 
   // Desktop navigation
   homeBtn?.addEventListener('click', () => navigate('home'));
+  document.getElementById('nav-title')?.addEventListener('click', () => navigate('home'));
   playBtn?.addEventListener('click', () => {
     // Optional safety: don't reset if user is in an active remote game
     if (!hasActiveRemoteGame()) resetPlayUIState();
