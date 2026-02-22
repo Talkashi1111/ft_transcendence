@@ -383,6 +383,7 @@ export class WebSocketManager {
   private startPing(): void {
     this.stopPing();
     this.awaitingPong = false;
+    this.pingSentAt = 0;
     this.pingTimer = setInterval(() => {
       if (this.isConnected) {
         // If we sent a ping and never got a pong back, the connection is dead
