@@ -284,14 +284,33 @@ Access from other IPs is blocked for security.
 
 ```
 ft_transcendence/
-├── frontend/          # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
-├── backend/           # Fastify + Prisma + SQLite + JWT auth
-├── blockchain/        # Hardhat + Solidity + Avalanche
-├── Caddyfile          # Caddy reverse proxy, routing and TLS configuration
-├── data/              # SQLite database (persistent volume)
-├── docker-compose.dev.yml
-├── docker-compose.prod.yml
-└── Dockerfile
+├── frontend/                   # TypeScript + Vite + Tailwind CSS (vanilla, no frameworks)
+│   └── src/
+│       ├── game/               # Pong game engine (local, bot, remote, tournament)
+│       ├── i18n/               # Internationalization (en, de, fr, ja)
+│       ├── pages/              # Page renderers (play, login, settings, friends, ...)
+│       ├── types/              # Shared TypeScript types
+│       └── utils/              # Auth, WebSocket, input, toast, modal helpers
+├── backend/                    # Fastify + Prisma + SQLite + JWT auth
+│   └── src/modules/
+│       ├── user/               # Auth, registration, avatar
+│       ├── 2fa/                # TOTP two-factor authentication
+│       ├── friends/            # Friends system
+│       ├── notifications/      # Real-time notifications
+│       ├── game/               # Remote multiplayer + server-side physics engine
+│       ├── analytics/          # Analytics endpoints
+│       ├── oauth/              # Google OAuth
+│       └── blockchain/         # Tournament score recording
+├── blockchain/                 # Hardhat + Solidity + Avalanche Fuji
+├── grafana/                    # Grafana dashboards & provisioning
+├── prometheus/                 # Prometheus config & alert rules
+├── scripts/                    # Init DB and prod startup scripts
+├── .github/                    # CI/CD workflows and PR templates
+├── Caddyfile                   # Caddy reverse proxy, routing and TLS termination
+├── Makefile                    # Developer convenience commands
+├── docker-compose.dev.yml      # Dev stack (app + monitoring)
+├── docker-compose.prod.yml     # Production stack
+└── Dockerfile                  # Multi-stage build (dev + production)
 ```
 
 ---
@@ -561,13 +580,18 @@ make blockchain-deploy-fuji
 
 ```
 blockchain/
-├── contracts/          # Solidity smart contracts
-│   └── TournamentScores.sol
-├── ignition/          # Deployment modules
+├── contracts/
+│   ├── TournamentScores.sol    # Main tournament scores contract
+│   └── TournamentScores.t.sol  # Solidity test file
+├── ignition/
 │   └── modules/
-├── test/              # Contract tests
-├── hardhat.config.ts  # Hardhat configuration
-└── package.json       # Scripts and dependencies
+│       └── TournamentScores.ts # Ignition deployment module
+├── scripts/
+│   └── verify-snowtrace.ts     # Contract verification on Snowtrace
+├── test/
+│   └── TournamentScores.ts     # Hardhat contract tests
+├── hardhat.config.ts           # Hardhat configuration
+└── package.json                # Scripts and dependencies
 ```
 
 For more details, see [blockchain/README.md](blockchain/README.md)

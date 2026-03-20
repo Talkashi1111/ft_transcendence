@@ -15,6 +15,17 @@ const start = async () => {
     await server.listen({ port: +PORT, host: HOST });
     console.log(`✅ Server started on http://${HOST}:${PORT}`);
 
+    // Graceful shutdown on SIGTERM (Docker) and SIGINT (Ctrl+C)
+    const shutdown = async (signal: string) => {
+      console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+      await server.close();
+      console.log('✅ Server closed');
+      process.exit(0);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
     // Cleanup old notifications in background (non-blocking)
     cleanupOldNotifications()
       .then((result) => {
