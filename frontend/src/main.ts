@@ -131,6 +131,7 @@ async function trackPageView(pageName: string) {
  */
 // Flag to skip auto-reconnect after session was replaced
 let sessionWasReplaced = false;
+let wsConnecting = false; // Prevent concurrent connect() calls
 
 /**
  * Fetch unread notification count from server
@@ -205,6 +206,12 @@ async function connectGlobalWebSocket(): Promise<void> {
 
   // Register handlers only once (when not connected)
   if (!wsManager.isConnected) {
+    // Prevent concurrent connect() calls from rapid re-renders triggering session:replaced
+    if (wsConnecting) {
+      return;
+    }
+    wsConnecting = true;
+
     // Track connection state for online indicator
     wsManager.setStateChangeHandler((state) => {
       updateOnlineIndicator(state === 'connected');
@@ -273,6 +280,7 @@ async function connectGlobalWebSocket(): Promise<void> {
 
     try {
       await wsManager.connect();
+      wsConnecting = false;
       console.log('[App] Global WebSocket connected');
       updateOnlineIndicator(true);
 
@@ -297,6 +305,7 @@ async function connectGlobalWebSocket(): Promise<void> {
       console.warn('[App] Failed to connect global WebSocket:', err);
       updateOnlineIndicator(false);
       // Non-fatal - features will fall back to REST or retry later
+      wsConnecting = false;
     }
   }
 }
