@@ -123,6 +123,7 @@ export class WebSocketManager {
   private _state: ConnectionState = 'disconnected';
   private matchId: string | null = null;
   private onStateChangeHandlers: ((state: ConnectionState) => void)[] = [];
+  private connectingPromise: Promise<void> | null = null; // Single-flight guard
 
   constructor(options: WebSocketManagerOptions = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options };
@@ -167,7 +168,8 @@ export class WebSocketManager {
   }
 
   /**
-   * Connect to the game WebSocket server
+   * Connect to the game WebSocket server.
+   * Concurrent calls share the same in-flight promise — no duplicate sockets.
    */
   async connect(): Promise<void> {
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -175,9 +177,14 @@ export class WebSocketManager {
       return;
     }
 
+    // Return existing in-flight promise so concurrent callers don't open a second socket
+    if (this.connectingPromise) {
+      return this.connectingPromise;
+    }
+
     this.setState('connecting');
 
-    return new Promise((resolve, reject) => {
+    this.connectingPromise = new Promise((resolve, reject) => {
       // Build WebSocket URL (no matchId - join via message after connect)
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const url = `${protocol}//${window.location.host}/api/game/ws`;
@@ -189,6 +196,7 @@ export class WebSocketManager {
           console.log('[WS] Connected');
           this.setState('connected');
           this.reconnectAttempts = 0;
+          this.connectingPromise = null;
           this.startPing();
           resolve();
         };
@@ -196,6 +204,7 @@ export class WebSocketManager {
         this.ws.onclose = (event) => {
           console.log('[WS] Disconnected:', event.code, event.reason);
           this.stopPing();
+          this.connectingPromise = null;
 
           // Handle session replaced (another tab connected)
           if (event.code === 4001) {
@@ -228,10 +237,13 @@ export class WebSocketManager {
           this.handleMessage(event.data);
         };
       } catch (err) {
+        this.connectingPromise = null;
         this.setState('disconnected');
         reject(err);
       }
     });
+
+    return this.connectingPromise;
   }
 
   /**
