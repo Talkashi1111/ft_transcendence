@@ -20,41 +20,80 @@ Fastify REST API with Prisma ORM and SQLite database.
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── migrations/         # Migration history
+│   ├── schema.prisma           # Database schema
+│   ├── seed.ts                 # Database seeding script
+│   └── migrations/             # Migration history
 ├── src/
-│   ├── app.ts              # Fastify app setup & plugins
-│   ├── index.ts            # Entry point (starts server)
-│   ├── generated/prisma/   # Generated Prisma Client (gitignored)
+│   ├── app.ts                  # Fastify app setup & plugins
+│   ├── index.ts                # Entry point (starts server)
+│   ├── assets/
+│   │   └── default-avatar.svg  # Default user avatar
+│   ├── generated/              # Generated Prisma Client (gitignored)
 │   ├── modules/
-│   │   ├── user/           # User module (auth, registration, search)
-│   │   ├── 2fa/            # Two-Factor Authentication module
-│   │   ├── friends/        # Friends system module
-│   │   │   ├── friends.controller.ts  # Request handlers
-│   │   │   ├── friends.route.ts       # REST API endpoints
-│   │   │   ├── friends.schema.ts      # Validation schemas
-│   │   │   └── friends.service.ts     # Business logic
-│   │   ├── notifications/  # Notifications module
+│   │   ├── user/               # User module (auth, registration, search)
+│   │   │   ├── avatar.route.ts         # Avatar upload/remove endpoints
+│   │   │   ├── user.controller.ts      # Request handlers
+│   │   │   ├── user.route.ts           # REST API endpoints
+│   │   │   ├── user.schema.ts          # Validation schemas
+│   │   │   └── user.service.ts         # Business logic
+│   │   ├── 2fa/                # Two-Factor Authentication module
+│   │   │   ├── 2fa.controller.ts
+│   │   │   ├── 2fa.route.ts
+│   │   │   ├── 2fa.schema.ts
+│   │   │   └── 2fa.service.ts
+│   │   ├── friends/            # Friends system module
+│   │   │   ├── friends.controller.ts   # Request handlers
+│   │   │   ├── friends.route.ts        # REST API endpoints
+│   │   │   ├── friends.schema.ts       # Validation schemas
+│   │   │   └── friends.service.ts      # Business logic
+│   │   ├── notifications/      # Notifications module
 │   │   │   ├── notifications.controller.ts
 │   │   │   ├── notifications.route.ts
 │   │   │   └── notifications.service.ts
-│   │   ├── game/           # Remote multiplayer game module
-│   │   │   ├── engine/     # Server-side game physics engine
-│   │   │   ├── game.gateway.ts   # WebSocket (game + friend status)
-│   │   │   ├── game.route.ts     # REST API endpoints
-│   │   │   ├── game.schema.ts    # Validation schemas
-│   │   │   ├── game.types.ts     # TypeScript types
-│   │   │   └── match-manager.ts  # Match state management
-│   │   ├── oauth/          # Google OAuth module
-│   │   └── blockchain/     # Blockchain module (tournament scores)
+│   │   ├── game/               # Remote multiplayer game module
+│   │   │   ├── engine/         # Server-side game physics engine
+│   │   │   │   ├── config.ts       # Game constants
+│   │   │   │   ├── game-engine.ts  # Main game loop
+│   │   │   │   ├── index.ts        # Engine exports
+│   │   │   │   └── physics.ts      # Ball/paddle physics
+│   │   │   ├── game.gateway.ts     # WebSocket handler (game + friend status)
+│   │   │   ├── game.route.ts       # REST API endpoints
+│   │   │   ├── game.schema.ts      # Validation schemas
+│   │   │   ├── game.types.ts       # TypeScript types
+│   │   │   └── match-manager.ts    # Match state management
+│   │   ├── analytics/          # Analytics module
+│   │   │   └── analytics.route.ts  # Analytics endpoints
+│   │   ├── oauth/              # Google OAuth module
+│   │   │   ├── oauth.route.ts
+│   │   │   └── oauth.service.ts
+│   │   └── blockchain/         # Blockchain module (tournament scores)
+│   │       ├── blockchain.controller.ts
+│   │       ├── blockchain.route.ts
+│   │       ├── blockchain.schema.ts
+│   │       └── blockchain.service.ts
 │   └── utils/
-│       ├── prisma.ts       # Prisma client singleton
-│       ├── hash.ts         # Argon2 password hashing
-│       └── crypto.ts       # AES-256-GCM encryption for 2FA secrets
-├── test/                   # Vitest tests
-├── prisma.config.ts        # Prisma configuration
-├── .env                    # Environment variables (gitignored)
-└── .env.example            # Environment template
+│       ├── auth-helpers.ts     # JWT/auth utility functions
+│       ├── avatar.ts           # Avatar processing helpers
+│       ├── crypto.ts           # AES-256-GCM encryption for 2FA secrets
+│       ├── hash.ts             # Argon2 password hashing
+│       └── prisma.ts           # Prisma client singleton
+├── test/                       # Vitest tests
+│   ├── setup.ts                # Test DB isolation setup
+│   ├── 2fa.test.ts
+│   ├── analytics.test.ts
+│   ├── avatar.test.ts
+│   ├── crypto.test.ts
+│   ├── friends.test.ts
+│   ├── game.test.ts
+│   ├── index.test.ts
+│   ├── metrics.integration.test.ts
+│   ├── oauth.test.ts
+│   ├── start.test.ts
+│   ├── user-profile.test.ts
+│   └── websocket.integration.test.ts
+├── prisma.config.ts            # Prisma configuration
+├── .env                        # Environment variables (gitignored)
+└── .env.example                # Environment template
 ```
 
 ## Database Setup
@@ -1160,12 +1199,12 @@ This section shows how to test API endpoints using command-line tools.
 
 ```bash
 # Login and save cookie to file
-curl -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
+curl -i -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
   -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Use saved cookie for authenticated requests
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
 ```
 
 **Option 2: Without cookies file (inline cookie)**
@@ -1177,7 +1216,7 @@ curl -i -X POST 'http://localhost:3000/api/users/login' \
   -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Manually copy the token from Set-Cookie header and use it:
-curl -H 'Cookie: token=YOUR_JWT_TOKEN_HERE' 'http://localhost:3000/api/users/me'
+curl -i -H 'Cookie: token=YOUR_JWT_TOKEN_HERE' 'http://localhost:3000/api/users/me'
 ```
 
 **Option 3: One-liner with command substitution**
@@ -1187,67 +1226,67 @@ TOKEN=$(curl -s -c - -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
   -d '{"email": "alice@example.com", "password": "Password123!"}' | grep token | awk '{print $7}')
 
-curl -H "Cookie: token=$TOKEN" 'http://localhost:3000/api/users/me'
+curl -i -H "Cookie: token=$TOKEN" 'http://localhost:3000/api/users/me'
 ```
 
 ### User Endpoints
 
 ```bash
 # Register a new user
-curl -X POST 'http://localhost:3000/api/users' \
+curl -i -X POST 'http://localhost:3000/api/users' \
   -H 'Content-Type: application/json' \
   -d '{"email": "test@example.com", "password": "Test1234!", "alias": "testuser"}'
 
 # Login
-curl -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
+curl -i -c /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/login' \
   -H 'Content-Type: application/json' \
   -d '{"email": "alice@example.com", "password": "Password123!"}'
 
 # Get current user profile
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/users/me'
 
 # List all users
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/users'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/users'
 
 # Logout
-curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/logout'
+curl -i -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/users/logout'
 ```
 
 ### Game Endpoints
 
 ```bash
 # Create a new match
-curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match' \
+curl -i -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match' \
   -H 'Content-Type: application/json' \
   -d '{}'
 
 # Create match with mode
-curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match' \
+curl -i -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match' \
   -H 'Content-Type: application/json' \
   -d '{"mode": "1v1"}'
 
 # List available matches (waiting for players)
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/game/matches'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/game/matches'
 
 # Get specific match details
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/game/match/<match-id>'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/game/match/<match-id>'
 
 # Get match game state
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/game/match/<match-id>/state'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/game/match/<match-id>/state'
 
 # Join an existing match
-curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match/<match-id>/join'
+curl -i -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match/<match-id>/join'
 
 # Quick match (auto-join or create)
-curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/quickmatch'
+curl -i -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/quickmatch'
 
 # Send input during game
-curl -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match/<match-id>/input' \
+curl -i -b /tmp/cookies.txt -X POST 'http://localhost:3000/api/game/match/<match-id>/input' \
   -H 'Content-Type: application/json' \
   -d '{"input": "up"}'   # Options: "up", "down", "stop"
 
 # Get current match for logged-in user
-curl -b /tmp/cookies.txt 'http://localhost:3000/api/game/current'
+curl -i -b /tmp/cookies.txt 'http://localhost:3000/api/game/current'
 
 # Leave/cancel current match
 curl -b /tmp/cookies.txt -X DELETE 'http://localhost:3000/api/game/match/current'

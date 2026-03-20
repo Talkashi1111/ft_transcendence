@@ -18,10 +18,8 @@ Web:
 	Introduce an AI opponent 1pt.(?)
 	2FA + JWT 1pt.
 	Server side pong 1pt.
-	ELK (Elasticsearch, Logstash, Kibana) for Log Management 1pt.(?)
 	Monitoring Grafana 0.5pt
-	accessibility support all devices 0.5p
-	3D Graphics 1pt
+	Expanding Browser Compatibility 0.5p
 	multiples language support 0.5pt
 
 

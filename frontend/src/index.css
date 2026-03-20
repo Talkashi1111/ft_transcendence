@@ -88,7 +88,7 @@ body {
   }
 
   .bracket-player-name--loser {
-    @apply text-gray-500 line-through opacity-50;
+    @apply text-gray-400 opacity-50;
   }
 
   .bracket-player-name--tbd {

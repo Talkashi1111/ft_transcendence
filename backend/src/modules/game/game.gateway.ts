@@ -494,6 +494,7 @@ export async function registerGameWebSocket(server: FastifyInstance): Promise<vo
 
   // Cleanup on server close
   server.addHook('onClose', () => {
+    console.log(`[WS] Server is shutting down`);
     clearInterval(pingInterval);
     for (const socket of connectedSockets.values()) {
       (socket as WebSocket).close();

@@ -843,11 +843,14 @@ export async function renderFriendsPage(
     }
   };
 
-  const handleFriendOffline = (data: { friendId: string }) => {
+  const handleFriendOffline = (data: { friendId: string; lastSeenAt?: string }) => {
     onlineFriendIds.delete(data.friendId);
     const friend = friends.find((f) => f.id === data.friendId);
     if (friend) {
       friend.isOnline = false;
+      if (data.lastSeenAt) {
+        friend.lastSeenAt = data.lastSeenAt;
+      }
       if (currentTab === 'friends') {
         updateContent(app);
       }
