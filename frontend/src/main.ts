@@ -131,6 +131,8 @@ async function trackPageView(pageName: string) {
  */
 // Flag to skip auto-reconnect after session was replaced
 let sessionWasReplaced = false;
+// Guard to prevent duplicate WS handler registration
+let wsHandlersRegistered = false;
 
 /**
  * Fetch unread notification count from server
@@ -203,8 +205,10 @@ async function connectGlobalWebSocket(): Promise<void> {
 
   const wsManager = getWebSocketManager();
 
-  // Register handlers only once (when not connected)
-  if (!wsManager.isConnected) {
+  // Register handlers only once per WS manager instance
+  if (!wsHandlersRegistered) {
+    wsHandlersRegistered = true;
+
     // Track connection state for online indicator
     wsManager.setStateChangeHandler((state) => {
       updateOnlineIndicator(state === 'connected');
@@ -271,33 +275,37 @@ async function connectGlobalWebSocket(): Promise<void> {
       }
     });
 
-    try {
-      await wsManager.connect();
-      console.log('[App] Global WebSocket connected');
-      updateOnlineIndicator(true);
-
-      // Fetch initial notification count
-      await fetchUnreadNotificationCount();
-
-      // Listen for notification count refresh events (from friends page, etc.)
-      // Only register once to prevent memory leaks from duplicate listeners
-      if (!notificationListenerRegistered) {
-        window.addEventListener('notification:countChanged', () => {
-          fetchUnreadNotificationCount();
-        });
-        notificationListenerRegistered = true;
-      }
-
-      // Check for active match after connecting (for non-play pages)
-      // Play page handles its own reconnect via remoteGame.connect()
-      if (currentPage !== 'play') {
-        wsManager.reconnectToMatch();
-      }
-    } catch (err) {
-      console.warn('[App] Failed to connect global WebSocket:', err);
-      updateOnlineIndicator(false);
-      // Non-fatal - features will fall back to REST or retry later
+    // Listen for notification count refresh events (from friends page, etc.)
+    if (!notificationListenerRegistered) {
+      window.addEventListener('notification:countChanged', () => {
+        fetchUnreadNotificationCount();
+      });
+      notificationListenerRegistered = true;
     }
+  }
+
+  // Skip if already connected
+  if (wsManager.isConnected) {
+    return;
+  }
+
+  try {
+    await wsManager.connect();
+    console.log('[App] Global WebSocket connected');
+    updateOnlineIndicator(true);
+
+    // Fetch initial notification count
+    await fetchUnreadNotificationCount();
+
+    // Check for active match after connecting (for non-play pages)
+    // Play page handles its own reconnect via remoteGame.connect()
+    if (currentPage !== 'play') {
+      wsManager.reconnectToMatch();
+    }
+  } catch (err) {
+    console.warn('[App] Failed to connect global WebSocket:', err);
+    updateOnlineIndicator(false);
+    // Non-fatal - features will fall back to REST or retry later
   }
 }
 
@@ -425,7 +433,7 @@ async function render() {
       navigate('home');
       return;
     }
-    renderLoginPage(app, renderNavBar, setupNavigation, async () => {
+    await renderLoginPage(app, renderNavBar, setupNavigation, async () => {
       // After successful login, connect WebSocket and go to home
       await syncLangFromAccount();
       await connectGlobalWebSocket();
@@ -448,7 +456,7 @@ async function render() {
     if (authenticated) {
       await connectGlobalWebSocket();
     }
-    renderHome(app);
+    await renderHome(app, authenticated);
   } else if (currentPage === 'play') {
     // Play page is accessible to everyone - local games don't require login
     // Remote games are protected within the play page UI
@@ -744,8 +752,9 @@ async function renderNavBar(
 }
 
 // Home page
-async function renderHome(app: HTMLElement) {
-  const navBar = await renderNavBar('home');
+async function renderHome(app: HTMLElement, authenticated?: boolean) {
+  const isAuth = authenticated ?? (await isAuthenticated());
+  const navBar = await renderNavBar('home', isAuth);
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${navBar}
@@ -770,6 +779,9 @@ async function renderHome(app: HTMLElement) {
 
   // Setup navigation
   setupNavigation();
+  // Sync online indicator with actual WS state after DOM is ready
+  // (guards against stale reads during async render races)
+  updateOnlineIndicator(getWebSocketManager().isConnected);
 }
 
 // Setup navigation
@@ -920,6 +932,7 @@ function setupNavigation() {
     clearAccountLang();
     // Disconnect global WebSocket on logout
     resetWebSocketManager();
+    wsHandlersRegistered = false;
     navigate('home');
   };
 
